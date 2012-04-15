@@ -19,8 +19,9 @@ static SCM xscheme_dij_respond( SCM args )
      printf("LINKER-");
      while(!scm_null_p(cdr))
        {
-	 s = SCM_STRING_CHARS( SCM_CAR( cdr ) );
+	 s = scm_to_locale_string( SCM_CAR( cdr ) );
          printf("%s ", s);
+         free(s);
          cdr = SCM_CDR(cdr);
        }
      printf("\n");
@@ -37,8 +38,8 @@ SCM xscheme_dij_constant(SCM stype, SCM encoding)
    int length;
    int i = 0;
    long n;
-   type = SCM_STRING_CHARS( stype );
-   buffer = SCM_STRING_CHARS( encoding );
+   type = scm_to_locale_string( stype );
+   buffer = scm_to_locale_string( encoding );
    length = process_constant( type, buffer, &constant, constant_buffer );
    if( !length )
       {
@@ -50,6 +51,8 @@ SCM xscheme_dij_constant(SCM stype, SCM encoding)
       printf("POP-DATA\n%d\nDEFINE-GLOBAL\n", current_label);
       } 
    current_label = current_label+1;
+   free(type);
+   free(buffer);
    return scm_int2num( current_label-1 );
    }
 
@@ -64,7 +67,7 @@ SCM xscheme_prettyprint( SCM v )
   int i;
   SCM str;
   str = scm_object_to_string( v, scm_c_eval_string("write") );
-  s = SCM_STRING_CHARS( str );
+  s = scm_to_locale_string( str );
   n = SCM_STRING_LENGTH( str );
   printf("%s %d\n", s, n );
   while( index < n )
@@ -91,6 +94,7 @@ SCM xscheme_prettyprint( SCM v )
 
     }
    printf("\n");
+   free(s);
    return 0;
 }
 
