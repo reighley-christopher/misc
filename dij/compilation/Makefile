@@ -29,4 +29,5 @@ clean :
 	rm y.tab.h
 	rm y.tab.c
 	rm scanner.c
-	
+	rm *~
+	rm dij
