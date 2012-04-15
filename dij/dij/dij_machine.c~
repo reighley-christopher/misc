@@ -1,0 +1,78 @@
+struct _dij_machine
+   {
+   char mode; 
+      /*this is interesting, I have two modes, one 
+        for the _dij_machine and one for the stack*/
+   struct _stack_member *stack;
+   int *code;
+   int inst_pointer;
+   int *variables;
+   int *types;
+   struct _function_metadata *context;
+   struct _parameter *next_anonymous_parameter;
+   struct _stack_member **last_anonymous_return;
+   };
+
+struct _machine *new_machine( )
+   {
+   struct _machine *ret = (struct _machine *)malloc(sizeof(struct _machine) );
+   struct _machine *sploop;
+   ret->stack = 0;
+   ret->mode = MODE_UNINITIALIZED;
+   ret->variables = 0;
+   ret->last_anonymous_return = 0;
+   ret->exit_procedure = 0;
+   ret->exit_datum = 0;
+   if( !first_machine ) first_machine = ret;
+   if( last_machine ) machine_add_after( last_machine, ret );
+   last_machine = ret;
+        sploop = first_machine;
+        while( sploop )
+        {
+        printf("\tmachine_list: %x %d\n", sploop, sploop->mode);
+        sploop = sploop->next;
+        }
+   return ret;
+   }
+
+void destroy_machine( struct _machine *killme )
+   {
+   struct _stack_member *sploop = killme->stack;
+   struct _stack_member *delete;
+   while( sploop )
+      {
+      delete = sploop;
+      sploop = sploop->under;
+      free( delete );
+      };
+   if( killme->variables ) free( killme->variables );
+   free( killme );
+   }
+
+int *variable_address( struct _machine *M, int code )
+   {
+   int i = 0;
+   int j = 0;
+   printf("searching variables: \nparameters\n");
+   for( i = 0; i < M->context->num_parameters; i++ )
+      {
+      printf("%d\n", j);
+      if( M->context->parameters[i] == code ) return M->variables+j;
+      j++;
+      }
+   printf("locals\n");
+   for( i = 0; i < M->context->num_locals; i++ )
+      {
+      printf("%d\n", j);
+      if( M->context->locals[i] == code ) return M->variables+j;
+      j++;
+      }
+   printf("returns\n");
+   for( i = 0; i < M->context->num_returns; i++ )
+      {
+      printf("%d\n", j);
+      if( M->context->returns[i] == code ) return M->variables+j;
+      j++;
+      }
+   }
+

@@ -1,0 +1,63 @@
+%option noyywrap
+
+%{
+#include "dij_misc.h"
+#include "../control/dij_control.h"
+#include "dij_exec.h"
+
+%}
+
+%%
+
+[\t\n ]*   { }
+
+[0-9]*  { int d; sscanf(yytext, "%d", &d ); dij_write(d); dij_record_number( d ); }
+
+"PUSH" { dij_write((int)inst_push); }
+
+"BLANK-CALL" {} 
+
+"APPLY" { dij_write((int)inst_apply); }
+
+"CURRY" { dij_write((int)inst_curry); }
+
+"CHECK" { dij_write((int)inst_check); }
+
+"HALT" { dij_write((int)inst_halt); }
+
+"PUSH-CODE" { dij_push_code();  }
+
+"POP-CODE" { dij_pop_code(); printf("'pop_code\n");}
+
+"PUSH-DATA" { dij_push_data(); }
+
+"POP-DATA" { dij_pop_data(); }
+
+"REFERENCE-VARIABLE" { dij_write((int)inst_reference_variable); dij_note_number( dij_note_rvalue ); } 
+
+"DEFINE-GLOBAL" {dij_define_global(); }
+
+"REFERENCE-GLOBAL" { dij_write((int)inst_reference_global); }
+
+"ASSIGN" { dij_write((int)inst_assign); }
+
+"ADD" { dij_write((int)inst_add); }
+
+"LVALUE-NAME" {dij_write((int)inst_lvalue_name); dij_note_number( dij_note_lvalue ); }
+
+"LVALUE-CALL" {dij_write((int)inst_lvalue_call); }
+
+"ANONYMOUS-PARAMETER" {dij_write((int)inst_anonymous_parameter); }
+
+"ANONYMOUS-RETURN" {dij_write((int)inst_anonymous_return); }
+
+"SPAWN" {dij_write((int)inst_spawn); }
+
+"DEBUG" {dij_write((int)debug); }
+
+"LEFT-JOIN" { dij_write((int)inst_left_join); }
+
+"NAMESPACE-JOIN" {dij_write((int)inst_namespace_join); }
+
+<<EOF>> {printf("finished\n"); yyterminate(); }
+

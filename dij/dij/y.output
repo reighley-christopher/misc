@@ -1,0 +1,1567 @@
+   0  $accept : function_collection $end
+
+   1  function_collection :
+   2                      | exterior_function_constant function_collection
+
+   3  exterior_function_constant : scheme begin_function command_list end_function
+
+   4  function_constant : scheme begin_function command_list end_function
+
+   5  scheme :
+   6         | TOKEN_SCHEME scheme
+
+   7  begin_function : TOKEN_OPEN_BLOCK
+
+   8  command_list :
+   9               | command
+  10               | command_list TOKEN_SEMICOLON command
+
+  11  end_function : TOKEN_CLOSE_BLOCK
+
+  12  command : lvalue_list TOKEN_ASSIGN expression_list
+  13          | terminated_combinator_expression
+  14          | if_statement
+  15          | do_statement
+
+  16  lvalue_list :
+  17              | lvalue
+  18              | lvalue TOKEN_COMMA lvalue_list
+
+  19  expression_list :
+  20                  | expression
+  21                  | expression TOKEN_COMMA expression_list
+
+  22  if_statement : TOKEN_IF guarded_command_list TOKEN_FI
+
+  23  do_statement : TOKEN_DO guarded_command_list TOKEN_OD
+
+  24  lvalue : scheme_name
+  25         | TOKEN_DEREFERENCE atomic_expression
+  26         | terminated_combinator_expression
+
+  27  guarded_command_list :
+  28                       | guarded_command guarded_command_list
+
+  29  guarded_command : expression TOKEN_GUARD command_list TOKEN_END_GUARD
+
+  30  tier0_expression : TOKEN_DEREFERENCE atomic_expression
+  31                   | atomic_expression
+
+  32  uninitiated_combinator_expression : TOKEN_FUNCTION_APPLICATION proper_combinator_expression
+  33                                    | TOKEN_FUNCTION_APPLICATION uninitiated_combinator_expression
+
+  34  terminated_combinator_expression : proper_combinator_expression TOKEN_FUNCTION_APPLICATION
+  35                                   | terminated_combinator_expression TOKEN_FUNCTION_APPLICATION
+
+  36  proper_combinator_expression : tier0_expression
+  37                               | proper_combinator_expression TOKEN_FUNCTION_APPLICATION tier0_expression
+  38                               | terminated_combinator_expression TOKEN_FUNCTION_APPLICATION tier0_expression
+  39                               | proper_combinator_expression TOKEN_COLON tier0_expression
+
+  40  functional_expression : proper_combinator_expression
+  41                        | terminated_combinator_expression
+  42                        | uninitiated_combinator_expression
+  43                        | functional_expression TOKEN_BACKSLASH atomic_expression
+
+  44  tier1_expression : TOKEN_REFERENCE tier1_expression
+  45                   | TOKEN_NOT tier1_expression
+  46                   | TOKEN_SUBTRACT tier1_expression
+  47                   | TOKEN_TILDE tier1_expression
+  48                   | functional_expression
+
+  49  tier2_expression : TOKEN_ADD expression
+
+  50  tier3_expression : TOKEN_MULTIPLY expression
+  51                   | TOKEN_DIVIDE expression
+  52                   | TOKEN_MODULO expression
+  53                   | tier2_expression
+
+  54  tier3_point_5_expression : TOKEN_TEST_EQUALITY expression
+  55                           | tier3_expression
+
+  56  tier4_expression : TOKEN_AND expression
+  57                   | tier3_point_5_expression
+
+  58  tier5_expression : TOKEN_OR expression
+  59                   | tier4_expression
+
+  60  expression : tier1_expression
+  61             | tier1_expression tier5_expression
+
+  62  atomic_expression : TOKEN_DECIMAL_INTEGER
+  63                    | TOKEN_CONSTANT
+  64                    | function_constant
+  65                    | scheme_name
+  66                    | TOKEN_OPEN_PAREN expression TOKEN_CLOSE_PAREN
+
+  67  scheme_name : scheme TOKEN_WORD
+
+state 0
+	$accept : . function_collection $end  (0)
+	function_collection : .  (1)
+	scheme : .  (5)
+
+	TOKEN_SCHEME  shift 1
+	$end  reduce 1
+	TOKEN_OPEN_BLOCK  reduce 5
+
+	function_collection  goto 2
+	exterior_function_constant  goto 3
+	scheme  goto 4
+
+
+state 1
+	scheme : TOKEN_SCHEME . scheme  (6)
+	scheme : .  (5)
+
+	TOKEN_SCHEME  shift 1
+	TOKEN_WORD  reduce 5
+	TOKEN_OPEN_BLOCK  reduce 5
+
+	scheme  goto 5
+
+
+state 2
+	$accept : function_collection . $end  (0)
+
+	$end  accept
+
+
+state 3
+	function_collection : exterior_function_constant . function_collection  (2)
+	function_collection : .  (1)
+	scheme : .  (5)
+
+	TOKEN_SCHEME  shift 1
+	$end  reduce 1
+	TOKEN_OPEN_BLOCK  reduce 5
+
+	function_collection  goto 6
+	exterior_function_constant  goto 3
+	scheme  goto 4
+
+
+state 4
+	exterior_function_constant : scheme . begin_function command_list end_function  (3)
+
+	TOKEN_OPEN_BLOCK  shift 7
+	.  error
+
+	begin_function  goto 8
+
+
+state 5
+	scheme : TOKEN_SCHEME scheme .  (6)
+
+	.  reduce 6
+
+
+state 6
+	function_collection : exterior_function_constant function_collection .  (2)
+
+	.  reduce 2
+
+
+state 7
+	begin_function : TOKEN_OPEN_BLOCK .  (7)
+
+	.  reduce 7
+
+
+state 8
+	exterior_function_constant : scheme begin_function . command_list end_function  (3)
+	scheme : .  (5)
+	command_list : .  (8)
+	lvalue_list : .  (16)
+
+	TOKEN_DECIMAL_INTEGER  shift 9
+	TOKEN_OPEN_PAREN  shift 10
+	TOKEN_DEREFERENCE  shift 11
+	TOKEN_IF  shift 12
+	TOKEN_DO  shift 13
+	TOKEN_SCHEME  shift 1
+	TOKEN_CONSTANT  shift 14
+	TOKEN_WORD  reduce 5
+	TOKEN_OPEN_BLOCK  reduce 5
+	TOKEN_CLOSE_BLOCK  reduce 8
+	TOKEN_SEMICOLON  reduce 8
+	TOKEN_ASSIGN  reduce 16
+
+	scheme  goto 15
+	command_list  goto 16
+	function_constant  goto 17
+	command  goto 18
+	lvalue_list  goto 19
+	terminated_combinator_expression  goto 20
+	if_statement  goto 21
+	do_statement  goto 22
+	lvalue  goto 23
+	scheme_name  goto 24
+	atomic_expression  goto 25
+	tier0_expression  goto 26
+	proper_combinator_expression  goto 27
+
+
+state 9
+	atomic_expression : TOKEN_DECIMAL_INTEGER .  (62)
+
+	.  reduce 62
+
+
+state 10
+	atomic_expression : TOKEN_OPEN_PAREN . expression TOKEN_CLOSE_PAREN  (66)
+	scheme : .  (5)
+
+	TOKEN_DECIMAL_INTEGER  shift 9
+	TOKEN_OPEN_PAREN  shift 10
+	TOKEN_TILDE  shift 28
+	TOKEN_SUBTRACT  shift 29
+	TOKEN_NOT  shift 30
+	TOKEN_REFERENCE  shift 31
+	TOKEN_DEREFERENCE  shift 32
+	TOKEN_SCHEME  shift 1
+	TOKEN_FUNCTION_APPLICATION  shift 33
+	TOKEN_CONSTANT  shift 14
+	TOKEN_WORD  reduce 5
+	TOKEN_OPEN_BLOCK  reduce 5
+
+	scheme  goto 15
+	function_constant  goto 17
+	terminated_combinator_expression  goto 34
+	expression  goto 35
+	scheme_name  goto 36
+	atomic_expression  goto 25
+	tier0_expression  goto 26
+	uninitiated_combinator_expression  goto 37
+	proper_combinator_expression  goto 38
+	functional_expression  goto 39
+	tier1_expression  goto 40
+
+
+state 11
+	lvalue : TOKEN_DEREFERENCE . atomic_expression  (25)
+	tier0_expression : TOKEN_DEREFERENCE . atomic_expression  (30)
+	scheme : .  (5)
+
+	TOKEN_DECIMAL_INTEGER  shift 9
+	TOKEN_OPEN_PAREN  shift 10
+	TOKEN_SCHEME  shift 1
+	TOKEN_CONSTANT  shift 14
+	TOKEN_WORD  reduce 5
+	TOKEN_OPEN_BLOCK  reduce 5
+
+	scheme  goto 15
+	function_constant  goto 17
+	scheme_name  goto 36
+	atomic_expression  goto 41
+
+
+state 12
+	if_statement : TOKEN_IF . guarded_command_list TOKEN_FI  (22)
+	scheme : .  (5)
+	guarded_command_list : .  (27)
+
+	TOKEN_DECIMAL_INTEGER  shift 9
+	TOKEN_OPEN_PAREN  shift 10
+	TOKEN_TILDE  shift 28
+	TOKEN_SUBTRACT  shift 29
+	TOKEN_NOT  shift 30
+	TOKEN_REFERENCE  shift 31
+	TOKEN_DEREFERENCE  shift 32
+	TOKEN_SCHEME  shift 1
+	TOKEN_FUNCTION_APPLICATION  shift 33
+	TOKEN_CONSTANT  shift 14
+	TOKEN_WORD  reduce 5
+	TOKEN_OPEN_BLOCK  reduce 5
+	TOKEN_FI  reduce 27
+
+	scheme  goto 15
+	function_constant  goto 17
+	terminated_combinator_expression  goto 34
+	expression  goto 42
+	guarded_command_list  goto 43
+	scheme_name  goto 36
+	atomic_expression  goto 25
+	guarded_command  goto 44
+	tier0_expression  goto 26
+	uninitiated_combinator_expression  goto 37
+	proper_combinator_expression  goto 38
+	functional_expression  goto 39
+	tier1_expression  goto 40
+
+
+state 13
+	do_statement : TOKEN_DO . guarded_command_list TOKEN_OD  (23)
+	scheme : .  (5)
+	guarded_command_list : .  (27)
+
+	TOKEN_DECIMAL_INTEGER  shift 9
+	TOKEN_OPEN_PAREN  shift 10
+	TOKEN_TILDE  shift 28
+	TOKEN_SUBTRACT  shift 29
+	TOKEN_NOT  shift 30
+	TOKEN_REFERENCE  shift 31
+	TOKEN_DEREFERENCE  shift 32
+	TOKEN_SCHEME  shift 1
+	TOKEN_FUNCTION_APPLICATION  shift 33
+	TOKEN_CONSTANT  shift 14
+	TOKEN_WORD  reduce 5
+	TOKEN_OPEN_BLOCK  reduce 5
+	TOKEN_OD  reduce 27
+
+	scheme  goto 15
+	function_constant  goto 17
+	terminated_combinator_expression  goto 34
+	expression  goto 42
+	guarded_command_list  goto 45
+	scheme_name  goto 36
+	atomic_expression  goto 25
+	guarded_command  goto 44
+	tier0_expression  goto 26
+	uninitiated_combinator_expression  goto 37
+	proper_combinator_expression  goto 38
+	functional_expression  goto 39
+	tier1_expression  goto 40
+
+
+state 14
+	atomic_expression : TOKEN_CONSTANT .  (63)
+
+	.  reduce 63
+
+
+state 15
+	function_constant : scheme . begin_function command_list end_function  (4)
+	scheme_name : scheme . TOKEN_WORD  (67)
+
+	TOKEN_WORD  shift 46
+	TOKEN_OPEN_BLOCK  shift 7
+	.  error
+
+	begin_function  goto 47
+
+
+state 16
+	exterior_function_constant : scheme begin_function command_list . end_function  (3)
+	command_list : command_list . TOKEN_SEMICOLON command  (10)
+
+	TOKEN_CLOSE_BLOCK  shift 48
+	TOKEN_SEMICOLON  shift 49
+	.  error
+
+	end_function  goto 50
+
+
+state 17
+	atomic_expression : function_constant .  (64)
+
+	.  reduce 64
+
+
+state 18
+	command_list : command .  (9)
+
+	.  reduce 9
+
+
+state 19
+	command : lvalue_list . TOKEN_ASSIGN expression_list  (12)
+
+	TOKEN_ASSIGN  shift 51
+	.  error
+
+
+state 20
+	command : terminated_combinator_expression .  (13)
+	lvalue : terminated_combinator_expression .  (26)
+	terminated_combinator_expression : terminated_combinator_expression . TOKEN_FUNCTION_APPLICATION  (35)
+	proper_combinator_expression : terminated_combinator_expression . TOKEN_FUNCTION_APPLICATION tier0_expression  (38)
+
+	TOKEN_FUNCTION_APPLICATION  shift 52
+	TOKEN_CLOSE_BLOCK  reduce 13
+	TOKEN_COMMA  reduce 26
+	TOKEN_SEMICOLON  reduce 13
+	TOKEN_ASSIGN  reduce 26
+	TOKEN_END_GUARD  reduce 13
+
+
+state 21
+	command : if_statement .  (14)
+
+	.  reduce 14
+
+
+state 22
+	command : do_statement .  (15)
+
+	.  reduce 15
+
+
+state 23
+	lvalue_list : lvalue .  (17)
+	lvalue_list : lvalue . TOKEN_COMMA lvalue_list  (18)
+
+	TOKEN_COMMA  shift 53
+	TOKEN_ASSIGN  reduce 17
+
+
+state 24
+	lvalue : scheme_name .  (24)
+	atomic_expression : scheme_name .  (65)
+
+	TOKEN_COLON  reduce 65
+	TOKEN_COMMA  reduce 24
+	TOKEN_ASSIGN  reduce 24
+	TOKEN_FUNCTION_APPLICATION  reduce 65
+
+
+state 25
+	tier0_expression : atomic_expression .  (31)
+
+	.  reduce 31
+
+
+state 26
+	proper_combinator_expression : tier0_expression .  (36)
+
+	.  reduce 36
+
+
+state 27
+	terminated_combinator_expression : proper_combinator_expression . TOKEN_FUNCTION_APPLICATION  (34)
+	proper_combinator_expression : proper_combinator_expression . TOKEN_FUNCTION_APPLICATION tier0_expression  (37)
+	proper_combinator_expression : proper_combinator_expression . TOKEN_COLON tier0_expression  (39)
+
+	TOKEN_COLON  shift 54
+	TOKEN_FUNCTION_APPLICATION  shift 55
+	.  error
+
+
+state 28
+	tier1_expression : TOKEN_TILDE . tier1_expression  (47)
+	scheme : .  (5)
+
+	TOKEN_DECIMAL_INTEGER  shift 9
+	TOKEN_OPEN_PAREN  shift 10
+	TOKEN_TILDE  shift 28
+	TOKEN_SUBTRACT  shift 29
+	TOKEN_NOT  shift 30
+	TOKEN_REFERENCE  shift 31
+	TOKEN_DEREFERENCE  shift 32
+	TOKEN_SCHEME  shift 1
+	TOKEN_FUNCTION_APPLICATION  shift 33
+	TOKEN_CONSTANT  shift 14
+	TOKEN_WORD  reduce 5
+	TOKEN_OPEN_BLOCK  reduce 5
+
+	scheme  goto 15
+	function_constant  goto 17
+	terminated_combinator_expression  goto 34
+	scheme_name  goto 36
+	atomic_expression  goto 25
+	tier0_expression  goto 26
+	uninitiated_combinator_expression  goto 37
+	proper_combinator_expression  goto 38
+	functional_expression  goto 39
+	tier1_expression  goto 56
+
+
+state 29
+	tier1_expression : TOKEN_SUBTRACT . tier1_expression  (46)
+	scheme : .  (5)
+
+	TOKEN_DECIMAL_INTEGER  shift 9
+	TOKEN_OPEN_PAREN  shift 10
+	TOKEN_TILDE  shift 28
+	TOKEN_SUBTRACT  shift 29
+	TOKEN_NOT  shift 30
+	TOKEN_REFERENCE  shift 31
+	TOKEN_DEREFERENCE  shift 32
+	TOKEN_SCHEME  shift 1
+	TOKEN_FUNCTION_APPLICATION  shift 33
+	TOKEN_CONSTANT  shift 14
+	TOKEN_WORD  reduce 5
+	TOKEN_OPEN_BLOCK  reduce 5
+
+	scheme  goto 15
+	function_constant  goto 17
+	terminated_combinator_expression  goto 34
+	scheme_name  goto 36
+	atomic_expression  goto 25
+	tier0_expression  goto 26
+	uninitiated_combinator_expression  goto 37
+	proper_combinator_expression  goto 38
+	functional_expression  goto 39
+	tier1_expression  goto 57
+
+
+state 30
+	tier1_expression : TOKEN_NOT . tier1_expression  (45)
+	scheme : .  (5)
+
+	TOKEN_DECIMAL_INTEGER  shift 9
+	TOKEN_OPEN_PAREN  shift 10
+	TOKEN_TILDE  shift 28
+	TOKEN_SUBTRACT  shift 29
+	TOKEN_NOT  shift 30
+	TOKEN_REFERENCE  shift 31
+	TOKEN_DEREFERENCE  shift 32
+	TOKEN_SCHEME  shift 1
+	TOKEN_FUNCTION_APPLICATION  shift 33
+	TOKEN_CONSTANT  shift 14
+	TOKEN_WORD  reduce 5
+	TOKEN_OPEN_BLOCK  reduce 5
+
+	scheme  goto 15
+	function_constant  goto 17
+	terminated_combinator_expression  goto 34
+	scheme_name  goto 36
+	atomic_expression  goto 25
+	tier0_expression  goto 26
+	uninitiated_combinator_expression  goto 37
+	proper_combinator_expression  goto 38
+	functional_expression  goto 39
+	tier1_expression  goto 58
+
+
+state 31
+	tier1_expression : TOKEN_REFERENCE . tier1_expression  (44)
+	scheme : .  (5)
+
+	TOKEN_DECIMAL_INTEGER  shift 9
+	TOKEN_OPEN_PAREN  shift 10
+	TOKEN_TILDE  shift 28
+	TOKEN_SUBTRACT  shift 29
+	TOKEN_NOT  shift 30
+	TOKEN_REFERENCE  shift 31
+	TOKEN_DEREFERENCE  shift 32
+	TOKEN_SCHEME  shift 1
+	TOKEN_FUNCTION_APPLICATION  shift 33
+	TOKEN_CONSTANT  shift 14
+	TOKEN_WORD  reduce 5
+	TOKEN_OPEN_BLOCK  reduce 5
+
+	scheme  goto 15
+	function_constant  goto 17
+	terminated_combinator_expression  goto 34
+	scheme_name  goto 36
+	atomic_expression  goto 25
+	tier0_expression  goto 26
+	uninitiated_combinator_expression  goto 37
+	proper_combinator_expression  goto 38
+	functional_expression  goto 39
+	tier1_expression  goto 59
+
+
+state 32
+	tier0_expression : TOKEN_DEREFERENCE . atomic_expression  (30)
+	scheme : .  (5)
+
+	TOKEN_DECIMAL_INTEGER  shift 9
+	TOKEN_OPEN_PAREN  shift 10
+	TOKEN_SCHEME  shift 1
+	TOKEN_CONSTANT  shift 14
+	TOKEN_WORD  reduce 5
+	TOKEN_OPEN_BLOCK  reduce 5
+
+	scheme  goto 15
+	function_constant  goto 17
+	scheme_name  goto 36
+	atomic_expression  goto 60
+
+
+state 33
+	uninitiated_combinator_expression : TOKEN_FUNCTION_APPLICATION . proper_combinator_expression  (32)
+	uninitiated_combinator_expression : TOKEN_FUNCTION_APPLICATION . uninitiated_combinator_expression  (33)
+	scheme : .  (5)
+
+	TOKEN_DECIMAL_INTEGER  shift 9
+	TOKEN_OPEN_PAREN  shift 10
+	TOKEN_DEREFERENCE  shift 32
+	TOKEN_SCHEME  shift 1
+	TOKEN_FUNCTION_APPLICATION  shift 33
+	TOKEN_CONSTANT  shift 14
+	TOKEN_WORD  reduce 5
+	TOKEN_OPEN_BLOCK  reduce 5
+
+	scheme  goto 15
+	function_constant  goto 17
+	terminated_combinator_expression  goto 61
+	scheme_name  goto 36
+	atomic_expression  goto 25
+	tier0_expression  goto 26
+	uninitiated_combinator_expression  goto 62
+	proper_combinator_expression  goto 63
+
+
+state 34
+	terminated_combinator_expression : terminated_combinator_expression . TOKEN_FUNCTION_APPLICATION  (35)
+	proper_combinator_expression : terminated_combinator_expression . TOKEN_FUNCTION_APPLICATION tier0_expression  (38)
+	functional_expression : terminated_combinator_expression .  (41)
+
+	TOKEN_FUNCTION_APPLICATION  shift 52
+	TOKEN_CLOSE_BLOCK  reduce 41
+	TOKEN_CLOSE_PAREN  reduce 41
+	TOKEN_BACKSLASH  reduce 41
+	TOKEN_COMMA  reduce 41
+	TOKEN_SEMICOLON  reduce 41
+	TOKEN_ADD  reduce 41
+	TOKEN_MULTIPLY  reduce 41
+	TOKEN_DIVIDE  reduce 41
+	TOKEN_MODULO  reduce 41
+	TOKEN_OR  reduce 41
+	TOKEN_AND  reduce 41
+	TOKEN_GUARD  reduce 41
+	TOKEN_END_GUARD  reduce 41
+	TOKEN_TEST_EQUALITY  reduce 41
+
+
+state 35
+	atomic_expression : TOKEN_OPEN_PAREN expression . TOKEN_CLOSE_PAREN  (66)
+
+	TOKEN_CLOSE_PAREN  shift 64
+	.  error
+
+
+state 36
+	atomic_expression : scheme_name .  (65)
+
+	.  reduce 65
+
+
+state 37
+	functional_expression : uninitiated_combinator_expression .  (42)
+
+	.  reduce 42
+
+
+state 38
+	terminated_combinator_expression : proper_combinator_expression . TOKEN_FUNCTION_APPLICATION  (34)
+	proper_combinator_expression : proper_combinator_expression . TOKEN_FUNCTION_APPLICATION tier0_expression  (37)
+	proper_combinator_expression : proper_combinator_expression . TOKEN_COLON tier0_expression  (39)
+	functional_expression : proper_combinator_expression .  (40)
+
+	TOKEN_COLON  shift 54
+	TOKEN_FUNCTION_APPLICATION  shift 55
+	TOKEN_CLOSE_BLOCK  reduce 40
+	TOKEN_CLOSE_PAREN  reduce 40
+	TOKEN_BACKSLASH  reduce 40
+	TOKEN_COMMA  reduce 40
+	TOKEN_SEMICOLON  reduce 40
+	TOKEN_ADD  reduce 40
+	TOKEN_MULTIPLY  reduce 40
+	TOKEN_DIVIDE  reduce 40
+	TOKEN_MODULO  reduce 40
+	TOKEN_OR  reduce 40
+	TOKEN_AND  reduce 40
+	TOKEN_GUARD  reduce 40
+	TOKEN_END_GUARD  reduce 40
+	TOKEN_TEST_EQUALITY  reduce 40
+
+
+state 39
+	functional_expression : functional_expression . TOKEN_BACKSLASH atomic_expression  (43)
+	tier1_expression : functional_expression .  (48)
+
+	TOKEN_BACKSLASH  shift 65
+	TOKEN_CLOSE_BLOCK  reduce 48
+	TOKEN_CLOSE_PAREN  reduce 48
+	TOKEN_COMMA  reduce 48
+	TOKEN_SEMICOLON  reduce 48
+	TOKEN_ADD  reduce 48
+	TOKEN_MULTIPLY  reduce 48
+	TOKEN_DIVIDE  reduce 48
+	TOKEN_MODULO  reduce 48
+	TOKEN_OR  reduce 48
+	TOKEN_AND  reduce 48
+	TOKEN_GUARD  reduce 48
+	TOKEN_END_GUARD  reduce 48
+	TOKEN_TEST_EQUALITY  reduce 48
+
+
+state 40
+	expression : tier1_expression .  (60)
+	expression : tier1_expression . tier5_expression  (61)
+
+	TOKEN_ADD  shift 66
+	TOKEN_MULTIPLY  shift 67
+	TOKEN_DIVIDE  shift 68
+	TOKEN_MODULO  shift 69
+	TOKEN_OR  shift 70
+	TOKEN_AND  shift 71
+	TOKEN_TEST_EQUALITY  shift 72
+	TOKEN_CLOSE_BLOCK  reduce 60
+	TOKEN_CLOSE_PAREN  reduce 60
+	TOKEN_COMMA  reduce 60
+	TOKEN_SEMICOLON  reduce 60
+	TOKEN_GUARD  reduce 60
+	TOKEN_END_GUARD  reduce 60
+
+	tier2_expression  goto 73
+	tier3_expression  goto 74
+	tier3_point_5_expression  goto 75
+	tier4_expression  goto 76
+	tier5_expression  goto 77
+
+
+state 41
+	lvalue : TOKEN_DEREFERENCE atomic_expression .  (25)
+	tier0_expression : TOKEN_DEREFERENCE atomic_expression .  (30)
+
+	TOKEN_COLON  reduce 30
+	TOKEN_COMMA  reduce 25
+	TOKEN_ASSIGN  reduce 25
+	TOKEN_FUNCTION_APPLICATION  reduce 30
+
+
+state 42
+	guarded_command : expression . TOKEN_GUARD command_list TOKEN_END_GUARD  (29)
+
+	TOKEN_GUARD  shift 78
+	.  error
+
+
+state 43
+	if_statement : TOKEN_IF guarded_command_list . TOKEN_FI  (22)
+
+	TOKEN_FI  shift 79
+	.  error
+
+
+state 44
+	guarded_command_list : guarded_command . guarded_command_list  (28)
+	scheme : .  (5)
+	guarded_command_list : .  (27)
+
+	TOKEN_DECIMAL_INTEGER  shift 9
+	TOKEN_OPEN_PAREN  shift 10
+	TOKEN_TILDE  shift 28
+	TOKEN_SUBTRACT  shift 29
+	TOKEN_NOT  shift 30
+	TOKEN_REFERENCE  shift 31
+	TOKEN_DEREFERENCE  shift 32
+	TOKEN_SCHEME  shift 1
+	TOKEN_FUNCTION_APPLICATION  shift 33
+	TOKEN_CONSTANT  shift 14
+	TOKEN_WORD  reduce 5
+	TOKEN_OPEN_BLOCK  reduce 5
+	TOKEN_FI  reduce 27
+	TOKEN_OD  reduce 27
+
+	scheme  goto 15
+	function_constant  goto 17
+	terminated_combinator_expression  goto 34
+	expression  goto 42
+	guarded_command_list  goto 80
+	scheme_name  goto 36
+	atomic_expression  goto 25
+	guarded_command  goto 44
+	tier0_expression  goto 26
+	uninitiated_combinator_expression  goto 37
+	proper_combinator_expression  goto 38
+	functional_expression  goto 39
+	tier1_expression  goto 40
+
+
+state 45
+	do_statement : TOKEN_DO guarded_command_list . TOKEN_OD  (23)
+
+	TOKEN_OD  shift 81
+	.  error
+
+
+state 46
+	scheme_name : scheme TOKEN_WORD .  (67)
+
+	.  reduce 67
+
+
+state 47
+	function_constant : scheme begin_function . command_list end_function  (4)
+	scheme : .  (5)
+	command_list : .  (8)
+	lvalue_list : .  (16)
+
+	TOKEN_DECIMAL_INTEGER  shift 9
+	TOKEN_OPEN_PAREN  shift 10
+	TOKEN_DEREFERENCE  shift 11
+	TOKEN_IF  shift 12
+	TOKEN_DO  shift 13
+	TOKEN_SCHEME  shift 1
+	TOKEN_CONSTANT  shift 14
+	TOKEN_WORD  reduce 5
+	TOKEN_OPEN_BLOCK  reduce 5
+	TOKEN_CLOSE_BLOCK  reduce 8
+	TOKEN_SEMICOLON  reduce 8
+	TOKEN_ASSIGN  reduce 16
+
+	scheme  goto 15
+	command_list  goto 82
+	function_constant  goto 17
+	command  goto 18
+	lvalue_list  goto 19
+	terminated_combinator_expression  goto 20
+	if_statement  goto 21
+	do_statement  goto 22
+	lvalue  goto 23
+	scheme_name  goto 24
+	atomic_expression  goto 25
+	tier0_expression  goto 26
+	proper_combinator_expression  goto 27
+
+
+state 48
+	end_function : TOKEN_CLOSE_BLOCK .  (11)
+
+	.  reduce 11
+
+
+state 49
+	command_list : command_list TOKEN_SEMICOLON . command  (10)
+	scheme : .  (5)
+	lvalue_list : .  (16)
+
+	TOKEN_DECIMAL_INTEGER  shift 9
+	TOKEN_OPEN_PAREN  shift 10
+	TOKEN_DEREFERENCE  shift 11
+	TOKEN_IF  shift 12
+	TOKEN_DO  shift 13
+	TOKEN_SCHEME  shift 1
+	TOKEN_CONSTANT  shift 14
+	TOKEN_WORD  reduce 5
+	TOKEN_OPEN_BLOCK  reduce 5
+	TOKEN_ASSIGN  reduce 16
+
+	scheme  goto 15
+	function_constant  goto 17
+	command  goto 83
+	lvalue_list  goto 19
+	terminated_combinator_expression  goto 20
+	if_statement  goto 21
+	do_statement  goto 22
+	lvalue  goto 23
+	scheme_name  goto 24
+	atomic_expression  goto 25
+	tier0_expression  goto 26
+	proper_combinator_expression  goto 27
+
+
+state 50
+	exterior_function_constant : scheme begin_function command_list end_function .  (3)
+
+	.  reduce 3
+
+
+state 51
+	command : lvalue_list TOKEN_ASSIGN . expression_list  (12)
+	scheme : .  (5)
+	expression_list : .  (19)
+
+	TOKEN_DECIMAL_INTEGER  shift 9
+	TOKEN_OPEN_PAREN  shift 10
+	TOKEN_TILDE  shift 28
+	TOKEN_SUBTRACT  shift 29
+	TOKEN_NOT  shift 30
+	TOKEN_REFERENCE  shift 31
+	TOKEN_DEREFERENCE  shift 32
+	TOKEN_SCHEME  shift 1
+	TOKEN_FUNCTION_APPLICATION  shift 33
+	TOKEN_CONSTANT  shift 14
+	TOKEN_WORD  reduce 5
+	TOKEN_OPEN_BLOCK  reduce 5
+	TOKEN_CLOSE_BLOCK  reduce 19
+	TOKEN_SEMICOLON  reduce 19
+	TOKEN_END_GUARD  reduce 19
+
+	scheme  goto 15
+	function_constant  goto 17
+	expression_list  goto 84
+	terminated_combinator_expression  goto 34
+	expression  goto 85
+	scheme_name  goto 36
+	atomic_expression  goto 25
+	tier0_expression  goto 26
+	uninitiated_combinator_expression  goto 37
+	proper_combinator_expression  goto 38
+	functional_expression  goto 39
+	tier1_expression  goto 40
+
+
+state 52
+	terminated_combinator_expression : terminated_combinator_expression TOKEN_FUNCTION_APPLICATION .  (35)
+	proper_combinator_expression : terminated_combinator_expression TOKEN_FUNCTION_APPLICATION . tier0_expression  (38)
+	scheme : .  (5)
+
+	TOKEN_DECIMAL_INTEGER  shift 9
+	TOKEN_OPEN_PAREN  shift 10
+	TOKEN_DEREFERENCE  shift 32
+	TOKEN_SCHEME  shift 1
+	TOKEN_CONSTANT  shift 14
+	TOKEN_WORD  reduce 5
+	TOKEN_OPEN_BLOCK  reduce 5
+	TOKEN_CLOSE_BLOCK  reduce 35
+	TOKEN_CLOSE_PAREN  reduce 35
+	TOKEN_BACKSLASH  reduce 35
+	TOKEN_COMMA  reduce 35
+	TOKEN_SEMICOLON  reduce 35
+	TOKEN_ADD  reduce 35
+	TOKEN_MULTIPLY  reduce 35
+	TOKEN_DIVIDE  reduce 35
+	TOKEN_MODULO  reduce 35
+	TOKEN_OR  reduce 35
+	TOKEN_AND  reduce 35
+	TOKEN_GUARD  reduce 35
+	TOKEN_ASSIGN  reduce 35
+	TOKEN_END_GUARD  reduce 35
+	TOKEN_FUNCTION_APPLICATION  reduce 35
+	TOKEN_TEST_EQUALITY  reduce 35
+
+	scheme  goto 15
+	function_constant  goto 17
+	scheme_name  goto 36
+	atomic_expression  goto 25
+	tier0_expression  goto 86
+
+
+state 53
+	lvalue_list : lvalue TOKEN_COMMA . lvalue_list  (18)
+	scheme : .  (5)
+	lvalue_list : .  (16)
+
+	TOKEN_DECIMAL_INTEGER  shift 9
+	TOKEN_OPEN_PAREN  shift 10
+	TOKEN_DEREFERENCE  shift 11
+	TOKEN_SCHEME  shift 1
+	TOKEN_CONSTANT  shift 14
+	TOKEN_WORD  reduce 5
+	TOKEN_OPEN_BLOCK  reduce 5
+	TOKEN_ASSIGN  reduce 16
+
+	scheme  goto 15
+	function_constant  goto 17
+	lvalue_list  goto 87
+	terminated_combinator_expression  goto 88
+	lvalue  goto 23
+	scheme_name  goto 24
+	atomic_expression  goto 25
+	tier0_expression  goto 26
+	proper_combinator_expression  goto 27
+
+
+state 54
+	proper_combinator_expression : proper_combinator_expression TOKEN_COLON . tier0_expression  (39)
+	scheme : .  (5)
+
+	TOKEN_DECIMAL_INTEGER  shift 9
+	TOKEN_OPEN_PAREN  shift 10
+	TOKEN_DEREFERENCE  shift 32
+	TOKEN_SCHEME  shift 1
+	TOKEN_CONSTANT  shift 14
+	TOKEN_WORD  reduce 5
+	TOKEN_OPEN_BLOCK  reduce 5
+
+	scheme  goto 15
+	function_constant  goto 17
+	scheme_name  goto 36
+	atomic_expression  goto 25
+	tier0_expression  goto 89
+
+
+state 55
+	terminated_combinator_expression : proper_combinator_expression TOKEN_FUNCTION_APPLICATION .  (34)
+	proper_combinator_expression : proper_combinator_expression TOKEN_FUNCTION_APPLICATION . tier0_expression  (37)
+	scheme : .  (5)
+
+	TOKEN_DECIMAL_INTEGER  shift 9
+	TOKEN_OPEN_PAREN  shift 10
+	TOKEN_DEREFERENCE  shift 32
+	TOKEN_SCHEME  shift 1
+	TOKEN_CONSTANT  shift 14
+	TOKEN_WORD  reduce 5
+	TOKEN_OPEN_BLOCK  reduce 5
+	TOKEN_CLOSE_BLOCK  reduce 34
+	TOKEN_CLOSE_PAREN  reduce 34
+	TOKEN_BACKSLASH  reduce 34
+	TOKEN_COMMA  reduce 34
+	TOKEN_SEMICOLON  reduce 34
+	TOKEN_ADD  reduce 34
+	TOKEN_MULTIPLY  reduce 34
+	TOKEN_DIVIDE  reduce 34
+	TOKEN_MODULO  reduce 34
+	TOKEN_OR  reduce 34
+	TOKEN_AND  reduce 34
+	TOKEN_GUARD  reduce 34
+	TOKEN_ASSIGN  reduce 34
+	TOKEN_END_GUARD  reduce 34
+	TOKEN_FUNCTION_APPLICATION  reduce 34
+	TOKEN_TEST_EQUALITY  reduce 34
+
+	scheme  goto 15
+	function_constant  goto 17
+	scheme_name  goto 36
+	atomic_expression  goto 25
+	tier0_expression  goto 90
+
+
+state 56
+	tier1_expression : TOKEN_TILDE tier1_expression .  (47)
+
+	.  reduce 47
+
+
+state 57
+	tier1_expression : TOKEN_SUBTRACT tier1_expression .  (46)
+
+	.  reduce 46
+
+
+state 58
+	tier1_expression : TOKEN_NOT tier1_expression .  (45)
+
+	.  reduce 45
+
+
+state 59
+	tier1_expression : TOKEN_REFERENCE tier1_expression .  (44)
+
+	.  reduce 44
+
+
+state 60
+	tier0_expression : TOKEN_DEREFERENCE atomic_expression .  (30)
+
+	.  reduce 30
+
+
+state 61
+	terminated_combinator_expression : terminated_combinator_expression . TOKEN_FUNCTION_APPLICATION  (35)
+	proper_combinator_expression : terminated_combinator_expression . TOKEN_FUNCTION_APPLICATION tier0_expression  (38)
+
+	TOKEN_FUNCTION_APPLICATION  shift 52
+	.  error
+
+
+state 62
+	uninitiated_combinator_expression : TOKEN_FUNCTION_APPLICATION uninitiated_combinator_expression .  (33)
+
+	.  reduce 33
+
+
+state 63
+	uninitiated_combinator_expression : TOKEN_FUNCTION_APPLICATION proper_combinator_expression .  (32)
+	terminated_combinator_expression : proper_combinator_expression . TOKEN_FUNCTION_APPLICATION  (34)
+	proper_combinator_expression : proper_combinator_expression . TOKEN_FUNCTION_APPLICATION tier0_expression  (37)
+	proper_combinator_expression : proper_combinator_expression . TOKEN_COLON tier0_expression  (39)
+
+	TOKEN_COLON  shift 54
+	TOKEN_FUNCTION_APPLICATION  shift 55
+	TOKEN_CLOSE_BLOCK  reduce 32
+	TOKEN_CLOSE_PAREN  reduce 32
+	TOKEN_BACKSLASH  reduce 32
+	TOKEN_COMMA  reduce 32
+	TOKEN_SEMICOLON  reduce 32
+	TOKEN_ADD  reduce 32
+	TOKEN_MULTIPLY  reduce 32
+	TOKEN_DIVIDE  reduce 32
+	TOKEN_MODULO  reduce 32
+	TOKEN_OR  reduce 32
+	TOKEN_AND  reduce 32
+	TOKEN_GUARD  reduce 32
+	TOKEN_END_GUARD  reduce 32
+	TOKEN_TEST_EQUALITY  reduce 32
+
+
+state 64
+	atomic_expression : TOKEN_OPEN_PAREN expression TOKEN_CLOSE_PAREN .  (66)
+
+	.  reduce 66
+
+
+state 65
+	functional_expression : functional_expression TOKEN_BACKSLASH . atomic_expression  (43)
+	scheme : .  (5)
+
+	TOKEN_DECIMAL_INTEGER  shift 9
+	TOKEN_OPEN_PAREN  shift 10
+	TOKEN_SCHEME  shift 1
+	TOKEN_CONSTANT  shift 14
+	TOKEN_WORD  reduce 5
+	TOKEN_OPEN_BLOCK  reduce 5
+
+	scheme  goto 15
+	function_constant  goto 17
+	scheme_name  goto 36
+	atomic_expression  goto 91
+
+
+state 66
+	tier2_expression : TOKEN_ADD . expression  (49)
+	scheme : .  (5)
+
+	TOKEN_DECIMAL_INTEGER  shift 9
+	TOKEN_OPEN_PAREN  shift 10
+	TOKEN_TILDE  shift 28
+	TOKEN_SUBTRACT  shift 29
+	TOKEN_NOT  shift 30
+	TOKEN_REFERENCE  shift 31
+	TOKEN_DEREFERENCE  shift 32
+	TOKEN_SCHEME  shift 1
+	TOKEN_FUNCTION_APPLICATION  shift 33
+	TOKEN_CONSTANT  shift 14
+	TOKEN_WORD  reduce 5
+	TOKEN_OPEN_BLOCK  reduce 5
+
+	scheme  goto 15
+	function_constant  goto 17
+	terminated_combinator_expression  goto 34
+	expression  goto 92
+	scheme_name  goto 36
+	atomic_expression  goto 25
+	tier0_expression  goto 26
+	uninitiated_combinator_expression  goto 37
+	proper_combinator_expression  goto 38
+	functional_expression  goto 39
+	tier1_expression  goto 40
+
+
+state 67
+	tier3_expression : TOKEN_MULTIPLY . expression  (50)
+	scheme : .  (5)
+
+	TOKEN_DECIMAL_INTEGER  shift 9
+	TOKEN_OPEN_PAREN  shift 10
+	TOKEN_TILDE  shift 28
+	TOKEN_SUBTRACT  shift 29
+	TOKEN_NOT  shift 30
+	TOKEN_REFERENCE  shift 31
+	TOKEN_DEREFERENCE  shift 32
+	TOKEN_SCHEME  shift 1
+	TOKEN_FUNCTION_APPLICATION  shift 33
+	TOKEN_CONSTANT  shift 14
+	TOKEN_WORD  reduce 5
+	TOKEN_OPEN_BLOCK  reduce 5
+
+	scheme  goto 15
+	function_constant  goto 17
+	terminated_combinator_expression  goto 34
+	expression  goto 93
+	scheme_name  goto 36
+	atomic_expression  goto 25
+	tier0_expression  goto 26
+	uninitiated_combinator_expression  goto 37
+	proper_combinator_expression  goto 38
+	functional_expression  goto 39
+	tier1_expression  goto 40
+
+
+state 68
+	tier3_expression : TOKEN_DIVIDE . expression  (51)
+	scheme : .  (5)
+
+	TOKEN_DECIMAL_INTEGER  shift 9
+	TOKEN_OPEN_PAREN  shift 10
+	TOKEN_TILDE  shift 28
+	TOKEN_SUBTRACT  shift 29
+	TOKEN_NOT  shift 30
+	TOKEN_REFERENCE  shift 31
+	TOKEN_DEREFERENCE  shift 32
+	TOKEN_SCHEME  shift 1
+	TOKEN_FUNCTION_APPLICATION  shift 33
+	TOKEN_CONSTANT  shift 14
+	TOKEN_WORD  reduce 5
+	TOKEN_OPEN_BLOCK  reduce 5
+
+	scheme  goto 15
+	function_constant  goto 17
+	terminated_combinator_expression  goto 34
+	expression  goto 94
+	scheme_name  goto 36
+	atomic_expression  goto 25
+	tier0_expression  goto 26
+	uninitiated_combinator_expression  goto 37
+	proper_combinator_expression  goto 38
+	functional_expression  goto 39
+	tier1_expression  goto 40
+
+
+state 69
+	tier3_expression : TOKEN_MODULO . expression  (52)
+	scheme : .  (5)
+
+	TOKEN_DECIMAL_INTEGER  shift 9
+	TOKEN_OPEN_PAREN  shift 10
+	TOKEN_TILDE  shift 28
+	TOKEN_SUBTRACT  shift 29
+	TOKEN_NOT  shift 30
+	TOKEN_REFERENCE  shift 31
+	TOKEN_DEREFERENCE  shift 32
+	TOKEN_SCHEME  shift 1
+	TOKEN_FUNCTION_APPLICATION  shift 33
+	TOKEN_CONSTANT  shift 14
+	TOKEN_WORD  reduce 5
+	TOKEN_OPEN_BLOCK  reduce 5
+
+	scheme  goto 15
+	function_constant  goto 17
+	terminated_combinator_expression  goto 34
+	expression  goto 95
+	scheme_name  goto 36
+	atomic_expression  goto 25
+	tier0_expression  goto 26
+	uninitiated_combinator_expression  goto 37
+	proper_combinator_expression  goto 38
+	functional_expression  goto 39
+	tier1_expression  goto 40
+
+
+state 70
+	tier5_expression : TOKEN_OR . expression  (58)
+	scheme : .  (5)
+
+	TOKEN_DECIMAL_INTEGER  shift 9
+	TOKEN_OPEN_PAREN  shift 10
+	TOKEN_TILDE  shift 28
+	TOKEN_SUBTRACT  shift 29
+	TOKEN_NOT  shift 30
+	TOKEN_REFERENCE  shift 31
+	TOKEN_DEREFERENCE  shift 32
+	TOKEN_SCHEME  shift 1
+	TOKEN_FUNCTION_APPLICATION  shift 33
+	TOKEN_CONSTANT  shift 14
+	TOKEN_WORD  reduce 5
+	TOKEN_OPEN_BLOCK  reduce 5
+
+	scheme  goto 15
+	function_constant  goto 17
+	terminated_combinator_expression  goto 34
+	expression  goto 96
+	scheme_name  goto 36
+	atomic_expression  goto 25
+	tier0_expression  goto 26
+	uninitiated_combinator_expression  goto 37
+	proper_combinator_expression  goto 38
+	functional_expression  goto 39
+	tier1_expression  goto 40
+
+
+state 71
+	tier4_expression : TOKEN_AND . expression  (56)
+	scheme : .  (5)
+
+	TOKEN_DECIMAL_INTEGER  shift 9
+	TOKEN_OPEN_PAREN  shift 10
+	TOKEN_TILDE  shift 28
+	TOKEN_SUBTRACT  shift 29
+	TOKEN_NOT  shift 30
+	TOKEN_REFERENCE  shift 31
+	TOKEN_DEREFERENCE  shift 32
+	TOKEN_SCHEME  shift 1
+	TOKEN_FUNCTION_APPLICATION  shift 33
+	TOKEN_CONSTANT  shift 14
+	TOKEN_WORD  reduce 5
+	TOKEN_OPEN_BLOCK  reduce 5
+
+	scheme  goto 15
+	function_constant  goto 17
+	terminated_combinator_expression  goto 34
+	expression  goto 97
+	scheme_name  goto 36
+	atomic_expression  goto 25
+	tier0_expression  goto 26
+	uninitiated_combinator_expression  goto 37
+	proper_combinator_expression  goto 38
+	functional_expression  goto 39
+	tier1_expression  goto 40
+
+
+state 72
+	tier3_point_5_expression : TOKEN_TEST_EQUALITY . expression  (54)
+	scheme : .  (5)
+
+	TOKEN_DECIMAL_INTEGER  shift 9
+	TOKEN_OPEN_PAREN  shift 10
+	TOKEN_TILDE  shift 28
+	TOKEN_SUBTRACT  shift 29
+	TOKEN_NOT  shift 30
+	TOKEN_REFERENCE  shift 31
+	TOKEN_DEREFERENCE  shift 32
+	TOKEN_SCHEME  shift 1
+	TOKEN_FUNCTION_APPLICATION  shift 33
+	TOKEN_CONSTANT  shift 14
+	TOKEN_WORD  reduce 5
+	TOKEN_OPEN_BLOCK  reduce 5
+
+	scheme  goto 15
+	function_constant  goto 17
+	terminated_combinator_expression  goto 34
+	expression  goto 98
+	scheme_name  goto 36
+	atomic_expression  goto 25
+	tier0_expression  goto 26
+	uninitiated_combinator_expression  goto 37
+	proper_combinator_expression  goto 38
+	functional_expression  goto 39
+	tier1_expression  goto 40
+
+
+state 73
+	tier3_expression : tier2_expression .  (53)
+
+	.  reduce 53
+
+
+state 74
+	tier3_point_5_expression : tier3_expression .  (55)
+
+	.  reduce 55
+
+
+state 75
+	tier4_expression : tier3_point_5_expression .  (57)
+
+	.  reduce 57
+
+
+state 76
+	tier5_expression : tier4_expression .  (59)
+
+	.  reduce 59
+
+
+state 77
+	expression : tier1_expression tier5_expression .  (61)
+
+	.  reduce 61
+
+
+state 78
+	guarded_command : expression TOKEN_GUARD . command_list TOKEN_END_GUARD  (29)
+	scheme : .  (5)
+	command_list : .  (8)
+	lvalue_list : .  (16)
+
+	TOKEN_DECIMAL_INTEGER  shift 9
+	TOKEN_OPEN_PAREN  shift 10
+	TOKEN_DEREFERENCE  shift 11
+	TOKEN_IF  shift 12
+	TOKEN_DO  shift 13
+	TOKEN_SCHEME  shift 1
+	TOKEN_CONSTANT  shift 14
+	TOKEN_WORD  reduce 5
+	TOKEN_OPEN_BLOCK  reduce 5
+	TOKEN_SEMICOLON  reduce 8
+	TOKEN_ASSIGN  reduce 16
+	TOKEN_END_GUARD  reduce 8
+
+	scheme  goto 15
+	command_list  goto 99
+	function_constant  goto 17
+	command  goto 18
+	lvalue_list  goto 19
+	terminated_combinator_expression  goto 20
+	if_statement  goto 21
+	do_statement  goto 22
+	lvalue  goto 23
+	scheme_name  goto 24
+	atomic_expression  goto 25
+	tier0_expression  goto 26
+	proper_combinator_expression  goto 27
+
+
+state 79
+	if_statement : TOKEN_IF guarded_command_list TOKEN_FI .  (22)
+
+	.  reduce 22
+
+
+state 80
+	guarded_command_list : guarded_command guarded_command_list .  (28)
+
+	.  reduce 28
+
+
+state 81
+	do_statement : TOKEN_DO guarded_command_list TOKEN_OD .  (23)
+
+	.  reduce 23
+
+
+state 82
+	function_constant : scheme begin_function command_list . end_function  (4)
+	command_list : command_list . TOKEN_SEMICOLON command  (10)
+
+	TOKEN_CLOSE_BLOCK  shift 48
+	TOKEN_SEMICOLON  shift 49
+	.  error
+
+	end_function  goto 100
+
+
+state 83
+	command_list : command_list TOKEN_SEMICOLON command .  (10)
+
+	.  reduce 10
+
+
+state 84
+	command : lvalue_list TOKEN_ASSIGN expression_list .  (12)
+
+	.  reduce 12
+
+
+state 85
+	expression_list : expression .  (20)
+	expression_list : expression . TOKEN_COMMA expression_list  (21)
+
+	TOKEN_COMMA  shift 101
+	TOKEN_CLOSE_BLOCK  reduce 20
+	TOKEN_SEMICOLON  reduce 20
+	TOKEN_END_GUARD  reduce 20
+
+
+state 86
+	proper_combinator_expression : terminated_combinator_expression TOKEN_FUNCTION_APPLICATION tier0_expression .  (38)
+
+	.  reduce 38
+
+
+state 87
+	lvalue_list : lvalue TOKEN_COMMA lvalue_list .  (18)
+
+	.  reduce 18
+
+
+state 88
+	lvalue : terminated_combinator_expression .  (26)
+	terminated_combinator_expression : terminated_combinator_expression . TOKEN_FUNCTION_APPLICATION  (35)
+	proper_combinator_expression : terminated_combinator_expression . TOKEN_FUNCTION_APPLICATION tier0_expression  (38)
+
+	TOKEN_FUNCTION_APPLICATION  shift 52
+	TOKEN_COMMA  reduce 26
+	TOKEN_ASSIGN  reduce 26
+
+
+state 89
+	proper_combinator_expression : proper_combinator_expression TOKEN_COLON tier0_expression .  (39)
+
+	.  reduce 39
+
+
+state 90
+	proper_combinator_expression : proper_combinator_expression TOKEN_FUNCTION_APPLICATION tier0_expression .  (37)
+
+	.  reduce 37
+
+
+state 91
+	functional_expression : functional_expression TOKEN_BACKSLASH atomic_expression .  (43)
+
+	.  reduce 43
+
+
+state 92
+	tier2_expression : TOKEN_ADD expression .  (49)
+
+	.  reduce 49
+
+
+state 93
+	tier3_expression : TOKEN_MULTIPLY expression .  (50)
+
+	.  reduce 50
+
+
+state 94
+	tier3_expression : TOKEN_DIVIDE expression .  (51)
+
+	.  reduce 51
+
+
+state 95
+	tier3_expression : TOKEN_MODULO expression .  (52)
+
+	.  reduce 52
+
+
+state 96
+	tier5_expression : TOKEN_OR expression .  (58)
+
+	.  reduce 58
+
+
+state 97
+	tier4_expression : TOKEN_AND expression .  (56)
+
+	.  reduce 56
+
+
+state 98
+	tier3_point_5_expression : TOKEN_TEST_EQUALITY expression .  (54)
+
+	.  reduce 54
+
+
+state 99
+	command_list : command_list . TOKEN_SEMICOLON command  (10)
+	guarded_command : expression TOKEN_GUARD command_list . TOKEN_END_GUARD  (29)
+
+	TOKEN_SEMICOLON  shift 49
+	TOKEN_END_GUARD  shift 102
+	.  error
+
+
+state 100
+	function_constant : scheme begin_function command_list end_function .  (4)
+
+	.  reduce 4
+
+
+state 101
+	expression_list : expression TOKEN_COMMA . expression_list  (21)
+	scheme : .  (5)
+	expression_list : .  (19)
+
+	TOKEN_DECIMAL_INTEGER  shift 9
+	TOKEN_OPEN_PAREN  shift 10
+	TOKEN_TILDE  shift 28
+	TOKEN_SUBTRACT  shift 29
+	TOKEN_NOT  shift 30
+	TOKEN_REFERENCE  shift 31
+	TOKEN_DEREFERENCE  shift 32
+	TOKEN_SCHEME  shift 1
+	TOKEN_FUNCTION_APPLICATION  shift 33
+	TOKEN_CONSTANT  shift 14
+	TOKEN_WORD  reduce 5
+	TOKEN_OPEN_BLOCK  reduce 5
+	TOKEN_CLOSE_BLOCK  reduce 19
+	TOKEN_SEMICOLON  reduce 19
+	TOKEN_END_GUARD  reduce 19
+
+	scheme  goto 15
+	function_constant  goto 17
+	expression_list  goto 103
+	terminated_combinator_expression  goto 34
+	expression  goto 85
+	scheme_name  goto 36
+	atomic_expression  goto 25
+	tier0_expression  goto 26
+	uninitiated_combinator_expression  goto 37
+	proper_combinator_expression  goto 38
+	functional_expression  goto 39
+	tier1_expression  goto 40
+
+
+state 102
+	guarded_command : expression TOKEN_GUARD command_list TOKEN_END_GUARD .  (29)
+
+	.  reduce 29
+
+
+state 103
+	expression_list : expression TOKEN_COMMA expression_list .  (21)
+
+	.  reduce 21
+
+
+39 terminals, 30 nonterminals
+68 grammar rules, 104 states

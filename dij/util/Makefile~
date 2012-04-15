@@ -1,0 +1,6 @@
+util.a : misc.o
+	ar util.a misc.o
+
+misc.o : misc.c
+
+

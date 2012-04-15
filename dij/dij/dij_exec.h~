@@ -1,0 +1,49 @@
+void inst_push( void *M );
+
+void inst_apply( void *M );
+
+void inst_curry( void *M );
+
+void inst_halt( void *M );
+
+void inst_check( void *M );
+
+void inst_reference_variable( void *M );
+
+void inst_reference_global( void *M );
+
+void inst_lvalue_name( void *M );
+
+void inst_assign( void *M );
+
+void inst_add( void *M );
+
+void inst_lvalue_call( void *M );
+
+void inst_anonymous_parameter( void *M );
+
+void inst_anonymous_return( void *M );
+
+void inst_spawn( void *M );
+
+void dij_write( int word );
+
+void dij_push_data();
+
+void dij_pop_data();
+
+void dij_push_code();
+
+void dij_pop_code();
+
+void dij_define_global();
+
+void dij_note_number( void (*note_me)( int later ) );
+
+void dij_record_number( int later );
+
+void dij_note_lvalue( int later );
+
+void dij_note_rvalue( int later );
+
+void debug( void *M );

@@ -1,0 +1,1664 @@
+Terminals unused in grammar
+
+   TOKEN_EOF
+   TOKEN_SCHEME_SCRIPT
+   TOKEN_OPEN_BRACKET
+   TOKEN_CLOSE_BRACKET
+   TOKEN_DOT
+
+
+Grammar
+
+    0 $accept: function_collection $end
+
+    1 function_collection: /* empty */
+    2                    | exterior_function_constant function_collection
+
+    3 exterior_function_constant: scheme begin_function command_list end_function
+
+    4 function_constant: scheme begin_function command_list end_function
+
+    5 scheme: /* empty */
+    6       | TOKEN_SCHEME scheme
+
+    7 begin_function: TOKEN_OPEN_BLOCK
+
+    8 command_list: /* empty */
+    9             | command
+   10             | command_list TOKEN_SEMICOLON command
+
+   11 end_function: TOKEN_CLOSE_BLOCK
+
+   12 command: lvalue_list TOKEN_ASSIGN expression_list
+   13        | terminated_combinator_expression
+   14        | if_statement
+   15        | do_statement
+
+   16 lvalue_list: /* empty */
+   17            | lvalue
+   18            | lvalue TOKEN_COMMA lvalue_list
+
+   19 expression_list: /* empty */
+   20                | expression
+   21                | expression TOKEN_COMMA expression_list
+
+   22 if_statement: TOKEN_IF guarded_command_list TOKEN_FI
+
+   23 do_statement: TOKEN_DO guarded_command_list TOKEN_OD
+
+   24 lvalue: scheme_name
+   25       | TOKEN_DEREFERENCE atomic_expression
+   26       | terminated_combinator_expression
+
+   27 guarded_command_list: /* empty */
+   28                     | guarded_command guarded_command_list
+
+   29 guarded_command: expression TOKEN_GUARD command_list TOKEN_END_GUARD
+
+   30 tier0_expression: TOKEN_DEREFERENCE atomic_expression
+   31                 | atomic_expression
+
+   32 uninitiated_combinator_expression: TOKEN_FUNCTION_APPLICATION proper_combinator_expression
+   33                                  | TOKEN_FUNCTION_APPLICATION uninitiated_combinator_expression
+
+   34 terminated_combinator_expression: proper_combinator_expression TOKEN_FUNCTION_APPLICATION
+   35                                 | terminated_combinator_expression TOKEN_FUNCTION_APPLICATION
+
+   36 proper_combinator_expression: tier0_expression
+   37                             | proper_combinator_expression TOKEN_FUNCTION_APPLICATION tier0_expression
+   38                             | terminated_combinator_expression TOKEN_FUNCTION_APPLICATION tier0_expression
+   39                             | proper_combinator_expression TOKEN_COLON tier0_expression
+
+   40 functional_expression: proper_combinator_expression
+   41                      | terminated_combinator_expression
+   42                      | uninitiated_combinator_expression
+   43                      | functional_expression TOKEN_BACKSLASH atomic_expression
+
+   44 tier1_expression: TOKEN_REFERENCE tier1_expression
+   45                 | TOKEN_NOT tier1_expression
+   46                 | TOKEN_SUBTRACT tier1_expression
+   47                 | TOKEN_TILDE tier1_expression
+   48                 | functional_expression
+
+   49 tier2_expression: TOKEN_ADD expression
+
+   50 tier3_expression: TOKEN_MULTIPLY expression
+   51                 | TOKEN_DIVIDE expression
+   52                 | TOKEN_MODULO expression
+   53                 | tier2_expression
+
+   54 tier3_point_5_expression: TOKEN_TEST_EQUALITY expression
+   55                         | tier3_expression
+
+   56 tier4_expression: TOKEN_AND expression
+   57                 | tier3_point_5_expression
+
+   58 tier5_expression: TOKEN_OR expression
+   59                 | tier4_expression
+
+   60 expression: tier1_expression
+   61           | tier1_expression tier5_expression
+
+   62 atomic_expression: TOKEN_DECIMAL_INTEGER
+   63                  | TOKEN_CONSTANT
+   64                  | function_constant
+   65                  | scheme_name
+   66                  | TOKEN_OPEN_PAREN expression TOKEN_CLOSE_PAREN
+
+   67 name: TOKEN_WORD
+
+   68 scheme_name: scheme name
+
+
+Terminals, with rules where they appear
+
+$end (0) 0
+error (256)
+TOKEN_EOF (258)
+TOKEN_WORD (259) 67
+TOKEN_DECIMAL_INTEGER (260) 62
+TOKEN_SCHEME_SCRIPT (261)
+TOKEN_OPEN_BLOCK (262) 7
+TOKEN_CLOSE_BLOCK (263) 11
+TOKEN_OPEN_PAREN (264) 66
+TOKEN_CLOSE_PAREN (265) 66
+TOKEN_OPEN_BRACKET (266)
+TOKEN_CLOSE_BRACKET (267)
+TOKEN_DOT (268)
+TOKEN_COLON (269) 39
+TOKEN_BACKSLASH (270) 43
+TOKEN_TILDE (271) 47
+TOKEN_COMMA (272) 18 21
+TOKEN_SEMICOLON (273) 10
+TOKEN_ADD (274) 49
+TOKEN_SUBTRACT (275) 46
+TOKEN_MULTIPLY (276) 50
+TOKEN_DIVIDE (277) 51
+TOKEN_MODULO (278) 52
+TOKEN_NOT (279) 45
+TOKEN_OR (280) 58
+TOKEN_AND (281) 56
+TOKEN_GUARD (282) 29
+TOKEN_REFERENCE (283) 44
+TOKEN_DEREFERENCE (284) 25 30
+TOKEN_ASSIGN (285) 12
+TOKEN_IF (286) 22
+TOKEN_FI (287) 22
+TOKEN_DO (288) 23
+TOKEN_OD (289) 23
+TOKEN_SCHEME (290) 6
+TOKEN_END_GUARD (291) 29
+TOKEN_FUNCTION_APPLICATION (292) 32 33 34 35 37 38
+TOKEN_CONSTANT (293) 63
+TOKEN_TEST_EQUALITY (294) 54
+
+
+Nonterminals, with rules where they appear
+
+$accept (40)
+    on left: 0
+function_collection (41)
+    on left: 1 2, on right: 0 2
+exterior_function_constant (42)
+    on left: 3, on right: 2
+function_constant (43)
+    on left: 4, on right: 64
+scheme (44)
+    on left: 5 6, on right: 3 4 6 68
+begin_function (45)
+    on left: 7, on right: 3 4
+command_list (46)
+    on left: 8 9 10, on right: 3 4 10 29
+end_function (47)
+    on left: 11, on right: 3 4
+command (48)
+    on left: 12 13 14 15, on right: 9 10
+lvalue_list (49)
+    on left: 16 17 18, on right: 12 18
+expression_list (50)
+    on left: 19 20 21, on right: 12 21
+if_statement (51)
+    on left: 22, on right: 14
+do_statement (52)
+    on left: 23, on right: 15
+lvalue (53)
+    on left: 24 25 26, on right: 17 18
+guarded_command_list (54)
+    on left: 27 28, on right: 22 23 28
+guarded_command (55)
+    on left: 29, on right: 28
+tier0_expression (56)
+    on left: 30 31, on right: 36 37 38 39
+uninitiated_combinator_expression (57)
+    on left: 32 33, on right: 33 42
+terminated_combinator_expression (58)
+    on left: 34 35, on right: 13 26 35 38 41
+proper_combinator_expression (59)
+    on left: 36 37 38 39, on right: 32 34 37 39 40
+functional_expression (60)
+    on left: 40 41 42 43, on right: 43 48
+tier1_expression (61)
+    on left: 44 45 46 47 48, on right: 44 45 46 47 60 61
+tier2_expression (62)
+    on left: 49, on right: 53
+tier3_expression (63)
+    on left: 50 51 52 53, on right: 55
+tier3_point_5_expression (64)
+    on left: 54 55, on right: 57
+tier4_expression (65)
+    on left: 56 57, on right: 59
+tier5_expression (66)
+    on left: 58 59, on right: 61
+expression (67)
+    on left: 60 61, on right: 20 21 29 49 50 51 52 54 56 58 66
+atomic_expression (68)
+    on left: 62 63 64 65 66, on right: 25 30 31 43
+name (69)
+    on left: 67, on right: 68
+scheme_name (70)
+    on left: 68, on right: 24 65
+
+
+state 0
+
+    0 $accept: . function_collection $end
+
+    TOKEN_SCHEME  shift, and go to state 1
+
+    TOKEN_OPEN_BLOCK  reduce using rule 5 (scheme)
+    $default          reduce using rule 1 (function_collection)
+
+    function_collection         go to state 2
+    exterior_function_constant  go to state 3
+    scheme                      go to state 4
+
+
+state 1
+
+    6 scheme: TOKEN_SCHEME . scheme
+
+    TOKEN_SCHEME  shift, and go to state 1
+
+    $default  reduce using rule 5 (scheme)
+
+    scheme  go to state 5
+
+
+state 2
+
+    0 $accept: function_collection . $end
+
+    $end  shift, and go to state 6
+
+
+state 3
+
+    2 function_collection: exterior_function_constant . function_collection
+
+    TOKEN_SCHEME  shift, and go to state 1
+
+    TOKEN_OPEN_BLOCK  reduce using rule 5 (scheme)
+    $default          reduce using rule 1 (function_collection)
+
+    function_collection         go to state 7
+    exterior_function_constant  go to state 3
+    scheme                      go to state 4
+
+
+state 4
+
+    3 exterior_function_constant: scheme . begin_function command_list end_function
+
+    TOKEN_OPEN_BLOCK  shift, and go to state 8
+
+    begin_function  go to state 9
+
+
+state 5
+
+    6 scheme: TOKEN_SCHEME scheme .
+
+    $default  reduce using rule 6 (scheme)
+
+
+state 6
+
+    0 $accept: function_collection $end .
+
+    $default  accept
+
+
+state 7
+
+    2 function_collection: exterior_function_constant function_collection .
+
+    $default  reduce using rule 2 (function_collection)
+
+
+state 8
+
+    7 begin_function: TOKEN_OPEN_BLOCK .
+
+    $default  reduce using rule 7 (begin_function)
+
+
+state 9
+
+    3 exterior_function_constant: scheme begin_function . command_list end_function
+
+    TOKEN_DECIMAL_INTEGER  shift, and go to state 10
+    TOKEN_OPEN_PAREN       shift, and go to state 11
+    TOKEN_DEREFERENCE      shift, and go to state 12
+    TOKEN_IF               shift, and go to state 13
+    TOKEN_DO               shift, and go to state 14
+    TOKEN_SCHEME           shift, and go to state 1
+    TOKEN_CONSTANT         shift, and go to state 15
+
+    TOKEN_CLOSE_BLOCK  reduce using rule 8 (command_list)
+    TOKEN_SEMICOLON    reduce using rule 8 (command_list)
+    TOKEN_ASSIGN       reduce using rule 16 (lvalue_list)
+    $default           reduce using rule 5 (scheme)
+
+    function_constant                 go to state 16
+    scheme                            go to state 17
+    command_list                      go to state 18
+    command                           go to state 19
+    lvalue_list                       go to state 20
+    if_statement                      go to state 21
+    do_statement                      go to state 22
+    lvalue                            go to state 23
+    tier0_expression                  go to state 24
+    terminated_combinator_expression  go to state 25
+    proper_combinator_expression      go to state 26
+    atomic_expression                 go to state 27
+    scheme_name                       go to state 28
+
+
+state 10
+
+   62 atomic_expression: TOKEN_DECIMAL_INTEGER .
+
+    $default  reduce using rule 62 (atomic_expression)
+
+
+state 11
+
+   66 atomic_expression: TOKEN_OPEN_PAREN . expression TOKEN_CLOSE_PAREN
+
+    TOKEN_DECIMAL_INTEGER       shift, and go to state 10
+    TOKEN_OPEN_PAREN            shift, and go to state 11
+    TOKEN_TILDE                 shift, and go to state 29
+    TOKEN_SUBTRACT              shift, and go to state 30
+    TOKEN_NOT                   shift, and go to state 31
+    TOKEN_REFERENCE             shift, and go to state 32
+    TOKEN_DEREFERENCE           shift, and go to state 33
+    TOKEN_SCHEME                shift, and go to state 1
+    TOKEN_FUNCTION_APPLICATION  shift, and go to state 34
+    TOKEN_CONSTANT              shift, and go to state 15
+
+    $default  reduce using rule 5 (scheme)
+
+    function_constant                  go to state 16
+    scheme                             go to state 17
+    tier0_expression                   go to state 24
+    uninitiated_combinator_expression  go to state 35
+    terminated_combinator_expression   go to state 36
+    proper_combinator_expression       go to state 37
+    functional_expression              go to state 38
+    tier1_expression                   go to state 39
+    expression                         go to state 40
+    atomic_expression                  go to state 27
+    scheme_name                        go to state 41
+
+
+state 12
+
+   25 lvalue: TOKEN_DEREFERENCE . atomic_expression
+   30 tier0_expression: TOKEN_DEREFERENCE . atomic_expression
+
+    TOKEN_DECIMAL_INTEGER  shift, and go to state 10
+    TOKEN_OPEN_PAREN       shift, and go to state 11
+    TOKEN_SCHEME           shift, and go to state 1
+    TOKEN_CONSTANT         shift, and go to state 15
+
+    $default  reduce using rule 5 (scheme)
+
+    function_constant  go to state 16
+    scheme             go to state 17
+    atomic_expression  go to state 42
+    scheme_name        go to state 41
+
+
+state 13
+
+   22 if_statement: TOKEN_IF . guarded_command_list TOKEN_FI
+
+    TOKEN_DECIMAL_INTEGER       shift, and go to state 10
+    TOKEN_OPEN_PAREN            shift, and go to state 11
+    TOKEN_TILDE                 shift, and go to state 29
+    TOKEN_SUBTRACT              shift, and go to state 30
+    TOKEN_NOT                   shift, and go to state 31
+    TOKEN_REFERENCE             shift, and go to state 32
+    TOKEN_DEREFERENCE           shift, and go to state 33
+    TOKEN_SCHEME                shift, and go to state 1
+    TOKEN_FUNCTION_APPLICATION  shift, and go to state 34
+    TOKEN_CONSTANT              shift, and go to state 15
+
+    TOKEN_FI  reduce using rule 27 (guarded_command_list)
+    $default  reduce using rule 5 (scheme)
+
+    function_constant                  go to state 16
+    scheme                             go to state 17
+    guarded_command_list               go to state 43
+    guarded_command                    go to state 44
+    tier0_expression                   go to state 24
+    uninitiated_combinator_expression  go to state 35
+    terminated_combinator_expression   go to state 36
+    proper_combinator_expression       go to state 37
+    functional_expression              go to state 38
+    tier1_expression                   go to state 39
+    expression                         go to state 45
+    atomic_expression                  go to state 27
+    scheme_name                        go to state 41
+
+
+state 14
+
+   23 do_statement: TOKEN_DO . guarded_command_list TOKEN_OD
+
+    TOKEN_DECIMAL_INTEGER       shift, and go to state 10
+    TOKEN_OPEN_PAREN            shift, and go to state 11
+    TOKEN_TILDE                 shift, and go to state 29
+    TOKEN_SUBTRACT              shift, and go to state 30
+    TOKEN_NOT                   shift, and go to state 31
+    TOKEN_REFERENCE             shift, and go to state 32
+    TOKEN_DEREFERENCE           shift, and go to state 33
+    TOKEN_SCHEME                shift, and go to state 1
+    TOKEN_FUNCTION_APPLICATION  shift, and go to state 34
+    TOKEN_CONSTANT              shift, and go to state 15
+
+    TOKEN_OD  reduce using rule 27 (guarded_command_list)
+    $default  reduce using rule 5 (scheme)
+
+    function_constant                  go to state 16
+    scheme                             go to state 17
+    guarded_command_list               go to state 46
+    guarded_command                    go to state 44
+    tier0_expression                   go to state 24
+    uninitiated_combinator_expression  go to state 35
+    terminated_combinator_expression   go to state 36
+    proper_combinator_expression       go to state 37
+    functional_expression              go to state 38
+    tier1_expression                   go to state 39
+    expression                         go to state 45
+    atomic_expression                  go to state 27
+    scheme_name                        go to state 41
+
+
+state 15
+
+   63 atomic_expression: TOKEN_CONSTANT .
+
+    $default  reduce using rule 63 (atomic_expression)
+
+
+state 16
+
+   64 atomic_expression: function_constant .
+
+    $default  reduce using rule 64 (atomic_expression)
+
+
+state 17
+
+    4 function_constant: scheme . begin_function command_list end_function
+   68 scheme_name: scheme . name
+
+    TOKEN_WORD        shift, and go to state 47
+    TOKEN_OPEN_BLOCK  shift, and go to state 8
+
+    begin_function  go to state 48
+    name            go to state 49
+
+
+state 18
+
+    3 exterior_function_constant: scheme begin_function command_list . end_function
+   10 command_list: command_list . TOKEN_SEMICOLON command
+
+    TOKEN_CLOSE_BLOCK  shift, and go to state 50
+    TOKEN_SEMICOLON    shift, and go to state 51
+
+    end_function  go to state 52
+
+
+state 19
+
+    9 command_list: command .
+
+    $default  reduce using rule 9 (command_list)
+
+
+state 20
+
+   12 command: lvalue_list . TOKEN_ASSIGN expression_list
+
+    TOKEN_ASSIGN  shift, and go to state 53
+
+
+state 21
+
+   14 command: if_statement .
+
+    $default  reduce using rule 14 (command)
+
+
+state 22
+
+   15 command: do_statement .
+
+    $default  reduce using rule 15 (command)
+
+
+state 23
+
+   17 lvalue_list: lvalue .
+   18            | lvalue . TOKEN_COMMA lvalue_list
+
+    TOKEN_COMMA  shift, and go to state 54
+
+    $default  reduce using rule 17 (lvalue_list)
+
+
+state 24
+
+   36 proper_combinator_expression: tier0_expression .
+
+    $default  reduce using rule 36 (proper_combinator_expression)
+
+
+state 25
+
+   13 command: terminated_combinator_expression .
+   26 lvalue: terminated_combinator_expression .
+   35 terminated_combinator_expression: terminated_combinator_expression . TOKEN_FUNCTION_APPLICATION
+   38 proper_combinator_expression: terminated_combinator_expression . TOKEN_FUNCTION_APPLICATION tier0_expression
+
+    TOKEN_FUNCTION_APPLICATION  shift, and go to state 55
+
+    TOKEN_COMMA   reduce using rule 26 (lvalue)
+    TOKEN_ASSIGN  reduce using rule 26 (lvalue)
+    $default      reduce using rule 13 (command)
+
+
+state 26
+
+   34 terminated_combinator_expression: proper_combinator_expression . TOKEN_FUNCTION_APPLICATION
+   37 proper_combinator_expression: proper_combinator_expression . TOKEN_FUNCTION_APPLICATION tier0_expression
+   39                             | proper_combinator_expression . TOKEN_COLON tier0_expression
+
+    TOKEN_COLON                 shift, and go to state 56
+    TOKEN_FUNCTION_APPLICATION  shift, and go to state 57
+
+
+state 27
+
+   31 tier0_expression: atomic_expression .
+
+    $default  reduce using rule 31 (tier0_expression)
+
+
+state 28
+
+   24 lvalue: scheme_name .
+   65 atomic_expression: scheme_name .
+
+    TOKEN_COLON                 reduce using rule 65 (atomic_expression)
+    TOKEN_FUNCTION_APPLICATION  reduce using rule 65 (atomic_expression)
+    $default                    reduce using rule 24 (lvalue)
+
+
+state 29
+
+   47 tier1_expression: TOKEN_TILDE . tier1_expression
+
+    TOKEN_DECIMAL_INTEGER       shift, and go to state 10
+    TOKEN_OPEN_PAREN            shift, and go to state 11
+    TOKEN_TILDE                 shift, and go to state 29
+    TOKEN_SUBTRACT              shift, and go to state 30
+    TOKEN_NOT                   shift, and go to state 31
+    TOKEN_REFERENCE             shift, and go to state 32
+    TOKEN_DEREFERENCE           shift, and go to state 33
+    TOKEN_SCHEME                shift, and go to state 1
+    TOKEN_FUNCTION_APPLICATION  shift, and go to state 34
+    TOKEN_CONSTANT              shift, and go to state 15
+
+    $default  reduce using rule 5 (scheme)
+
+    function_constant                  go to state 16
+    scheme                             go to state 17
+    tier0_expression                   go to state 24
+    uninitiated_combinator_expression  go to state 35
+    terminated_combinator_expression   go to state 36
+    proper_combinator_expression       go to state 37
+    functional_expression              go to state 38
+    tier1_expression                   go to state 58
+    atomic_expression                  go to state 27
+    scheme_name                        go to state 41
+
+
+state 30
+
+   46 tier1_expression: TOKEN_SUBTRACT . tier1_expression
+
+    TOKEN_DECIMAL_INTEGER       shift, and go to state 10
+    TOKEN_OPEN_PAREN            shift, and go to state 11
+    TOKEN_TILDE                 shift, and go to state 29
+    TOKEN_SUBTRACT              shift, and go to state 30
+    TOKEN_NOT                   shift, and go to state 31
+    TOKEN_REFERENCE             shift, and go to state 32
+    TOKEN_DEREFERENCE           shift, and go to state 33
+    TOKEN_SCHEME                shift, and go to state 1
+    TOKEN_FUNCTION_APPLICATION  shift, and go to state 34
+    TOKEN_CONSTANT              shift, and go to state 15
+
+    $default  reduce using rule 5 (scheme)
+
+    function_constant                  go to state 16
+    scheme                             go to state 17
+    tier0_expression                   go to state 24
+    uninitiated_combinator_expression  go to state 35
+    terminated_combinator_expression   go to state 36
+    proper_combinator_expression       go to state 37
+    functional_expression              go to state 38
+    tier1_expression                   go to state 59
+    atomic_expression                  go to state 27
+    scheme_name                        go to state 41
+
+
+state 31
+
+   45 tier1_expression: TOKEN_NOT . tier1_expression
+
+    TOKEN_DECIMAL_INTEGER       shift, and go to state 10
+    TOKEN_OPEN_PAREN            shift, and go to state 11
+    TOKEN_TILDE                 shift, and go to state 29
+    TOKEN_SUBTRACT              shift, and go to state 30
+    TOKEN_NOT                   shift, and go to state 31
+    TOKEN_REFERENCE             shift, and go to state 32
+    TOKEN_DEREFERENCE           shift, and go to state 33
+    TOKEN_SCHEME                shift, and go to state 1
+    TOKEN_FUNCTION_APPLICATION  shift, and go to state 34
+    TOKEN_CONSTANT              shift, and go to state 15
+
+    $default  reduce using rule 5 (scheme)
+
+    function_constant                  go to state 16
+    scheme                             go to state 17
+    tier0_expression                   go to state 24
+    uninitiated_combinator_expression  go to state 35
+    terminated_combinator_expression   go to state 36
+    proper_combinator_expression       go to state 37
+    functional_expression              go to state 38
+    tier1_expression                   go to state 60
+    atomic_expression                  go to state 27
+    scheme_name                        go to state 41
+
+
+state 32
+
+   44 tier1_expression: TOKEN_REFERENCE . tier1_expression
+
+    TOKEN_DECIMAL_INTEGER       shift, and go to state 10
+    TOKEN_OPEN_PAREN            shift, and go to state 11
+    TOKEN_TILDE                 shift, and go to state 29
+    TOKEN_SUBTRACT              shift, and go to state 30
+    TOKEN_NOT                   shift, and go to state 31
+    TOKEN_REFERENCE             shift, and go to state 32
+    TOKEN_DEREFERENCE           shift, and go to state 33
+    TOKEN_SCHEME                shift, and go to state 1
+    TOKEN_FUNCTION_APPLICATION  shift, and go to state 34
+    TOKEN_CONSTANT              shift, and go to state 15
+
+    $default  reduce using rule 5 (scheme)
+
+    function_constant                  go to state 16
+    scheme                             go to state 17
+    tier0_expression                   go to state 24
+    uninitiated_combinator_expression  go to state 35
+    terminated_combinator_expression   go to state 36
+    proper_combinator_expression       go to state 37
+    functional_expression              go to state 38
+    tier1_expression                   go to state 61
+    atomic_expression                  go to state 27
+    scheme_name                        go to state 41
+
+
+state 33
+
+   30 tier0_expression: TOKEN_DEREFERENCE . atomic_expression
+
+    TOKEN_DECIMAL_INTEGER  shift, and go to state 10
+    TOKEN_OPEN_PAREN       shift, and go to state 11
+    TOKEN_SCHEME           shift, and go to state 1
+    TOKEN_CONSTANT         shift, and go to state 15
+
+    $default  reduce using rule 5 (scheme)
+
+    function_constant  go to state 16
+    scheme             go to state 17
+    atomic_expression  go to state 62
+    scheme_name        go to state 41
+
+
+state 34
+
+   32 uninitiated_combinator_expression: TOKEN_FUNCTION_APPLICATION . proper_combinator_expression
+   33                                  | TOKEN_FUNCTION_APPLICATION . uninitiated_combinator_expression
+
+    TOKEN_DECIMAL_INTEGER       shift, and go to state 10
+    TOKEN_OPEN_PAREN            shift, and go to state 11
+    TOKEN_DEREFERENCE           shift, and go to state 33
+    TOKEN_SCHEME                shift, and go to state 1
+    TOKEN_FUNCTION_APPLICATION  shift, and go to state 34
+    TOKEN_CONSTANT              shift, and go to state 15
+
+    $default  reduce using rule 5 (scheme)
+
+    function_constant                  go to state 16
+    scheme                             go to state 17
+    tier0_expression                   go to state 24
+    uninitiated_combinator_expression  go to state 63
+    terminated_combinator_expression   go to state 64
+    proper_combinator_expression       go to state 65
+    atomic_expression                  go to state 27
+    scheme_name                        go to state 41
+
+
+state 35
+
+   42 functional_expression: uninitiated_combinator_expression .
+
+    $default  reduce using rule 42 (functional_expression)
+
+
+state 36
+
+   35 terminated_combinator_expression: terminated_combinator_expression . TOKEN_FUNCTION_APPLICATION
+   38 proper_combinator_expression: terminated_combinator_expression . TOKEN_FUNCTION_APPLICATION tier0_expression
+   41 functional_expression: terminated_combinator_expression .
+
+    TOKEN_FUNCTION_APPLICATION  shift, and go to state 55
+
+    $default  reduce using rule 41 (functional_expression)
+
+
+state 37
+
+   34 terminated_combinator_expression: proper_combinator_expression . TOKEN_FUNCTION_APPLICATION
+   37 proper_combinator_expression: proper_combinator_expression . TOKEN_FUNCTION_APPLICATION tier0_expression
+   39                             | proper_combinator_expression . TOKEN_COLON tier0_expression
+   40 functional_expression: proper_combinator_expression .
+
+    TOKEN_COLON                 shift, and go to state 56
+    TOKEN_FUNCTION_APPLICATION  shift, and go to state 57
+
+    $default  reduce using rule 40 (functional_expression)
+
+
+state 38
+
+   43 functional_expression: functional_expression . TOKEN_BACKSLASH atomic_expression
+   48 tier1_expression: functional_expression .
+
+    TOKEN_BACKSLASH  shift, and go to state 66
+
+    $default  reduce using rule 48 (tier1_expression)
+
+
+state 39
+
+   60 expression: tier1_expression .
+   61           | tier1_expression . tier5_expression
+
+    TOKEN_ADD            shift, and go to state 67
+    TOKEN_MULTIPLY       shift, and go to state 68
+    TOKEN_DIVIDE         shift, and go to state 69
+    TOKEN_MODULO         shift, and go to state 70
+    TOKEN_OR             shift, and go to state 71
+    TOKEN_AND            shift, and go to state 72
+    TOKEN_TEST_EQUALITY  shift, and go to state 73
+
+    $default  reduce using rule 60 (expression)
+
+    tier2_expression          go to state 74
+    tier3_expression          go to state 75
+    tier3_point_5_expression  go to state 76
+    tier4_expression          go to state 77
+    tier5_expression          go to state 78
+
+
+state 40
+
+   66 atomic_expression: TOKEN_OPEN_PAREN expression . TOKEN_CLOSE_PAREN
+
+    TOKEN_CLOSE_PAREN  shift, and go to state 79
+
+
+state 41
+
+   65 atomic_expression: scheme_name .
+
+    $default  reduce using rule 65 (atomic_expression)
+
+
+state 42
+
+   25 lvalue: TOKEN_DEREFERENCE atomic_expression .
+   30 tier0_expression: TOKEN_DEREFERENCE atomic_expression .
+
+    TOKEN_COLON                 reduce using rule 30 (tier0_expression)
+    TOKEN_FUNCTION_APPLICATION  reduce using rule 30 (tier0_expression)
+    $default                    reduce using rule 25 (lvalue)
+
+
+state 43
+
+   22 if_statement: TOKEN_IF guarded_command_list . TOKEN_FI
+
+    TOKEN_FI  shift, and go to state 80
+
+
+state 44
+
+   28 guarded_command_list: guarded_command . guarded_command_list
+
+    TOKEN_DECIMAL_INTEGER       shift, and go to state 10
+    TOKEN_OPEN_PAREN            shift, and go to state 11
+    TOKEN_TILDE                 shift, and go to state 29
+    TOKEN_SUBTRACT              shift, and go to state 30
+    TOKEN_NOT                   shift, and go to state 31
+    TOKEN_REFERENCE             shift, and go to state 32
+    TOKEN_DEREFERENCE           shift, and go to state 33
+    TOKEN_SCHEME                shift, and go to state 1
+    TOKEN_FUNCTION_APPLICATION  shift, and go to state 34
+    TOKEN_CONSTANT              shift, and go to state 15
+
+    TOKEN_FI  reduce using rule 27 (guarded_command_list)
+    TOKEN_OD  reduce using rule 27 (guarded_command_list)
+    $default  reduce using rule 5 (scheme)
+
+    function_constant                  go to state 16
+    scheme                             go to state 17
+    guarded_command_list               go to state 81
+    guarded_command                    go to state 44
+    tier0_expression                   go to state 24
+    uninitiated_combinator_expression  go to state 35
+    terminated_combinator_expression   go to state 36
+    proper_combinator_expression       go to state 37
+    functional_expression              go to state 38
+    tier1_expression                   go to state 39
+    expression                         go to state 45
+    atomic_expression                  go to state 27
+    scheme_name                        go to state 41
+
+
+state 45
+
+   29 guarded_command: expression . TOKEN_GUARD command_list TOKEN_END_GUARD
+
+    TOKEN_GUARD  shift, and go to state 82
+
+
+state 46
+
+   23 do_statement: TOKEN_DO guarded_command_list . TOKEN_OD
+
+    TOKEN_OD  shift, and go to state 83
+
+
+state 47
+
+   67 name: TOKEN_WORD .
+
+    $default  reduce using rule 67 (name)
+
+
+state 48
+
+    4 function_constant: scheme begin_function . command_list end_function
+
+    TOKEN_DECIMAL_INTEGER  shift, and go to state 10
+    TOKEN_OPEN_PAREN       shift, and go to state 11
+    TOKEN_DEREFERENCE      shift, and go to state 12
+    TOKEN_IF               shift, and go to state 13
+    TOKEN_DO               shift, and go to state 14
+    TOKEN_SCHEME           shift, and go to state 1
+    TOKEN_CONSTANT         shift, and go to state 15
+
+    TOKEN_CLOSE_BLOCK  reduce using rule 8 (command_list)
+    TOKEN_SEMICOLON    reduce using rule 8 (command_list)
+    TOKEN_ASSIGN       reduce using rule 16 (lvalue_list)
+    $default           reduce using rule 5 (scheme)
+
+    function_constant                 go to state 16
+    scheme                            go to state 17
+    command_list                      go to state 84
+    command                           go to state 19
+    lvalue_list                       go to state 20
+    if_statement                      go to state 21
+    do_statement                      go to state 22
+    lvalue                            go to state 23
+    tier0_expression                  go to state 24
+    terminated_combinator_expression  go to state 25
+    proper_combinator_expression      go to state 26
+    atomic_expression                 go to state 27
+    scheme_name                       go to state 28
+
+
+state 49
+
+   68 scheme_name: scheme name .
+
+    $default  reduce using rule 68 (scheme_name)
+
+
+state 50
+
+   11 end_function: TOKEN_CLOSE_BLOCK .
+
+    $default  reduce using rule 11 (end_function)
+
+
+state 51
+
+   10 command_list: command_list TOKEN_SEMICOLON . command
+
+    TOKEN_DECIMAL_INTEGER  shift, and go to state 10
+    TOKEN_OPEN_PAREN       shift, and go to state 11
+    TOKEN_DEREFERENCE      shift, and go to state 12
+    TOKEN_IF               shift, and go to state 13
+    TOKEN_DO               shift, and go to state 14
+    TOKEN_SCHEME           shift, and go to state 1
+    TOKEN_CONSTANT         shift, and go to state 15
+
+    TOKEN_ASSIGN  reduce using rule 16 (lvalue_list)
+    $default      reduce using rule 5 (scheme)
+
+    function_constant                 go to state 16
+    scheme                            go to state 17
+    command                           go to state 85
+    lvalue_list                       go to state 20
+    if_statement                      go to state 21
+    do_statement                      go to state 22
+    lvalue                            go to state 23
+    tier0_expression                  go to state 24
+    terminated_combinator_expression  go to state 25
+    proper_combinator_expression      go to state 26
+    atomic_expression                 go to state 27
+    scheme_name                       go to state 28
+
+
+state 52
+
+    3 exterior_function_constant: scheme begin_function command_list end_function .
+
+    $default  reduce using rule 3 (exterior_function_constant)
+
+
+state 53
+
+   12 command: lvalue_list TOKEN_ASSIGN . expression_list
+
+    TOKEN_DECIMAL_INTEGER       shift, and go to state 10
+    TOKEN_OPEN_PAREN            shift, and go to state 11
+    TOKEN_TILDE                 shift, and go to state 29
+    TOKEN_SUBTRACT              shift, and go to state 30
+    TOKEN_NOT                   shift, and go to state 31
+    TOKEN_REFERENCE             shift, and go to state 32
+    TOKEN_DEREFERENCE           shift, and go to state 33
+    TOKEN_SCHEME                shift, and go to state 1
+    TOKEN_FUNCTION_APPLICATION  shift, and go to state 34
+    TOKEN_CONSTANT              shift, and go to state 15
+
+    TOKEN_WORD        reduce using rule 5 (scheme)
+    TOKEN_OPEN_BLOCK  reduce using rule 5 (scheme)
+    $default          reduce using rule 19 (expression_list)
+
+    function_constant                  go to state 16
+    scheme                             go to state 17
+    expression_list                    go to state 86
+    tier0_expression                   go to state 24
+    uninitiated_combinator_expression  go to state 35
+    terminated_combinator_expression   go to state 36
+    proper_combinator_expression       go to state 37
+    functional_expression              go to state 38
+    tier1_expression                   go to state 39
+    expression                         go to state 87
+    atomic_expression                  go to state 27
+    scheme_name                        go to state 41
+
+
+state 54
+
+   18 lvalue_list: lvalue TOKEN_COMMA . lvalue_list
+
+    TOKEN_DECIMAL_INTEGER  shift, and go to state 10
+    TOKEN_OPEN_PAREN       shift, and go to state 11
+    TOKEN_DEREFERENCE      shift, and go to state 12
+    TOKEN_SCHEME           shift, and go to state 1
+    TOKEN_CONSTANT         shift, and go to state 15
+
+    TOKEN_ASSIGN  reduce using rule 16 (lvalue_list)
+    $default      reduce using rule 5 (scheme)
+
+    function_constant                 go to state 16
+    scheme                            go to state 17
+    lvalue_list                       go to state 88
+    lvalue                            go to state 23
+    tier0_expression                  go to state 24
+    terminated_combinator_expression  go to state 89
+    proper_combinator_expression      go to state 26
+    atomic_expression                 go to state 27
+    scheme_name                       go to state 28
+
+
+state 55
+
+   35 terminated_combinator_expression: terminated_combinator_expression TOKEN_FUNCTION_APPLICATION .
+   38 proper_combinator_expression: terminated_combinator_expression TOKEN_FUNCTION_APPLICATION . tier0_expression
+
+    TOKEN_DECIMAL_INTEGER  shift, and go to state 10
+    TOKEN_OPEN_PAREN       shift, and go to state 11
+    TOKEN_DEREFERENCE      shift, and go to state 33
+    TOKEN_SCHEME           shift, and go to state 1
+    TOKEN_CONSTANT         shift, and go to state 15
+
+    TOKEN_WORD        reduce using rule 5 (scheme)
+    TOKEN_OPEN_BLOCK  reduce using rule 5 (scheme)
+    $default          reduce using rule 35 (terminated_combinator_expression)
+
+    function_constant  go to state 16
+    scheme             go to state 17
+    tier0_expression   go to state 90
+    atomic_expression  go to state 27
+    scheme_name        go to state 41
+
+
+state 56
+
+   39 proper_combinator_expression: proper_combinator_expression TOKEN_COLON . tier0_expression
+
+    TOKEN_DECIMAL_INTEGER  shift, and go to state 10
+    TOKEN_OPEN_PAREN       shift, and go to state 11
+    TOKEN_DEREFERENCE      shift, and go to state 33
+    TOKEN_SCHEME           shift, and go to state 1
+    TOKEN_CONSTANT         shift, and go to state 15
+
+    $default  reduce using rule 5 (scheme)
+
+    function_constant  go to state 16
+    scheme             go to state 17
+    tier0_expression   go to state 91
+    atomic_expression  go to state 27
+    scheme_name        go to state 41
+
+
+state 57
+
+   34 terminated_combinator_expression: proper_combinator_expression TOKEN_FUNCTION_APPLICATION .
+   37 proper_combinator_expression: proper_combinator_expression TOKEN_FUNCTION_APPLICATION . tier0_expression
+
+    TOKEN_DECIMAL_INTEGER  shift, and go to state 10
+    TOKEN_OPEN_PAREN       shift, and go to state 11
+    TOKEN_DEREFERENCE      shift, and go to state 33
+    TOKEN_SCHEME           shift, and go to state 1
+    TOKEN_CONSTANT         shift, and go to state 15
+
+    TOKEN_WORD        reduce using rule 5 (scheme)
+    TOKEN_OPEN_BLOCK  reduce using rule 5 (scheme)
+    $default          reduce using rule 34 (terminated_combinator_expression)
+
+    function_constant  go to state 16
+    scheme             go to state 17
+    tier0_expression   go to state 92
+    atomic_expression  go to state 27
+    scheme_name        go to state 41
+
+
+state 58
+
+   47 tier1_expression: TOKEN_TILDE tier1_expression .
+
+    $default  reduce using rule 47 (tier1_expression)
+
+
+state 59
+
+   46 tier1_expression: TOKEN_SUBTRACT tier1_expression .
+
+    $default  reduce using rule 46 (tier1_expression)
+
+
+state 60
+
+   45 tier1_expression: TOKEN_NOT tier1_expression .
+
+    $default  reduce using rule 45 (tier1_expression)
+
+
+state 61
+
+   44 tier1_expression: TOKEN_REFERENCE tier1_expression .
+
+    $default  reduce using rule 44 (tier1_expression)
+
+
+state 62
+
+   30 tier0_expression: TOKEN_DEREFERENCE atomic_expression .
+
+    $default  reduce using rule 30 (tier0_expression)
+
+
+state 63
+
+   33 uninitiated_combinator_expression: TOKEN_FUNCTION_APPLICATION uninitiated_combinator_expression .
+
+    $default  reduce using rule 33 (uninitiated_combinator_expression)
+
+
+state 64
+
+   35 terminated_combinator_expression: terminated_combinator_expression . TOKEN_FUNCTION_APPLICATION
+   38 proper_combinator_expression: terminated_combinator_expression . TOKEN_FUNCTION_APPLICATION tier0_expression
+
+    TOKEN_FUNCTION_APPLICATION  shift, and go to state 55
+
+
+state 65
+
+   32 uninitiated_combinator_expression: TOKEN_FUNCTION_APPLICATION proper_combinator_expression .
+   34 terminated_combinator_expression: proper_combinator_expression . TOKEN_FUNCTION_APPLICATION
+   37 proper_combinator_expression: proper_combinator_expression . TOKEN_FUNCTION_APPLICATION tier0_expression
+   39                             | proper_combinator_expression . TOKEN_COLON tier0_expression
+
+    TOKEN_COLON                 shift, and go to state 56
+    TOKEN_FUNCTION_APPLICATION  shift, and go to state 57
+
+    $default  reduce using rule 32 (uninitiated_combinator_expression)
+
+
+state 66
+
+   43 functional_expression: functional_expression TOKEN_BACKSLASH . atomic_expression
+
+    TOKEN_DECIMAL_INTEGER  shift, and go to state 10
+    TOKEN_OPEN_PAREN       shift, and go to state 11
+    TOKEN_SCHEME           shift, and go to state 1
+    TOKEN_CONSTANT         shift, and go to state 15
+
+    $default  reduce using rule 5 (scheme)
+
+    function_constant  go to state 16
+    scheme             go to state 17
+    atomic_expression  go to state 93
+    scheme_name        go to state 41
+
+
+state 67
+
+   49 tier2_expression: TOKEN_ADD . expression
+
+    TOKEN_DECIMAL_INTEGER       shift, and go to state 10
+    TOKEN_OPEN_PAREN            shift, and go to state 11
+    TOKEN_TILDE                 shift, and go to state 29
+    TOKEN_SUBTRACT              shift, and go to state 30
+    TOKEN_NOT                   shift, and go to state 31
+    TOKEN_REFERENCE             shift, and go to state 32
+    TOKEN_DEREFERENCE           shift, and go to state 33
+    TOKEN_SCHEME                shift, and go to state 1
+    TOKEN_FUNCTION_APPLICATION  shift, and go to state 34
+    TOKEN_CONSTANT              shift, and go to state 15
+
+    $default  reduce using rule 5 (scheme)
+
+    function_constant                  go to state 16
+    scheme                             go to state 17
+    tier0_expression                   go to state 24
+    uninitiated_combinator_expression  go to state 35
+    terminated_combinator_expression   go to state 36
+    proper_combinator_expression       go to state 37
+    functional_expression              go to state 38
+    tier1_expression                   go to state 39
+    expression                         go to state 94
+    atomic_expression                  go to state 27
+    scheme_name                        go to state 41
+
+
+state 68
+
+   50 tier3_expression: TOKEN_MULTIPLY . expression
+
+    TOKEN_DECIMAL_INTEGER       shift, and go to state 10
+    TOKEN_OPEN_PAREN            shift, and go to state 11
+    TOKEN_TILDE                 shift, and go to state 29
+    TOKEN_SUBTRACT              shift, and go to state 30
+    TOKEN_NOT                   shift, and go to state 31
+    TOKEN_REFERENCE             shift, and go to state 32
+    TOKEN_DEREFERENCE           shift, and go to state 33
+    TOKEN_SCHEME                shift, and go to state 1
+    TOKEN_FUNCTION_APPLICATION  shift, and go to state 34
+    TOKEN_CONSTANT              shift, and go to state 15
+
+    $default  reduce using rule 5 (scheme)
+
+    function_constant                  go to state 16
+    scheme                             go to state 17
+    tier0_expression                   go to state 24
+    uninitiated_combinator_expression  go to state 35
+    terminated_combinator_expression   go to state 36
+    proper_combinator_expression       go to state 37
+    functional_expression              go to state 38
+    tier1_expression                   go to state 39
+    expression                         go to state 95
+    atomic_expression                  go to state 27
+    scheme_name                        go to state 41
+
+
+state 69
+
+   51 tier3_expression: TOKEN_DIVIDE . expression
+
+    TOKEN_DECIMAL_INTEGER       shift, and go to state 10
+    TOKEN_OPEN_PAREN            shift, and go to state 11
+    TOKEN_TILDE                 shift, and go to state 29
+    TOKEN_SUBTRACT              shift, and go to state 30
+    TOKEN_NOT                   shift, and go to state 31
+    TOKEN_REFERENCE             shift, and go to state 32
+    TOKEN_DEREFERENCE           shift, and go to state 33
+    TOKEN_SCHEME                shift, and go to state 1
+    TOKEN_FUNCTION_APPLICATION  shift, and go to state 34
+    TOKEN_CONSTANT              shift, and go to state 15
+
+    $default  reduce using rule 5 (scheme)
+
+    function_constant                  go to state 16
+    scheme                             go to state 17
+    tier0_expression                   go to state 24
+    uninitiated_combinator_expression  go to state 35
+    terminated_combinator_expression   go to state 36
+    proper_combinator_expression       go to state 37
+    functional_expression              go to state 38
+    tier1_expression                   go to state 39
+    expression                         go to state 96
+    atomic_expression                  go to state 27
+    scheme_name                        go to state 41
+
+
+state 70
+
+   52 tier3_expression: TOKEN_MODULO . expression
+
+    TOKEN_DECIMAL_INTEGER       shift, and go to state 10
+    TOKEN_OPEN_PAREN            shift, and go to state 11
+    TOKEN_TILDE                 shift, and go to state 29
+    TOKEN_SUBTRACT              shift, and go to state 30
+    TOKEN_NOT                   shift, and go to state 31
+    TOKEN_REFERENCE             shift, and go to state 32
+    TOKEN_DEREFERENCE           shift, and go to state 33
+    TOKEN_SCHEME                shift, and go to state 1
+    TOKEN_FUNCTION_APPLICATION  shift, and go to state 34
+    TOKEN_CONSTANT              shift, and go to state 15
+
+    $default  reduce using rule 5 (scheme)
+
+    function_constant                  go to state 16
+    scheme                             go to state 17
+    tier0_expression                   go to state 24
+    uninitiated_combinator_expression  go to state 35
+    terminated_combinator_expression   go to state 36
+    proper_combinator_expression       go to state 37
+    functional_expression              go to state 38
+    tier1_expression                   go to state 39
+    expression                         go to state 97
+    atomic_expression                  go to state 27
+    scheme_name                        go to state 41
+
+
+state 71
+
+   58 tier5_expression: TOKEN_OR . expression
+
+    TOKEN_DECIMAL_INTEGER       shift, and go to state 10
+    TOKEN_OPEN_PAREN            shift, and go to state 11
+    TOKEN_TILDE                 shift, and go to state 29
+    TOKEN_SUBTRACT              shift, and go to state 30
+    TOKEN_NOT                   shift, and go to state 31
+    TOKEN_REFERENCE             shift, and go to state 32
+    TOKEN_DEREFERENCE           shift, and go to state 33
+    TOKEN_SCHEME                shift, and go to state 1
+    TOKEN_FUNCTION_APPLICATION  shift, and go to state 34
+    TOKEN_CONSTANT              shift, and go to state 15
+
+    $default  reduce using rule 5 (scheme)
+
+    function_constant                  go to state 16
+    scheme                             go to state 17
+    tier0_expression                   go to state 24
+    uninitiated_combinator_expression  go to state 35
+    terminated_combinator_expression   go to state 36
+    proper_combinator_expression       go to state 37
+    functional_expression              go to state 38
+    tier1_expression                   go to state 39
+    expression                         go to state 98
+    atomic_expression                  go to state 27
+    scheme_name                        go to state 41
+
+
+state 72
+
+   56 tier4_expression: TOKEN_AND . expression
+
+    TOKEN_DECIMAL_INTEGER       shift, and go to state 10
+    TOKEN_OPEN_PAREN            shift, and go to state 11
+    TOKEN_TILDE                 shift, and go to state 29
+    TOKEN_SUBTRACT              shift, and go to state 30
+    TOKEN_NOT                   shift, and go to state 31
+    TOKEN_REFERENCE             shift, and go to state 32
+    TOKEN_DEREFERENCE           shift, and go to state 33
+    TOKEN_SCHEME                shift, and go to state 1
+    TOKEN_FUNCTION_APPLICATION  shift, and go to state 34
+    TOKEN_CONSTANT              shift, and go to state 15
+
+    $default  reduce using rule 5 (scheme)
+
+    function_constant                  go to state 16
+    scheme                             go to state 17
+    tier0_expression                   go to state 24
+    uninitiated_combinator_expression  go to state 35
+    terminated_combinator_expression   go to state 36
+    proper_combinator_expression       go to state 37
+    functional_expression              go to state 38
+    tier1_expression                   go to state 39
+    expression                         go to state 99
+    atomic_expression                  go to state 27
+    scheme_name                        go to state 41
+
+
+state 73
+
+   54 tier3_point_5_expression: TOKEN_TEST_EQUALITY . expression
+
+    TOKEN_DECIMAL_INTEGER       shift, and go to state 10
+    TOKEN_OPEN_PAREN            shift, and go to state 11
+    TOKEN_TILDE                 shift, and go to state 29
+    TOKEN_SUBTRACT              shift, and go to state 30
+    TOKEN_NOT                   shift, and go to state 31
+    TOKEN_REFERENCE             shift, and go to state 32
+    TOKEN_DEREFERENCE           shift, and go to state 33
+    TOKEN_SCHEME                shift, and go to state 1
+    TOKEN_FUNCTION_APPLICATION  shift, and go to state 34
+    TOKEN_CONSTANT              shift, and go to state 15
+
+    $default  reduce using rule 5 (scheme)
+
+    function_constant                  go to state 16
+    scheme                             go to state 17
+    tier0_expression                   go to state 24
+    uninitiated_combinator_expression  go to state 35
+    terminated_combinator_expression   go to state 36
+    proper_combinator_expression       go to state 37
+    functional_expression              go to state 38
+    tier1_expression                   go to state 39
+    expression                         go to state 100
+    atomic_expression                  go to state 27
+    scheme_name                        go to state 41
+
+
+state 74
+
+   53 tier3_expression: tier2_expression .
+
+    $default  reduce using rule 53 (tier3_expression)
+
+
+state 75
+
+   55 tier3_point_5_expression: tier3_expression .
+
+    $default  reduce using rule 55 (tier3_point_5_expression)
+
+
+state 76
+
+   57 tier4_expression: tier3_point_5_expression .
+
+    $default  reduce using rule 57 (tier4_expression)
+
+
+state 77
+
+   59 tier5_expression: tier4_expression .
+
+    $default  reduce using rule 59 (tier5_expression)
+
+
+state 78
+
+   61 expression: tier1_expression tier5_expression .
+
+    $default  reduce using rule 61 (expression)
+
+
+state 79
+
+   66 atomic_expression: TOKEN_OPEN_PAREN expression TOKEN_CLOSE_PAREN .
+
+    $default  reduce using rule 66 (atomic_expression)
+
+
+state 80
+
+   22 if_statement: TOKEN_IF guarded_command_list TOKEN_FI .
+
+    $default  reduce using rule 22 (if_statement)
+
+
+state 81
+
+   28 guarded_command_list: guarded_command guarded_command_list .
+
+    $default  reduce using rule 28 (guarded_command_list)
+
+
+state 82
+
+   29 guarded_command: expression TOKEN_GUARD . command_list TOKEN_END_GUARD
+
+    TOKEN_DECIMAL_INTEGER  shift, and go to state 10
+    TOKEN_OPEN_PAREN       shift, and go to state 11
+    TOKEN_DEREFERENCE      shift, and go to state 12
+    TOKEN_IF               shift, and go to state 13
+    TOKEN_DO               shift, and go to state 14
+    TOKEN_SCHEME           shift, and go to state 1
+    TOKEN_CONSTANT         shift, and go to state 15
+
+    TOKEN_SEMICOLON  reduce using rule 8 (command_list)
+    TOKEN_ASSIGN     reduce using rule 16 (lvalue_list)
+    TOKEN_END_GUARD  reduce using rule 8 (command_list)
+    $default         reduce using rule 5 (scheme)
+
+    function_constant                 go to state 16
+    scheme                            go to state 17
+    command_list                      go to state 101
+    command                           go to state 19
+    lvalue_list                       go to state 20
+    if_statement                      go to state 21
+    do_statement                      go to state 22
+    lvalue                            go to state 23
+    tier0_expression                  go to state 24
+    terminated_combinator_expression  go to state 25
+    proper_combinator_expression      go to state 26
+    atomic_expression                 go to state 27
+    scheme_name                       go to state 28
+
+
+state 83
+
+   23 do_statement: TOKEN_DO guarded_command_list TOKEN_OD .
+
+    $default  reduce using rule 23 (do_statement)
+
+
+state 84
+
+    4 function_constant: scheme begin_function command_list . end_function
+   10 command_list: command_list . TOKEN_SEMICOLON command
+
+    TOKEN_CLOSE_BLOCK  shift, and go to state 50
+    TOKEN_SEMICOLON    shift, and go to state 51
+
+    end_function  go to state 102
+
+
+state 85
+
+   10 command_list: command_list TOKEN_SEMICOLON command .
+
+    $default  reduce using rule 10 (command_list)
+
+
+state 86
+
+   12 command: lvalue_list TOKEN_ASSIGN expression_list .
+
+    $default  reduce using rule 12 (command)
+
+
+state 87
+
+   20 expression_list: expression .
+   21                | expression . TOKEN_COMMA expression_list
+
+    TOKEN_COMMA  shift, and go to state 103
+
+    $default  reduce using rule 20 (expression_list)
+
+
+state 88
+
+   18 lvalue_list: lvalue TOKEN_COMMA lvalue_list .
+
+    $default  reduce using rule 18 (lvalue_list)
+
+
+state 89
+
+   26 lvalue: terminated_combinator_expression .
+   35 terminated_combinator_expression: terminated_combinator_expression . TOKEN_FUNCTION_APPLICATION
+   38 proper_combinator_expression: terminated_combinator_expression . TOKEN_FUNCTION_APPLICATION tier0_expression
+
+    TOKEN_FUNCTION_APPLICATION  shift, and go to state 55
+
+    $default  reduce using rule 26 (lvalue)
+
+
+state 90
+
+   38 proper_combinator_expression: terminated_combinator_expression TOKEN_FUNCTION_APPLICATION tier0_expression .
+
+    $default  reduce using rule 38 (proper_combinator_expression)
+
+
+state 91
+
+   39 proper_combinator_expression: proper_combinator_expression TOKEN_COLON tier0_expression .
+
+    $default  reduce using rule 39 (proper_combinator_expression)
+
+
+state 92
+
+   37 proper_combinator_expression: proper_combinator_expression TOKEN_FUNCTION_APPLICATION tier0_expression .
+
+    $default  reduce using rule 37 (proper_combinator_expression)
+
+
+state 93
+
+   43 functional_expression: functional_expression TOKEN_BACKSLASH atomic_expression .
+
+    $default  reduce using rule 43 (functional_expression)
+
+
+state 94
+
+   49 tier2_expression: TOKEN_ADD expression .
+
+    $default  reduce using rule 49 (tier2_expression)
+
+
+state 95
+
+   50 tier3_expression: TOKEN_MULTIPLY expression .
+
+    $default  reduce using rule 50 (tier3_expression)
+
+
+state 96
+
+   51 tier3_expression: TOKEN_DIVIDE expression .
+
+    $default  reduce using rule 51 (tier3_expression)
+
+
+state 97
+
+   52 tier3_expression: TOKEN_MODULO expression .
+
+    $default  reduce using rule 52 (tier3_expression)
+
+
+state 98
+
+   58 tier5_expression: TOKEN_OR expression .
+
+    $default  reduce using rule 58 (tier5_expression)
+
+
+state 99
+
+   56 tier4_expression: TOKEN_AND expression .
+
+    $default  reduce using rule 56 (tier4_expression)
+
+
+state 100
+
+   54 tier3_point_5_expression: TOKEN_TEST_EQUALITY expression .
+
+    $default  reduce using rule 54 (tier3_point_5_expression)
+
+
+state 101
+
+   10 command_list: command_list . TOKEN_SEMICOLON command
+   29 guarded_command: expression TOKEN_GUARD command_list . TOKEN_END_GUARD
+
+    TOKEN_SEMICOLON  shift, and go to state 51
+    TOKEN_END_GUARD  shift, and go to state 104
+
+
+state 102
+
+    4 function_constant: scheme begin_function command_list end_function .
+
+    $default  reduce using rule 4 (function_constant)
+
+
+state 103
+
+   21 expression_list: expression TOKEN_COMMA . expression_list
+
+    TOKEN_DECIMAL_INTEGER       shift, and go to state 10
+    TOKEN_OPEN_PAREN            shift, and go to state 11
+    TOKEN_TILDE                 shift, and go to state 29
+    TOKEN_SUBTRACT              shift, and go to state 30
+    TOKEN_NOT                   shift, and go to state 31
+    TOKEN_REFERENCE             shift, and go to state 32
+    TOKEN_DEREFERENCE           shift, and go to state 33
+    TOKEN_SCHEME                shift, and go to state 1
+    TOKEN_FUNCTION_APPLICATION  shift, and go to state 34
+    TOKEN_CONSTANT              shift, and go to state 15
+
+    TOKEN_WORD        reduce using rule 5 (scheme)
+    TOKEN_OPEN_BLOCK  reduce using rule 5 (scheme)
+    $default          reduce using rule 19 (expression_list)
+
+    function_constant                  go to state 16
+    scheme                             go to state 17
+    expression_list                    go to state 105
+    tier0_expression                   go to state 24
+    uninitiated_combinator_expression  go to state 35
+    terminated_combinator_expression   go to state 36
+    proper_combinator_expression       go to state 37
+    functional_expression              go to state 38
+    tier1_expression                   go to state 39
+    expression                         go to state 87
+    atomic_expression                  go to state 27
+    scheme_name                        go to state 41
+
+
+state 104
+
+   29 guarded_command: expression TOKEN_GUARD command_list TOKEN_END_GUARD .
+
+    $default  reduce using rule 29 (guarded_command)
+
+
+state 105
+
+   21 expression_list: expression TOKEN_COMMA expression_list .
+
+    $default  reduce using rule 21 (expression_list)

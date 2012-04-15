@@ -1,0 +1,254 @@
+( define noop (lambda (x) x) )
+( define first car )
+( define rest cdr )
+( define xcons (lambda (rest last) 
+                 ( cond 
+                 ((null? rest)(list last))
+                 (else (cons (car rest) (xcons (cdr rest) last) ) )
+                 ) 
+               ) 
+   )
+( define filter ( lambda (fun list) (cond ((null? list) list) ((fun (first list) ) (cons (first list) (filter fun (rest list)) ) ) (else (filter fun (rest list) ) ) ) ) ) 
+( define includes? ( lambda (value list) (not (null? (filter (lambda (x) (eq? x value) ) list ) ) ) ) )
+( define less ( lambda (value list) (filter (lambda (x) (not (eq? x value) ) ) list ) ) ) 
+( define find-index (lambda (list value) 
+   ( cond ( (null? list) -1 )
+          ( (eq? (first list) value ) 0)
+          ( else (letrec ((sub (find-index (rest list) value) ) ) 
+                 (cond ((eq? sub -1) -1)
+                       (else (+ 1 sub) )
+                       ) )
+                 )
+    )
+   ) )
+
+(define insert (lambda (into value index) (cond  
+                                                                                                                                       ( (and (null? into) (eq? index 0) ) (list value) ) 
+                                                                                                                                       ( (eq? index 0) (cons value (rest into) ) )
+                                                                                                                                       ( (null? into) (cons '* (insert into value (- index 1) ) ) )
+                                                                                                                                       ( else (cons (first into) (insert (rest into) value (- index 1) ) ) )
+                                                                                                                                ) ) )
+
+( define dij-respond (cond ((namespace-defined? 'dij-respond) dij-respond) ( else (lambda (x) (print 'nothing) ) ) ) ) 
+( define dij-constant (cond ((namespace-defined? 'dij-constant) dij-constant) (else (lambda (type encoding) (print type) (print encoding)  ) ) ) )
+( define dij-code (cond ((namespace-defined? 'dij-code) dij-code) (else (lambda (tree) (print tree) ) ) ) )
+
+( define dij-entry-point -1 )
+( define dij-bindings '( ) )
+
+( define dij-resolve-bindings (lambda (symbol bindings) ( cond 
+                               ( (null? bindings) '() )
+                               ( (eq? symbol (first (dij-lookup 'function (first bindings) ) ) ) (insert (dij-resolve-bindings symbol (rest bindings)) (first (dij-lookup 'value (first bindings) ) ) (first (dij-lookup 'parameter (first bindings) )) ) ) 
+                               ( else (dij-resolve-bindings symbol (rest bindings) ) )
+                               ) ) )
+
+( define dij-complete (lambda ()
+                              (dij-code (cons dij-entry-point (dij-resolve-bindings dij-entry-point dij-bindings ) ) )  
+                              ) )
+
+( define dij-stack '() )
+
+( define variable-block-sort (lambda (partial-solution variables)
+                                     (cond ( (null? variables) partial-solution ) (else
+                                           
+                                     (letrec 
+                                     (
+                                       ( current-name (dij-strip (dij-locate (cons '() (first variables) ) 'name) ) )
+                                       ( is-lvalue? (eq? (first (first (first variables) ) ) 'identifier) )
+                                       ( returns (first (rest (rest partial-solution) ) ) )  ;;assigned and never used
+                                       ( locals (first (rest partial-solution) ) )  ;;assigned and then used
+                                       ( parameters (first partial-solution) ) ;;used before assignment
+                                       )
+                                     (cond
+                                      ( is-lvalue?
+                                         (cond 
+                                          ( (includes? current-name (append parameters locals returns) ) (variable-block-sort partial-solution (rest variables) ) )
+                                          ( else (variable-block-sort (list parameters locals (xcons returns current-name) ) (rest variables) ) )
+                                          )
+                                       )
+                                      (else
+                                        (cond
+                                         ( (includes? current-name (append locals parameters) ) (variable-block-sort partial-solution (rest variables) ) )
+                                         ( (includes? current-name returns) (variable-block-sort (list parameters (xcons locals current-name) (less current-name returns)) (rest variables) ))
+                                         ( else (variable-block-sort (list (xcons parameters current-name) locals returns) (rest variables) ) )
+                                       )
+                                      )
+                                     )
+                                     
+                                      ) ) ) 
+                                     ) )
+   
+( define variable-block-event (lambda (remove-me)  
+                                      (letrec ((var-list (dij-locate-filter (cons '() (rest (first dij-stack) ) ) (lambda (x) (or (eq? (first x) 'identifier ) (eq? (first x) 'lvalue-name) ) ) (lambda (x) (not (eq? (first x) 'block ) ) ) ) ) ) 
+                                      ( dij-edit-node (cons 'variables  (variable-block-sort '(()()()) var-list) ) )
+                                      )
+                                      (dij-raise-event 'variables)
+                                      ) )
+
+( define variable-info (lambda (varname blocknode) ( cons
+                               (list 'name varname)
+                               (letrec ((variables (first (dij-locate-filter (cons '() (rest blocknode) ) (lambda (x) (eq? (first x) 'variables ) ) (lambda (x) (not (eq? (first x) 'block ) ) ) ) ) ) )
+                                       
+                                                                                              (cond  
+                                                                                              ( (includes? varname (first variables) ) (list ( list 'role 'parameter ) ( list 'index (find-index (first variables) varname ) ) ) ) 
+                                                                                              ( (includes? varname (first (rest variables) ) '( (role local) ) ) ) 
+                                                                                              ( (includes? varname (first (rest (rest variables) ) ) ) (list (list 'role 'returned) (list 'index (find-index (first (rest (rest variables) ) ) varname ) ) ) ) 
+                                                                                              (else '( ( role undefined) ) ) 
+                                                                                              )
+                               
+                               ) ) ) )
+
+( define dij-push (lambda (x) (set! dij-stack (cons x dij-stack ) ) (set! dij-depth (+ 1 dij-depth) ) ) )
+
+( define dij-pop (lambda () 
+                   (cond
+                   ( (null? dij-stack ) '() )
+                   (else (letrec ((ret (first dij-stack))) (set! dij-stack (rest dij-stack) ) (set! dij-depth (- dij-depth 1) ) ret ) )
+                   )
+                   ) ) 
+
+( define dij-node (lambda (name count) 
+   (define sub (lambda (count) (cond ((equal? count 0) '() ) (else (letrec ((pop-val (dij-pop))) (xcons (sub (- count 1) ) pop-val ) ) ) ) ) )
+   (dij-push (cons name (sub count) ) ) 
+   (dij-raise-event name)
+   ) )
+
+( define dij-leaf (lambda (name value) (dij-push (list name value) ) (dij-raise-event name) ) )
+
+( define dij-list (lambda (name) (letrec ((one (dij-pop) )(two (dij-pop)) ) (dij-push 
+                                                                           (cond 
+                                                                             ((cond ( (and (list? one) (not (null? one)) ) (equal? (first one) name ) ) ( else #f)) 
+                                                                              (cons name (xcons (rest one) two ) ) ) 
+                                                                             ((cond ( (and (list? two) (not (null? two)) ) (equal? (first two) name ) ) (else #f ) ) 
+                                                                              (cons name (xcons (rest two ) one ) ) ) 
+                                                                             (else (list 'ERROR one two) )
+                                                                             )))))                                                                    
+
+( define dij-ground (lambda (name) (dij-push (list name) ) ) )
+( define dij-edit-node (lambda (append-me)
+                               (dij-push (xcons (dij-pop) append-me ) )
+                               )
+   )
+
+( define dij-strip (lambda (list) (cond ( (null? list) '() ) ( (list? list) (dij-strip (first list)) ) (else list ) ) ) )
+
+;;helpful utility function to package a common idiom.
+( define dij-find-n-strip ( lambda ( key ) 
+                                   (dij-strip (dij-locate-path (first dij-stack) key ) )
+                                   ))
+
+( define import-number 0 )
+( define symbol-table-data '()) 
+( define stack-binding( lambda (code-segment var-offset ref-binding) (dij-respond 'BIND code-segment var-offset ref-binding) ) )
+( define symbol-table ( lambda ( name calling-convention) ( let ((val (dij-lookup (list name calling-convention) symbol-table-data ) )) ( cond ( (null? val) (dij-respond 'TABLE import-number calling-convention 'dij_c_init 2 ) 
+                                                                         (dij-respond 'PARAM import-number 0 name)
+                                                                         (dij-respond 'PARAM import-number 1 'libc.dylib )
+                                                                         (dij-store import-number (list name calling-convention) symbol-table-data )
+                                                                         (set! import-number (+ 1 import-number))
+                                                                         (- import-number 1) )
+                                                          ( else val ) ) )
+                               
+                               ) )
+
+( define c-symbol (lambda ()
+                          (dij-attach-event 'variables 
+                                            ( (lambda ( name depth ) 
+                                            ( lambda (remove-me) 
+                                                     ( cond ( (< dij-depth depth)
+                                                     (set! dij-bindings (cons ( list 
+                                                       (list 'function (dij-find-n-strip 'label) )
+                                                       (list 'parameter (first (dij-lookup 'index (variable-info name (first dij-stack) ) ) ) )
+                                                       (list 'value (list 0 (dij-constant "[c-string:" "libc.dylib") (dij-constant "[c-string:" (symbol->string name) ) ) )
+                                                     ) dij-bindings ) ) ( remove-me ) ) ) )
+                                            ) (dij-find-n-strip 'name) dij-depth )
+                                            )
+                         '(c-symbol:no-data)
+                          ))
+
+( define entry-point (lambda () (dij-raise-event 'entry-point) (set! dij-entry-point (dij-find-n-strip 'label) ) ) )
+
+( define dij-name (lambda (x) (dij-leaf 'name x) ) )
+
+( define dij-op (lambda (x) ( dij-node x 2 ) ) )
+
+( define dij-val (lambda (x) (dij-leaf 'val x ) ) )
+
+( define dij-lookup (lambda (key table)
+                            (cond
+                             ((null? table) '())
+                             ((not (list? table)) (error "Lookup table must be a list") )
+                             ((not (pair? (first table) ) ) (error "Lookup table entries must be pairs") )
+                             ((equal? (first (first table) ) key) (rest (first table)) )
+                             (else (dij-lookup key (rest table) ) )
+                             )
+                    )
+   )
+
+( define dij-store (lambda (value key table)
+                           (cond
+                            ((null? table) (list (cons key value) ) )
+                            ((not (list? table)) (error "Lookup table must be a list") )
+                            ((not (pair? (first table) ) ) (error "Lookup table entries must be pairs") )
+                            ((equal? (first (first table) ) key) ( cons ( cons key value ) (rest table) ) )
+                            (else (cons (first table) (dij-store value key (rest table) )) )
+                            )
+                           )
+   )
+
+;;--------------------------------------------------
+;;Event Handling
+;;  The event handling system consists of a procedure which takes a list of lists of S-expressions and evaluates them.
+;;The procedures must also have write access to the list, the return value of dij-events is the new list.
+
+(define dij-events (lambda ( event-list )
+                           
+                                    ;;remove-me is local to events only.  when it is called it means that the 
+                                    ;;event will be removed from the list after it completes execution               
+                                    (letrec
+                                     (( remove-him #f ))
+                                     (letrec
+                                      ( ( remove-me (lambda () ( set! remove-him #t )) ) )
+                                      
+                                    
+                                    ( cond
+                                      ((null? event-list) '() )
+                                      (else
+                                       ((first event-list) remove-me )
+                                       ( cond
+                                         ( remove-him ( dij-events (rest event-list) ) )
+                                         (else ( cons (first event-list) ( dij-events (rest event-list ) ) ) )
+                                       )
+                                       )                                           
+                                    )
+                                    
+                           )
+  )))
+;;end Event Handling
+;;--------------------------------------------------
+(define dij-event-list '())        
+(define dij-depth 0)
+(define dij-attach-event (lambda (name handler) (cond ((procedure? handler)
+                                                      (set! dij-event-list (dij-store (cons handler (dij-lookup name dij-event-list)) name dij-event-list ) )                                                      
+) (else (error "Handler must be a procedure")) ) ) )
+
+(define dij-raise-event (lambda (name) (set! dij-event-list (dij-store (dij-events (dij-lookup name dij-event-list)) name dij-event-list ) ) ) )
+
+(define dij-locate-filter (lambda (tree output-filter subtree-filter)
+                           (cond ((or (null? tree) (not (list? tree) ) (not (subtree-filter tree) ) ) '() )
+                                 ((output-filter tree) (list (rest tree)) )
+                                 (else (apply append (map (lambda (subtree) (dij-locate-filter subtree output-filter subtree-filter)) (rest tree)) ) ) 
+                                 )
+                           )
+                    )
+
+(define dij-locate (lambda (tree name) (dij-locate-filter tree (lambda (x) (equal? (first x) name) ) (lambda (x) #t) ) ) )
+
+(define dij-locate-path (lambda (tree . path)
+  (cond ( (null? (rest path) ) (dij-locate tree (first path) ) )
+        ( else (apply dij-locate-path (cons '() (apply append ( dij-locate-path tree (first path) ) ) ) (rest path )) )
+        )
+  )
+  )
+
+ (dij-attach-event 'block variable-block-event)
+                       

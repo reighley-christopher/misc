@@ -1,0 +1,613 @@
+made an fgraph 8cfe008
+started cbox
+fgraph_ground
+finished cbox
+close buffer 8d03118
+define global
+	3 8d03118
+close buffer 8d04140
+define global
+	4 8d04140
+enter push_code
+exit push_code
+enter pop_code
+close buffer 8d04198
+1
+fgraph->ground 8cfe008 804cf5a
+fgraph_ground
+code::8d04188
+ fnode: 8d03148
+exit pop_code
+'pop_code
+define global
+	1 8d03148
+enter push_code
+exit push_code
+enter push_code
+exit push_code
+enter pop_code
+close buffer 8d03200
+1
+fgraph->ground 8cfe008 804cf5a
+fgraph_ground
+code::8d031f0
+ fnode: 8d03268
+exit pop_code
+'pop_code
+enter push_code
+exit push_code
+close buffer 8d03298
+close buffer 8d032c8
+enter pop_code
+close buffer 8d032e8
+1
+fgraph->ground 8cfe008 804cf5a
+fgraph_ground
+code::8d032d8
+ fnode: 8d033e0
+exit pop_code
+'pop_code
+close buffer 8d03288
+close buffer 8d03198
+enter pop_code
+close buffer 8d03410
+1
+fgraph->ground 8cfe008 804cf5a
+fgraph_ground
+code::8d03400
+ fnode: 8d034f8
+exit pop_code
+'pop_code
+define global
+	2 8d034f8
+finished
+ready
+fgraph_load
+fgraph_eval_recursive 8d03148 0 8d04168 8d04168 0 0
+return righthand result
+complete load
+ready to begin
+ ... 8d04198 . 0
+ ... 8d04198 . 2
+ ... 8d04198 . 4
+ ... 8d04198 . 6
+apply
+param = 8d03118func = 8cfe090create hot call
+copy
+apply
+complete apply
+ ... 8d04198 . 7
+ ... 8d04198 . 9
+apply
+param = 8d04140func = 8d035c8extend hot call
+apply
+complete apply
+ ... 8d04198 . 10
+curry
+hot curry
+complete curry
+ ... 8d04198 . 11
+evaluate
+	8d03118
+	8d04140
+apply 8d03568, 8d035c8, 8cfe008
+fgraph_apply
+exit apply 804cdf6
+is_loadable
+fgraph_eval_recursive 8d03660 804c929 0 0 8cfe090 8d03640
+node op
+fgraph_eval_recursive 8d03640 0 8d035e8 8d035e8 0 0
+return righthand result
+fgraph_eval_recursive 8cfe090 0 8cfe060 8cfe060 0 0
+return righthand result
+foperation_apply
+done with is_loadable
+invoke
+fgraph_load
+fgraph_eval_recursive 8d03660 804c929 0 8d03680 8cfe090 8d03640
+return righthand result
+complete load
+... 3 substitutions
+0
+1
+3
+built substitution map
+...load
+...detach
+...attach
+context switch
+	Machine_list: 8d03718
+last process 0
+first process 0
+context switch
+	Machine_list: 8d03718
+last process 0
+first process 0
+!!!!!!!!!!load: libc.so, printf
+started cbox
+fgraph_ground
+finished cbox
+context switch
+	Machine_list: 8d03538
+last process 0
+first process 0
+ ... 8d04198 . 12
+apply
+param = 8d03838func = 8d034f8create hot call
+copy
+apply
+complete apply
+ ... 8d04198 . 13
+curry
+hot curry
+complete curry
+ ... 8d04198 . 14
+evaluate
+	8d03838
+apply 8d03568, 8d035b8, 8cfe008
+fgraph_apply
+exit apply 804cdf6
+is_loadable
+fgraph_eval_recursive 8d03878 804c929 0 0 8d034f8 8d03858
+node op
+fgraph_eval_recursive 8d03858 0 8d037f0 8d037f0 0 0
+return righthand result
+fgraph_eval_recursive 8d034f8 0 8d03168 8d03168 0 0
+return righthand result
+foperation_apply
+done with is_loadable
+invoke
+fgraph_load
+fgraph_eval_recursive 8d03878 804c929 0 8d03898 8d034f8 8d03858
+return righthand result
+complete load
+... 2 substitutions
+0
+2
+built substitution map
+...load
+...detach
+...attach
+context switch
+	Machine_list: 8d038d8
+last process 0
+first process 0
+context switch
+	Machine_list: 8d038d8
+last process 0
+first process 0
+ ... 8d03410 . 0
+searching variables: 
+parameters
+locals
+0
+1
+lvalue named
+ ... 8d03410 . 2
+push 8d03268
+ ... 8d03410 . 4
+push 8d033e0
+ ... 8d03410 . 6
+curry
+cold curry
+complete curry
+ ... 8d03410 . 7
+referencing variable
+...  4
+searching variables: 
+parameters
+locals
+0
+ ... 8d03410 . 9
+apply
+param = 8d03838func = 8d03a08extend hot call
+apply
+complete apply
+ ... 8d03410 . 10
+evaluate
+	0
+apply 8d03990, 8d03a08, 8cfe008
+fgraph_apply
+exit apply 804cdf6
+is_loadable
+fgraph_eval_recursive 8d03a50 804c929 0 0 8d033e0 8d03948
+node op
+fgraph_eval_recursive 8d03948 0 8d03968 8d03968 0 0
+return righthand result
+fgraph_eval_recursive 8d033e0 0 8d031d0 8d031d0 0 0
+return righthand result
+foperation_apply
+done with is_loadable
+ ... 8d03410 . 11
+dont evaluate
+ ... 8d03410 . 12
+fgraph_spawn
+fgraph_apply
+fgraph_load
+fgraph_eval_recursive 8d03cc8 804c929 0 0 8d03a50 8d03ca8
+node op
+fgraph_eval_recursive 8d03ca8 0 8d03b40 8d03b40 0 0
+return righthand result
+fgraph_eval_recursive 8d03a50 804c929 0 8d03a70 8d033e0 8d03948
+return righthand result
+foperation_apply
+complete load
+... 2 substitutions
+0
+2
+built substitution map
+... 2 substitutions
+0
+2
+built substitution map
+ ... 8d03410 . 13
+apply
+param = 8d03b00func = 8d03268create hot call
+copy
+apply
+complete apply
+ ... 8d03410 . 14
+evaluate
+apply 8d03990, 8d039f8, 8cfe008
+fgraph_apply
+exit apply 804cdf6
+is_loadable
+fgraph_eval_recursive 8d03f78 804c929 0 0 8d03268 8d03f58
+node op
+fgraph_eval_recursive 8d03f58 0 8d03f40 8d03f40 0 0
+return righthand result
+fgraph_eval_recursive 8d03268 0 8d031b0 8d031b0 0 0
+return righthand result
+foperation_apply
+done with is_loadable
+ ... 8d03410 . 15
+assign 8d03f78
+liquidating name 8d0390c
+success
+:-( 8d04038 0
+back out at assignment
+assignment
+assignment complete
+ ... 8d03410 . 16
+referencing variable
+...  4
+searching variables: 
+parameters
+locals
+0
+ ... 8d03410 . 18
+push 8d03288
+ ... 8d03410 . 20
+apply
+param = 8d03288func = 8d03838create hot call
+copy
+apply
+complete apply
+ ... 8d03410 . 21
+referencing variable
+...  0
+searching variables: 
+parameters
+locals
+0
+1
+ ... 8d03410 . 23
+push 1
+ ... 8d03410 . 25
+apply
+param = 1func = 8d03f78create hot call
+copy
+apply
+complete apply
+ ... 8d03410 . 26
+curry
+hot curry
+complete curry
+ ... 8d03410 . 27
+evaluate
+	1
+apply 8d03990, 8d04028, 8cfe008
+fgraph_apply
+exit apply 804cdf6
+is_loadable
+fgraph_eval_recursive 8d040b0 804c929 0 0 8d03f78 8d04090
+node op
+fgraph_eval_recursive 8d04090 0 8d04060 8d04060 0 0
+return righthand result
+fgraph_eval_recursive 8d03f78 804c929 0 8d03f98 8d03268 8d03f58
+return righthand result
+foperation_apply
+done with is_loadable
+invoke
+fgraph_load
+fgraph_eval_recursive 8d040b0 804c929 0 8d040d0 8d03f78 8d04090
+return righthand result
+complete load
+... 2 substitutions
+0
+2
+built substitution map
+... 2 substitutions
+0
+2
+built substitution map
+...load
+...detach
+...attach
+context switch
+	Machine_list: 8d03db8
+first process 8d04220
+	Machine_list: 8d04220
+last process 0
+context switch
+	Machine_list: 8d04220
+first process 8d03db8
+	Machine_list: 8d03db8
+last process 0
+context switch
+	Machine_list: 8d03db8
+first process 8d04220
+	Machine_list: 8d04220
+last process 0
+context switch
+	Machine_list: 8d04220
+first process 8d03db8
+	Machine_list: 8d03db8
+last process 0
+context switch
+	Machine_list: 8d03db8
+first process 8d04220
+	Machine_list: 8d04220
+last process 0
+ ... 8d032e8 . 0
+searching variables: 
+parameters
+locals
+0
+1
+2
+lvalue named
+ ... 8d032e8 . 2
+referencing variable
+...  0
+searching variables: 
+parameters
+locals
+0
+ ... 8d032e8 . 4
+curry
+cold curry
+complete curry
+ ... 8d032e8 . 5
+evaluate
+exit apply 804cdf6
+is_loadable
+fgraph_eval_recursive 8d03b20 0 8d03bf8 8d03c18 0 0
+return righthand result
+done with is_loadable
+invoke
+fgraph_load
+fgraph_eval_recursive 8d03b20 0 8d03bf8 8d03c18 0 0
+return righthand result
+complete load
+...load
+...detach
+...attach
+context switch
+	Machine_list: 8d04220
+first process 8d04398
+	Machine_list: 8d04398
+last process 0
+ ... 8d03200 . 0
+referencing variable
+...  0
+searching variables: 
+parameters
+locals
+0
+1
+ ... 8d03200 . 2
+curry
+cold curry
+complete curry
+ ... 8d03200 . 3
+lvalue call
+ ... 8d03200 . 4
+referencing variable
+...  1
+searching variables: 
+parameters
+locals
+0
+ ... 8d03200 . 6
+dont evaluate
+ ... 8d03200 . 7
+assign 1
+fgraph_apply
+invoke
+fgraph_load
+fgraph_eval_recursive 8d04290 804c929 0 0 8d03b00 8d03e80
+node op
+fgraph_eval_recursive 8d03e80 0 8d04400 8d04400 0 0
+return lefthand result
+fgraph_eval_recursive 8d03b00 0 8d03bb8 8d03bd8 0 0
+return lefthand result
+foperation_apply
+complete load
+... 2 substitutions
+0
+2
+built substitution map
+...load
+...detach
+...attach
+back out at assignment
+assignment
+assignment complete
+context switch
+	Machine_list: 8d04398
+first process 8d04498
+	Machine_list: 8d04498
+last process 0
+channel_receive_iMachine_run
+receive??
+motherfucker set to receive
+context switch
+	Machine_list: 8d04498
+last process 0
+first process 0
+context switch
+	Machine_list: 8d04498
+last process 0
+first process 0
+channel_send_iMachine_run
+send data ready
+process_client_wake
+context switch
+	Machine_list: 8d03db8
+first process 8d04398
+	Machine_list: 8d04398
+last process 0
+ ... 8d032e8 . 6
+assign 1
+liquidating name 8d03df0
+success
+:-( 8d04560 0
+back out at assignment
+assignment
+assignment complete
+ ... 8d032e8 . 7
+referencing variable
+...  4
+searching variables: 
+parameters
+locals
+0
+1
+ ... 8d032e8 . 9
+push 8d03298
+ ... 8d032e8 . 11
+apply
+param = 8d03298func = 8d03838create hot call
+copy
+apply
+complete apply
+ ... 8d032e8 . 12
+referencing variable
+...  3
+searching variables: 
+parameters
+locals
+0
+1
+2
+ ... 8d032e8 . 14
+apply
+param = 1func = 8d042c8extend hot call
+apply
+complete apply
+ ... 8d032e8 . 15
+curry
+hot curry
+complete curry
+ ... 8d032e8 . 16
+evaluate
+	8d03298
+	1
+apply 8d03ec8, 8d042c8, 8cfe008
+fgraph_apply
+exit apply 804cdf6
+is_loadable
+fgraph_eval_recursive 8d04590 804c929 0 0 8d03838 8d04508
+node op
+fgraph_eval_recursive 8d04508 0 8d04560 8d04560 0 0
+return righthand result
+fgraph_eval_recursive 8d03838 0 8d03808 8d03808 0 0
+return righthand result
+foperation_apply
+done with is_loadable
+invoke
+fgraph_load
+fgraph_eval_recursive 8d04590 804c929 0 8d045b0 8d03838 8d04508
+return righthand result
+complete load
+... 3 substitutions
+0
+1
+3
+built substitution map
+...load
+...detach
+...attach
+context switch
+	Machine_list: 8d04398
+first process 8d04628
+	Machine_list: 8d04628
+last process 0
+channel_receive_iMachine_run
+...I'm done
+context switch
+	Machine_list: 8d04628
+last process 0
+first process 0
+context switch
+	Machine_list: 8d04628
+last process 0
+first process 0
+first 1
+context switch
+	Machine_list: 8d03db8
+last process 0
+first process 0
+ ... 8d032e8 . 17
+referencing variable
+...  0
+searching variables: 
+parameters
+locals
+0
+ ... 8d032e8 . 19
+curry
+cold curry
+complete curry
+ ... 8d032e8 . 20
+lvalue call
+ ... 8d032e8 . 21
+push 2
+ ... 8d032e8 . 23
+dont evaluate
+ ... 8d032e8 . 24
+assign 2
+fgraph_apply
+invoke
+fgraph_load
+fgraph_eval_recursive 8d046f8 804c929 0 0 8d03b20 8d046d8
+node op
+fgraph_eval_recursive 8d046d8 0 8d04680 8d04680 0 0
+return lefthand result
+fgraph_eval_recursive 8d03b20 0 8d03bf8 8d03c18 0 0
+return lefthand result
+foperation_apply
+complete load
+... 2 substitutions
+0
+2
+built substitution map
+...load
+...detach
+...attach
+back out at assignment
+assignment
+assignment complete
+context switch
+	Machine_list: 8d04758
+last process 0
+first process 0
+context switch
+	Machine_list: 8d04758
+last process 0
+first process 0
+channel_send_iMachine_run
+send data not ready
+context switch
+machine has halted normally

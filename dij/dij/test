@@ -1,0 +1,222 @@
+define global
+define global
+INIT.PART.CALL 300210 3001b0 300180 0
+code::300270  partial call:: 300210
+'pop_code
+define global
+INIT.PART.CALL 300360 300300 3002c0 0
+code::3003a0  partial call:: 300360
+'pop_code
+INIT.PART.CALL 300470 300420 3003d0 2
+code::3004c0  partial call:: 300470
+'pop_code
+INIT.PART.CALL 3005a0 300540 3004e0 1
+code::300600  partial call:: 3005a0
+'pop_code
+INIT.PART.CALL 300680 300620 300280 1
+code::300790  partial call:: 300680
+'pop_code
+define global
+finished
+INIT.PART.CALL 3007d0 3007a0 3007a0 0
+ready
+done
+first curried term : 1, last noncurried term: 0
+, pc 300210, pc->left 3001b0, pc->right 300180
+evaluate partial call 1
+first curried term : 1, last noncurried term: 0
+, pc 300210, pc->left 3001b0, pc->right 300180
+go ahead and run
+	machine_list: 300800 0
+I am ready
+receive??
+motherfucker set to receive
+loading variables
+done
+finish evaluate
+ready to begin
+ ... 300230 . 0
+ ... 300230 . 2
+ ... 300230 . 4
+ ... 300230 . 6
+apply
+param = 300120func = 3007d0create hot call
+copy
+done
+apply value: 300120 to 300880
+apply
+complete apply
+ ... 300230 . 7
+ ... 300230 . 9
+apply
+param = 300170func = 300880extend hot call
+done
+apply value: 300170 to 300880
+apply
+complete apply
+ ... 300230 . 10
+curry
+hot curry
+done
+complete curry
+ ... 300230 . 11
+evaluate
+first curried term : 3, last noncurried term: 2
+, pc 300880, pc->left 3007a0, pc->right 3007a0
+evaluate partial call 1
+first curried term : 3, last noncurried term: 2
+, pc 300880, pc->left 3007a0, pc->right 3007a0
+go ahead and run
+calling : 8
+!!!!!!!!!!load: libc.dylib, printf
+INIT.PART.CALL 300a10 3009e0 3009e0 0
+finish evaluate
+ ... 300230 . 12
+apply
+param = 300a10func = 300680create hot call
+copy
+done
+apply value: 300a10 to 3008b0
+apply
+complete apply
+ ... 300230 . 13
+curry
+hot curry
+done
+complete curry
+ ... 300230 . 14
+evaluate
+first curried term : 2, last noncurried term: 1
+, pc 3008b0, pc->left 300620, pc->right 300280
+evaluate partial call 1
+first curried term : 2, last noncurried term: 1
+, pc 3008b0, pc->left 300620, pc->right 300280
+go ahead and run
+	machine_list: 300a50 0
+I am ready
+receive??
+	remove machine 300800
+motherfucker set to receive
+loading variables
+300a10.
+done
+finish evaluate
+context switch
+	machine_list: 300a50 1
+ ... 3006a0 . 0
+searching variables: 
+parameters
+0
+locals
+1
+lvalue named
+ ... 3006a0 . 2
+push 300360
+ ... 3006a0 . 4
+referencing variable
+...  1
+searching variables: 
+parameters
+0
+ ... 3006a0 . 6
+apply
+param = 300a10func = 300360create hot call
+copy
+done
+apply value: 300a10 to 300ae0
+apply
+complete apply
+ ... 3006a0 . 7
+evaluate
+first curried term : 0, last noncurried term: 1
+, pc 300ae0, pc->left 300300, pc->right 3002c0
+evaluate partial call 0
+first curried term : 0, last noncurried term: 1
+, pc 300ae0, pc->left 300300, pc->right 3002c0
+wtf?!!?
+push partial call
+INIT.PART.CALL 300bb0 300b50 300b00 0
+finish evaluate
+ ... 3006a0 . 8
+liquidating name 300a84
+success
+back out at assignment
+:-( 300bd0 0
+assignment
+assignment complete
+ ... 3006a0 . 9
+searching variables: 
+parameters
+0
+locals
+1
+2
+lvalue named
+ ... 3006a0 . 11
+push 300470
+ ... 3006a0 . 13
+referencing variable
+...  1
+searching variables: 
+parameters
+0
+ ... 3006a0 . 15
+apply
+param = 300a10func = 300470create hot call
+copy
+done
+apply value: 300a10 to 300bf0
+apply
+complete apply
+ ... 3006a0 . 16
+evaluate
+first curried term : 0, last noncurried term: 1
+, pc 300bf0, pc->left 300420, pc->right 3003d0
+evaluate partial call 0
+first curried term : 0, last noncurried term: 1
+, pc 300bf0, pc->left 300420, pc->right 3003d0
+wtf?!!?
+push partial call
+INIT.PART.CALL 300cc0 300c60 300c10 2
+finish evaluate
+ ... 3006a0 . 17
+liquidating name 300a88
+success
+back out at assignment
+:-( 300ce0 0
+assignment
+assignment complete
+ ... 3006a0 . 18
+searching variables: 
+parameters
+0
+locals
+1
+2
+3
+lvalue named
+ ... 3006a0 . 20
+referencing variable
+...  0
+searching variables: 
+parameters
+0
+locals
+1
+ ... 3006a0 . 22
+push 3005a0
+ ... 3006a0 . 24
+trying to namespace join
+*first 0 300b00
+
+
+	1
+*second 1 3004e0
+	1
+
+	5
+finished annoying namespace computations
+leaving
+trying to namespace join
+*first 1 300540
+	1

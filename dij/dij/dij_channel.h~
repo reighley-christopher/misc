@@ -1,0 +1,17 @@
+struct _message
+   {
+   struct _stack_member *message;
+   struct _message *next;
+   };
+
+struct _channel
+   {
+   struct _message *first_message;
+   struct _message *last_message;
+   struct _machine *first_client;
+   struct _machine *last_client;
+   };
+
+struct iEndpoint
+   {
+}

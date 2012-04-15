@@ -1,0 +1,174 @@
+{\rtf1\mac\ansicpg10000\cocoartf824\cocoasubrtf480
+{\fonttbl\f0\fswiss\fcharset77 Helvetica;}
+{\colortbl;\red255\green255\blue255;}
+\margl1440\margr1440\vieww17600\viewh8840\viewkind0
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\ql\qnatural\pardirnatural
+
+\f0\fs24 \cf0 Having abandoned the idea of finding by a linear operation the normals to our quadratic surface, the new goal is to locate directly the variety wherein the surface is tangent to a given vector.\
+\
+this takes the form a*dF/du + b*dF/dv = C for some a and b, with C given.\
+what is the nature of this curve?\
+\
+Treating a, b, u and v as variables and use as the condition :\
+\
+a * ( 2c0u + c2v + c3 ) + b * (c2u + 2c1v + c4 ) = C has a solution.\
+\
+[ ( 2c0u + c2v + c3 ) x ( c2u + 2c1v + c4 ) ]  * C = 0\
+\
+digression into the properties of the cross product.\
+a1		b1\
+a2	x	b2 = ( a1i + a2j + a3k ) * ( b1i + b2j + b3k ) \
+a3		b3 = ( 	a1b1ii 	+ a1b2ij 	+ a1b3ik + \
+			a2b1ji 	+ a2b2jj 	+ a2b3jk +\
+			a3b1ki 	+ a3b2kj 	+ a3b3kk =\
+\
+			0		+ a1b2k	-  a1b3j -\
+			a2b1k		+ 0		+ a2b3i +\
+			a3b1j		- a3b2i	+ 0 =\
+\
+[ a2b3 - a3b2 ]\
+[ a3b1 - a1b3 ]\
+[ a1b2 - a2b1 ]\
+\
+multiplication of either term by a scalar multiplies the cross product by a scalar.\
+If one term is a sum :\
+[ a2( b3+c3 ) - a3(b2+c2 ) ]		[ (a2b3-a3b2) + (a2c3-a3c2) ]\
+[ a3( b1+c1 ) - a1(b3+c3 ) ]     = 	[ (a3b1-a1b3) + (a3c1-a1c3) ] \
+[ a1( b2+c2 ) - a2(b1+c1) ]		[ (a1b2-a1c2) + (a2b1-b2c1) ]\
+\
+so addition distribute :\
+\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\tx9340\tx10060\tx10760\tx11500\ql\qnatural\pardirnatural
+\cf0 ( a2b3 - a3b2 )*c1 +\
+( a3b1 - a1b3 )*c2 +\
+( a1b2 - a2b1 )*c3 =\
+a2b3c1 - a3b2c1 +\
+a3b1c2 - a1b3c2 +\
+a1b2c3 - a2b1c3 = \
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\ql\qnatural\pardirnatural
+\cf0 \
+\
+\
+the laws are thus :\
+( sA ) x B = s ( A x B ) \
+A x ( B + C ) = ( A x B ) + ( A x C )\
+(A x B ) * C  = \
+so the equation \
+[ ( 2c0u + c2v + c3 ) x ( c2u + 2c1v + c4 ) ]  * C = 0\
+\
+can be simplified as :\
+( ( 2c0u + c2v + c3 ) x c2u ) +\
+( ( 2c0u + c2v + c3 ) x 2c1v ) + \
+( ( 2c0u + c2v + c3 ) x c4 ) =\
+\
+( 2c0u x c2u ) + ( c2v x c2u ) + ( c3 x c2u ) +\
+( 2c0u x 2c1v ) + ( c2v x 2c1v ) + ( c3 x 2c1v ) +\
+( 2c0u x c4 ) + ( c2v x c4 ) + ( c3 x c4 ) =\
+\
+2uu ( c0 x c2 ) + uv ( c2 x c2 ) + u ( c3 x c2 ) +\
+4uv ( c0 x c1 ) + 2vv ( c2 x c1 ) + 2v ( c3 x c1 ) +\
+2u ( c0 x c4 ) + v ( c2 x c4 ) + (c3 x c4 ) =\
+\
+[ 2( c0 x c2 )uu + 2( c2 x c1 )vv + 4( c0 x c1 )uv + \
+[ ( c3 x c2 )+2(c0 x c4) ]u +\
+[ ( c2 x c4)+2(c3 x c1) ]v +\
+(c3 x c4) ] * C\
+\
+experimentally we find that this variety always takes the form of an ellipse (or a line, in the degenerate case) in the parameter space.\
+Is this true in general?  no.  I've seen hyperbolas and lines too.\
+\
+The fact that a given sequence of bezier curves might give a result which has 0 normal at the corner, and that multiple bezier curves could give the same results at the corner suggests that perhaps I have been overspecific.  I never actually need to render the boundry curves after all, only the sillouhettes.  \
+F(u,v) such that :\
+F(0,0) = P0\
+F(0,1) = P1\
+F(1,0) = P2\
+dF/du(0,0) * N0 = 0\
+dF/dv(0,0) * N0 = 0\
+dF/du(0,1) * N1 = 0\
+dF/dv(0,1) * N1 = 0\
+dF/du(1,0) * N2 = 0\
+dF/dv(1,0) * N2 = 0\
+for any vector C\
+the solutions to the equation\
+(dF/du x dF/dv ) * C = 0\
+may be written in the form\
+C0(1-t)(1-t) + 2C1t(1-t) + C2tt  ->\
+It seems very unlikely that the problem, formulated this way, has a solution.\
+\
+consider a strait line through the parameter space.  \
+G(u) = F(u, 0).  dG/du(0)*N0 = 0 and dG/du(1)*N2 = 0\
+\
+\
+---\
+\
+Let's imagine furthat that the normal vectors are linear in the parameter space so that we have a function N(u,v) = N0u+N1v+N2.\
+We wish to find a function F in u and v, with normals parallel to these.\
+\
+dF/dv(u,v) x dF/du(u,v) = N(u,v) * s(u, v) with s a non-vanishing scalar function.\
+\
+lets differentiate this with respect to u and v and try to find the second derivatives of F in terms of N0.\
+dF/dv(u,v) x dF/du(u,v)\
+\
+(\
+[ a2b3 - a3b2 ]\
+[ a3b1 - a1b3 ]\
+[ a1b2 - a2b1 ]\
+\
+the derivative of a term a2b3 - a3b2 = \
+da2*b3 + db3*a2 - da3*b2 - db2*a3\
+\
+the cross product of the derivatives is\
+da2b3 - da3b2 so the product rule applies to cross products \
+)\
+\
+d/du (dF/dv(u,v) x dF/du(u,v) ) = \
+\
+dF/dvdu x dF/du + dF/dv x dF/dudu = \
+\
+N0 * s + N * ds/du\
+\
+dF/dvdv x dF/du + dF/dv x dF/dudv = \
+N1 * s + N * ds/dv \
+\
+dF/dvdudv x dF/du + dF/dvdu x dF/dudv + dF/dvdv x dF/dudu + dF/dv x dF/dududv =\
+N0 * ds/dv + N*ds/dudv =\
+N1 * ds/du + N*ds/dudv =\
+dF/dvdvdu x dF/du + F/dvdv x dF/dudu + dF/dvdu x dF/dudv + dF/dv x dF/dudvdu = (the terms dF/dvdu x dF/dudv are all 0)\
+dF/dvdudv x dF/du + dF/dvdv x dF/dudu + dF/dv x dF/dududv =\
+dF/dvdvdu x dF/du + dF/dvdv x dF/dudu + dF/dv x dF/dudvdu  ( that's strange )\
+\
+consider lines through the origin for which all the normals lie on the same plane.  Since the normal vectors lie in the same plane, doesn't the arc through parameter space lie in that plane also?  The derivative of the function with respect to the line is perpendicular to the normal, \
+\
+Conjecture : the derivative of the function F with respect to any line is parallel to the derivative of the normal vectors.    No, not just any line.\
+but the derivatives of the normal vectors are going to provide a clue.  \
+\
+imagine that the normal function is creating a torque on a given function F, which is a differential form.\
+the pressure is a function of the difference between the normal we have dF/dv x dF/du and the normal we want.\
+\
+uncomfortable case.  What if all the normals are the same.  Then the function must be a plane, but if we have already choosen the plane it must be by fixing the corners, then the problem might be unsolvable.  So there is another condition of which I am unaware.\
+\
+under a small deviation in the direction of the derivative, the normal, the derivative and the new normal are all in the same plane.\
+\
+N = 	[ N0u + N1v + N2 ]   [ dF/du.0]\
+	[ N3u + N4v + N5 ] *[ dF/du.1 ] = 0 \
+        	[ N6u + N7v + N8 ]   [dF/du.2 ] \
+\
+N0u*dF/du.0(u) + N1v*dF/du.0(u) ... = 0 for every choice of u and v.\
+In particular, when v and u = 0, so we know dF/du and dF/dv at 0. satisfy the equations\
+\
+consider F in just one dimension, along the u axis, and only at the origin.\
+\
+[ N2 ]   [ dF/du.0 ][\
+[ N5 ] * [ dF/du.1]    =    0\
+[ N8 ]    [ dF/du.2 ]\
+\
+if we differentiate this function again we find that all the second derivatives of F are also perpendicular to N.  that's a shock.  can't be right.\
+\
+what if we force u and v ( and for that matter the line u+v = 1, while we are at it )  onto planes in 3 space.  Can I just make them arbitrary?  I think so, because I have no idea how the parameters map the actual surface.  ( I might have trouble getting them to link up on the boundaries if I do this though).\
+\
+Once we know the plane, we just project the normal onto it.  Lets say the plane is perpendicular to P, then the projected Normal is N - N*P.  That's the normal in plane space.  N-N*P should still be linear in the parameter.  And now we have a tangent line in plane space (provided we give some convenient coordinates to that space, and that we know that N is never 0 there.\
+\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\tx11540\tx12240\ql\qnatural\pardirnatural
+\cf0 Lets pick the coordinates to plane space to be the projection of the normal and the projection of the first derivative of the normal at 0, and the projection of the first derivative of the normal with respect to u.  The function for the projection into plane space is going to be 	[ P0 P1 P2 ] can it be anything?  How do we get our 3 coordinates back once we have constructed a function?					[ P3 P4 P5 ]\
+\
+}

@@ -1,0 +1,26 @@
+The expression :
+((f.4):(f.5.6)).7.
+should be the same as
+f.4.7.,f.5.6.7.
+if f has no named parameters.
+
+the iMachine chain will look like :
+[apply 7], [apply 4], [f], [njoin tasks], [apply 5,6], [f]
+
+this means that there will be gaps in the memory space used for anonymous parameters,
+since the second term does not see 4 and the first term does not know about the distance
+between 4 and 7.
+
+the memory space of the fnodes will be organized like this
+
+f -- [f locals],[f returns]
+f.4 -- [f locals],[f returns],[4]
+f.5.6 -- [f locals],[f returns],[5],[6]
+((f.4):(f.5.6)).7. -- [f locals],[f returns],[5],[4/6],[7]
+
+the anonymous parameters used by the join will be the same as the larger element.
+the smaller elements will be moved toward the back.  the njoin tasks placed in
+between the joined nodes will ammount to moving the anonymous pointers so that
+apply 5,6 fills in the right memory and the second invokation of f reads the
+right memory
+
