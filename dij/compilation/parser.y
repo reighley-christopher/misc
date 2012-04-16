@@ -283,7 +283,7 @@ expression TOKEN_COMMA expression_list
 if_statement:
 TOKEN_IF guarded_command_list TOKEN_FI
 {
-  $$ = create_tree( nil, 0, $1, 0 );
+  $$ = create_tree( dump, (int)"POP-CONTROL\n", create_tree( dump, (int)"PUSH-IF\n", 0, 0 ), $2 );
   xscheme_node("if", 1 );
 }
 ;
@@ -291,7 +291,7 @@ TOKEN_IF guarded_command_list TOKEN_FI
 do_statement:
 TOKEN_DO guarded_command_list TOKEN_OD
 {
-  $$ = create_tree( nil, 0, $1, 0 );
+  $$ = create_tree( dump, (int)"POP-CONTROL\n", create_tree( dump, (int)"PUSH-DO\n", 0, 0 ), $2 );
   xscheme_node( "do", 1 );
 }
 ;
@@ -324,6 +324,7 @@ guarded_command_list:
 |
 guarded_command guarded_command_list
 {
+  $$ = create_tree( nil, 0, $1, $2 );
   xscheme_list("guarded_command_list");
 }
 ;
@@ -331,7 +332,7 @@ guarded_command guarded_command_list
 guarded_command :
 expression TOKEN_GUARD command_list TOKEN_END_GUARD
 {
-  create_tree( nil, 0, $1, $3 );
+  $$ = create_tree( dump, (int)"MARK\n", create_tree( dump, (int)"TEST\n", $1, 0 ), $3 );
   xscheme_node("guarded-command", 2);
 }
 ;
