@@ -228,13 +228,11 @@ terminated_combinator_expression
 |
 if_statement
 {
-  xscheme_node("command", 0);
   $$ = $1;
 }
 |
 do_statement
 {
-  xscheme_node("command", 0);
   $$ = $1;
 }
 ;
@@ -428,12 +426,14 @@ TOKEN_REFERENCE tier1_expression
 |
 TOKEN_NOT tier1_expression
 {
-  printf("not\n");
+  $$ = create_tree( dump, (int)"NOT\n", $2, 0 );
+  xscheme_node( "not", 1 );
 }
 |
 TOKEN_SUBTRACT tier1_expression
 {
-  printf("negate\n");
+  $$ = create_tree( dump, (int)"NEG\n", $2, 0 );
+  xscheme_node( "neg", 1 );
 }
 |
 TOKEN_TILDE tier1_expression
