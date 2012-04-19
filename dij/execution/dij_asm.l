@@ -59,5 +59,21 @@
 
 "NAMESPACE-JOIN" {dij_write((int)inst_namespace_join); }
 
+"PUSH-IF" {dij_push_if(); }
+
+"PUSH-DO" {dij_push_do(); }
+
+"TEST" {dij_control_test(); }
+
+"MARK" {dij_control_marker(); }
+
+"POP-CONTROL" {dij_pop_control(); }
+
+"NOT" { dij_write((int)inst_not); }
+
+"NEG" { dij_write((int)inst_neg); }
+
+"EQUAL" { dij_write((int)inst_equal); }
+
 <<EOF>> {printf("finished\n"); yyterminate(); }
 
