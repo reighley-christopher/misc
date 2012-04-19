@@ -58,6 +58,12 @@ void inst_if_mark( struct _dij_machine *M );
 
 void inst_test( struct _dij_machine *M );
 
+void inst_not( struct _dij_machine *M );
+
+void inst_neg( struct _dij_machine *M );
+
+void inst_equal( struct _dij_machine *M );
+
 void dij_write( int word );
 
 void dij_push_data();
@@ -77,6 +83,16 @@ void dij_record_number( int later );
 void dij_note_lvalue( int later );
 
 void dij_note_rvalue( int later );
+
+void dij_push_if();
+
+void dij_push_do();
+
+void dij_control_test();
+
+void dij_control_marker();
+
+void dij_pop_control();
 
 void debug( struct _dij_machine *M );
 
