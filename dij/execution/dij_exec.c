@@ -369,6 +369,8 @@ void dij_control_marker()
       }
    *(current_control_structure->marker_edit) = 
       final_distance(current_control_structure->marker_edit);
+   dij_write(final_distance(current_control_structure->control_edit));
+   printf("edit marker : %d\n", *(current_control_structure->marker_edit) );
    }
 
 /*end control structures*/
