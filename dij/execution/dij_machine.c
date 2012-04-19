@@ -636,6 +636,7 @@ All of this logic should end up in the control module*/
 /*this instruction is at the top of if and do loops to indicate that the value following is just a word of data and not an instruction*/
 void inst_noop( struct _dij_machine *M )
   {
+  printf("hit noop %d\n", M->code[M->inst_pointer+1]);
   M->inst_pointer = M->inst_pointer+1;
   }
 
@@ -647,7 +648,7 @@ void inst_test( struct _dij_machine *M )
   int value = pop(&(M->stack)).value;
   M->inst_pointer = M->inst_pointer+1;
   mark = M->code[M->inst_pointer];
-  if(value%2) M->inst_pointer = M->inst_pointer+mark;
+  if(value%2) { printf("not jumping\n"); } else { M->inst_pointer = M->inst_pointer+mark; printf("jumping %d\n", mark); } 
   }
 
 void inst_if_mark( struct _dij_machine *M )
@@ -657,8 +658,9 @@ void inst_if_mark( struct _dij_machine *M )
   int end;
   M->inst_pointer = M->inst_pointer+1;
   head = M->code[M->inst_pointer];
+  printf("hit if marker %d\n", head);
   end = M->code[M->inst_pointer - head ];
-  M->inst_pointer = M->inst_pointer - head + end;
+  M->inst_pointer = M->inst_pointer - head + end - 1;
   }
 
 void inst_do_mark( struct _dij_machine *M )
@@ -667,7 +669,8 @@ void inst_do_mark( struct _dij_machine *M )
   int head; /*markers include a distance back to the header*/
   M->inst_pointer = M->inst_pointer+1;
   head = M->code[M->inst_pointer];
-  M->inst_pointer = M->inst_pointer - head + 1;
+  printf("hit do marker %d\n", head );
+  M->inst_pointer = M->inst_pointer - head;
   }
 
 void inst_left_join( struct _dij_machine *M )
@@ -703,6 +706,32 @@ void inst_namespace_join( struct _dij_machine *M )
   void *ret;
   ret = M->fgraph->njoin(M->fgraph, first, second);
   push( &(M->stack), object((int)ret, &TYPE_F_NODE) );
+}
+
+void inst_not( struct _dij_machine *M )
+{
+  int arg;
+  arg = pop( &(M->stack) ).value;
+  push( &(M->stack), object( ~arg, &TYPE_SCALAR ) );
+  printf("bitwise not\n");
+}
+
+void inst_neg( struct _dij_machine *M )
+{
+  int arg;
+  arg = pop( &(M->stack) ).value;
+  push( &(M->stack), object( -arg, &TYPE_SCALAR ) );
+  printf("twos compliment negation\n");
+}
+
+void inst_equal( struct _dij_machine *M )
+{
+   int a;
+   int b;
+   a = pop( &(M->stack) ).value;
+   b = pop( &(M->stack) ).value;
+   if( a==b ) { push( &(M->stack), object( -1, &TYPE_SCALAR ) ); }
+   else { push( &(M->stack), object( 0, &TYPE_SCALAR ) ); }
 }
 
 /*end instructions*/
