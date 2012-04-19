@@ -68,7 +68,7 @@ SCM xscheme_prettyprint( SCM v )
   SCM str;
   str = scm_object_to_string( v, scm_c_eval_string("write") );
   s = scm_to_locale_string( str );
-  n = SCM_STRING_LENGTH( str );
+  n = scm_c_string_length( str );
   printf("%s %d\n", s, n );
   while( index < n )
     {
