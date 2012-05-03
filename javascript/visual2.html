@@ -1,0 +1,235 @@
+<html>
+  <title>Visualization Experiment</title>
+  <body>
+    <!--
+    <div id="output"></div>
+    <input type="text" id="inputspace"/> -->
+  <div style="position:absolute;top:10px;left:200px;border-color:black;border:solid;border-width:2px">
+<canvas id="c3d" width="400" height="400">
+This text is displayed if your browser does not support HTML5 Canvas.
+</canvas>
+  </div>
+    <script language="javascript">
+
+    var buffer;
+    
+    function MatrixToLambda( m )
+       {
+       return function( v )
+          {
+          var i,j;
+          var ret = new Array();
+          for( i = 0; i < m.length; i++ )
+             {
+             ret[i] = 0;
+             for( j = 0; j < m[i].length; j++ )
+                {
+                ret[i] = ret[i] + m[i][j]*v[j];
+                } 
+             }
+
+          return ret;
+          }
+       }
+
+    function _3dObject( _f, _v )
+       {
+       var f = _f;
+       var v = _v;
+
+       this.clear = function()
+          {
+          
+          }
+
+       this.paint = function(root, transform)
+          {
+          var vv = new Array();
+          var i;
+          for( i = 0; i < v.length; i++ )
+             {
+             vv[i] = transform(v[i]);
+             }
+          f(root, vv);
+         
+          }
+       }
+
+    function greyline(ctx, vector)
+       {
+       ctx.beginPath();
+       ctx.strokeStyle="grey";
+       ctx.moveTo( vector[0][0] , vector[0][1] );
+       ctx.lineTo( vector[1][0] , vector[1][1] );
+       ctx.stroke();
+       }
+
+    function coloredRectangle(ctx, vector)
+       {
+       ctx.beginPath();
+       ctx.fillStyle="red";
+       
+          ctx.moveTo(vector[0][0] , vector[0][1] );
+          ctx.lineTo(vector[1][0] , vector[1][1] );
+          ctx.lineTo(vector[2][0] , vector[2][1] );
+          ctx.lineTo(vector[3][0] , vector[3][1] );
+          ctx.lineTo(vector[0][0] , vector[0][1] );
+          ctx.fill();
+       ctx.beginPath();
+       ctx.strokeStyle="black";
+       
+          ctx.moveTo(vector[0][0] , vector[0][1] );
+          ctx.lineTo(vector[1][0] , vector[1][1] );
+          ctx.lineTo(vector[2][0] , vector[2][1] );
+          ctx.lineTo(vector[3][0] , vector[3][1] );
+          ctx.lineTo(vector[0][0] , vector[0][1] );
+          ctx.stroke();
+       }
+
+    function _3dCanvas( doc )
+       {
+       //_3dCanvas contains a sorted array of _3dObject
+       var path_array = new Array();
+       var dragging = false;
+       var refx = 0, refy = 0;
+       var angle_theta = 0, angle_phi = 0;
+       var gridlines = new Array();
+       var ctx = doc.getContext('2d');
+       gridlines[0] = new _3dObject(
+          greyline, [[-100,-100,-100,1],[100,-100,-100,1]]
+          );
+       gridlines[1] = new _3dObject(
+          greyline, [[-100,100,-100,1],[100,100,-100,1]]
+          );
+       gridlines[2] = new _3dObject(
+          greyline, [[-100,-100,100,1],[100,-100,100,1]]
+          );
+       gridlines[3] = new _3dObject(
+          greyline, [[-100,100,100,1],[100,100,100,1]]
+          );
+       gridlines[4] = new _3dObject(
+          greyline, [[-100,-100,-100,1],[-100,-100,100,1]]
+          );
+       gridlines[5] = new _3dObject(
+          greyline, [[-100,100,-100,1],[-100,100,100,1]]
+          );
+       gridlines[6] = new _3dObject(
+          greyline, [[100,-100,-100,1],[100,-100,100,1]]
+          );
+       gridlines[7] = new _3dObject(
+          greyline, [[100,100,-100,1],[100,100,100,1]]
+          );
+       gridlines[8] = new _3dObject(
+          greyline, [[-100,-100,-100,1],[-100,100,-100,1]]
+          );
+       gridlines[9] = new _3dObject(
+          greyline, [[-100,-100,100,1],[-100,100,100,1]]
+          );
+       gridlines[10] = new _3dObject(
+          greyline, [[100,-100,-100,1],[100,100,-100,1]]
+          );
+       gridlines[11] = new _3dObject(
+          greyline, [[100,-100,100,1],[100,100,100,1]]
+          );
+
+       function chartThis( array, chart, interval )
+           {
+           var i;
+           var j;
+           for(i = -100; i < 100; i = i+interval)
+           for(j = -100; j < 100; j = j+interval)
+               {
+               array.push( new _3dObject (
+                  coloredRectangle, 
+                     [
+                     [i, chart(i,j), j, 1],
+                     [i+interval, chart(i+interval, j), j,  1],
+                     [i+interval,  chart(i+interval, j+interval), j+interval, 1],
+                     [i, chart(i, j+interval),j+interval, 1]
+                     ] 
+                  ));
+               }
+           }
+
+       chartThis( gridlines,
+                  function(x,y) { var z = 50*Math.cos( Math.sqrt(Math.pow(x,2)+Math.pow(y,2))/10); return isNaN(z)?0:z; },
+                 5
+                 );
+
+       this.status = function(){ return angle_theta + " " + angle_phi };
+       this.mouseUpOrOut = 
+          function() { dragging = false;}
+       this.mouseDown =
+          function(e) { dragging = true; refx = e.clientX; refy = e.clientY; }
+       this.mouseMove = 
+          function(e) { if(dragging == true) {
+             angle_theta = angle_theta + (e.clientX-refx); 
+             refx=e.clientX;
+             angle_phi = angle_phi + (e.clientY-refy);
+             refy=e.clientY;
+             while(angle_theta >= 400) {angle_theta = angle_theta-4000;}
+             while(angle_theta < 0) {angle_theta = angle_theta+4000;}
+             while(angle_phi >= 400) {angle_phi = angle_phi-4000;}
+             while(angle_phi < 0) { angle_phi = angle_phi+4000;}
+       render();
+             } }
+       doc.addEventListener("mousedown", this.mouseDown, true);
+       doc.addEventListener("mousemove", this.mouseMove, true);
+       doc.addEventListener("mouseout", this.mouseUpOrOut, true);
+       doc.addEventListener("mouseup", this.mouseUpOrOut, true);
+
+       this.rotate = function( t, p )
+          {
+          angle_theta = t;
+          angle_phi = p;
+          render();
+          return 0;
+          }
+
+       function render()
+          {
+          var v;
+          var at = angle_theta*Math.PI/200;
+          var ap = angle_phi*Math.PI/200;
+          ctx.fillStyle="white";
+          ctx.fillRect(0,0,400,400);
+	  rotate1 = MatrixToLambda([[Math.cos(at),0,-Math.sin(at),0],[0,1,0,0],[Math.sin(at), 0, Math.cos(at),0],[0,0,0,1]]);
+          rotate2 = MatrixToLambda([[1,0,0,0],[0,Math.cos(ap), -Math.sin(ap),0],[0, Math.sin(ap), Math.cos(ap),0],[0,0,0,1]]);
+          project = MatrixToLambda([[1, 0, 0, 200],[ 0, 1, 0, 200 ]]);
+          v = function(x){return project(rotate2(rotate1(x)))};
+          //gridlines[0].clear();
+          gridlines[1].paint(ctx,v);
+          for(i = 0; i < gridlines.length; i++)
+          {
+          //gridlines[i].clear();
+
+          gridlines[i].paint( ctx, v );
+          }
+          }
+
+       function animate()
+          {
+          angle_theta = angle_theta+10;
+          angle_phi = angle_phi+10;
+          render();
+          }
+
+      // setInterval(animate, 5);
+       render();
+       }
+/*
+    document.getElementById("inputspace").addEventListener( "keydown", function(e){if(e.keyCode==13){document.getElementById("output").appendChild( document.createTextNode( this.value ) ); 
+document.getElementById("output").appendChild(document.createElement("br")); 
+eval("$ = " + this.value );
+document.getElementById("output").appendChild(document.createTextNode( $.toString() ));
+document.getElementById("output").appendChild(document.createElement("br"));
+this.value="";}}, true );
+*/
+var c = new _3dCanvas(document.getElementById("c3d"));
+
+
+
+    </script>
+
+  </body>
+</html>

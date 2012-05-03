@@ -1,0 +1,437 @@
+<html>
+  <title>Visualization Experiment</title>
+  <body>
+
+  <div style="position:absolute;top:10px;left:200px;border-color:black;border:solid;border-width:2px">
+  <svg id="c3d" 
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   version="1.1"
+   height="400" width="400">
+ 
+  </svg>
+  </div>
+    <script language="javascript">
+
+    /*the geometric primitives will have an equation which is satisfied by the points on them
+      the line will be of the form (x-x1) - c(y-y1) = 0
+      the circle is x^2 + y^2 = r^2 
+    */
+
+    function EuclidCircle( center, radius )
+       {
+       var element = document.createElementNS("http://www.w3.org/2000/svg", "svg:circle");
+       var rx = 0;
+       var ry = 0;
+       var deps = new Array();
+       this.type = "circle";
+       function move1(x, y) 
+          {
+          var i;
+          var r = Math.sqrt( Math.pow(rx-x,2) + Math.pow(ry-y,2) );
+          element.setAttribute("r", r);
+          element.setAttribute("cx", x);
+          element.setAttribute("cy", y);
+          for( i = 0; i < deps.length; i++ ) { deps[i](); }
+          }
+       function move2(x, y) 
+          {
+          var i;
+          var cx = element.getAttribute("cx");
+          var cy = element.getAttribute("cy");
+          var r = Math.sqrt( Math.pow(cx-x,2) + Math.pow(cy-y,2) );
+          element.setAttribute("r", r);
+          rx = x;
+          ry = y;
+          for( i = 0; i < deps.length; i++ ) { deps[i](); }
+          }
+       this.depend = function( x )
+          {
+          deps.push(x);
+          }
+
+       this.getConstraint = function()
+          {
+          var cx = element.getAttribute("cx");
+          var cy = element.getAttribute("cy");
+          var r = element.getAttribute("r");
+          return [1, 1, -2*cx, -2*cy, cx*cx + cy*cy - r*r];
+          }
+       this.getElement = function()
+          {
+          return element;
+          }
+       center.depend(move1);
+       radius.depend(move2);
+       element.setAttribute("style", "stroke:black;fill:none");
+       }
+
+    function EuclidLine( point1, point2 )
+       {
+       var element = document.createElementNS("http://www.w3.org/2000/svg", "svg:line");
+       var deps = new Array();
+       this.type = "line";
+       function move1(x, y) 
+          {
+          var i;
+          element.setAttribute("x1", x);
+          element.setAttribute("y1", y);
+          for( i = 0; i < deps.length; i++ ) { deps[i](); }
+          }
+       function move2(x, y) 
+          {
+          var i;
+          element.setAttribute("x2", x);
+          element.setAttribute("y2", y);
+          for( i = 0; i < deps.length; i++ ) { deps[i](); }
+          }
+       this.depend = function(x)
+          {
+          deps.push(x);
+          }
+       this.getConstraint = function()
+          {
+          var x1 = element.getAttribute("x1");
+          var y1 = element.getAttribute("y1");
+          var x2 = element.getAttribute("x2");
+          var y2 = element.getAttribute("y2");
+          return [0, 0, y1-y2, x2-x1, x1*y2-y1*x2 ];
+          }
+       this.getElement = function()
+          {
+          return element;
+          }
+       point1.depend(move1);
+       point2.depend(move2);
+       element.setAttribute("style", "stroke:black");
+       }
+
+    function Incident_1( A, B )
+       {
+       /*A, B are two circles*/
+       var cxA, cxB, cyA, cyB, rA, rB;
+       var sinT, cosT, D;
+       var x, y, sx1, sx2, sy1, sy2;
+       /*back out the parameters of the circle*/
+       cxA = A[2]/-2;
+       cxB = B[2]/-2;
+       cyA = A[3]/-2;
+       cyB = B[3]/-2;
+       rA = Math.sqrt(cxA*cxA+cyA*cyA-A[4]); 
+       rB = Math.sqrt(cxB*cxB+cyB*cyB-B[4]); /*B[4] = cxB*cxB + cyB*cyB - r*r*/
+       /*change coordinates so that the circle A is at the origin
+         and the line between them along the x axis*/
+       D = Math.sqrt((cxB-cxA)*(cxB-cxA)+(cyB-cyA)*(cyB-cyA));
+       sinT = (cyB-cyA)/D;
+       cosT = (cxB-cxA)/D;
+       x = (D*D-rB*rB+rA*rA)/(2*D);
+       y = Math.sqrt(rA*rA-x*x);
+       sx1 = x*cosT - y*sinT + cxA;
+       sy1 = x*sinT + y*cosT + cyA;
+       sx2 = x*cosT + y*sinT + cxA;
+       sy2 = x*sinT - y*cosT + cyA;
+       return [{x:sx1, y:sy1},{x:sx2, y:sy2}];
+       }
+
+    function Incident_2( A, B )
+       {
+       /*A, B are two lines*/
+       /*solve simultaneously :
+         A[2]x + A[3]y + A[4] = 0
+         B[2]x + B[3]y + B[4] = 0
+        */
+       var m00, m01, m10, m11, D;
+       var x, y;
+       /*first invert the matrix*/
+       D = A[2]*B[3] - A[3]*B[2];
+       m00 = B[3]/D; m01 = -A[3]/D;
+       m10 = -B[2]/D; m11 = A[2]/D; 
+       /*now apply to the constant terms*/
+       x = m00 * (-A[4]) + m01 * (-B[4]);
+       y = m10 * (-A[4]) + m11 * (-B[4]);
+       return [{x:x, y:y}];
+       }
+
+    function Incident_3( A, B )
+       {
+       /*A is a circle, B is a line*/
+       var cx, cy, r;
+       var dx, dy, D, dr;
+       var sx1,sy1, sx2, sy2;
+       cx = -A[2]/2;
+       cy = -A[3]/2;
+       r = Math.sqrt(cx*cx+cy*cy-A[4]);
+       dx = B[3];
+       dy = -B[2];
+       D = B[4] + cx*B[2] + cy*B[3];
+       dr = Math.sqrt(dx*dx+dy*dy);
+       sx1 = ( D*dy + dx*Math.sqrt(r*r*dr*dr-D*D))/(dr*dr)+cx;
+       sy1 = (-D*dx + dy*Math.sqrt(r*r*dr*dr-D*D))/(dr*dr)+cy;
+       sx2 = ( D*dy - dx*Math.sqrt(r*r*dr*dr-D*D))/(dr*dr)+cx;
+       sy2 = (-D*dx - dy*Math.sqrt(r*r*dr*dr-D*D))/(dr*dr)+cy;
+       return [{x:sx1, y:sy1}, {x:sx2, y:sy2}];
+       }
+
+    function Incident_3b( A, B )
+       {
+       /*A is a circle, B is a line*/
+       var b1, b2;
+       var a1, a2, a3;
+       var sx1, sy1, sx2, sy2;
+       /*solve B[2]*x + B[3]*y + B[4] = 0 for y : y = b1* x + b2*/
+       b1 = -B[2]/B[3];
+       b2 = -B[4]/B[3];
+       /*plug into A[0]*x*x + A[1]*y*y + A[2]*x + A[3]*y + A[4] = 0
+         so that a1*x*x + a2*x + a3 = 0 */
+       a1 = A[0] + A[1]*b1*b1;
+       a2 = A[2] + A[1]*2*b1*b2 + A[3]*b1;
+       a3 = A[4] + A[1]*b2*b2 + A[3]*b2;
+       /*use the quadratic equation to solve for the two roots*/
+       sx1 = (-a2 + Math.sqrt(a2*a2 - 4*a1*a3))/(2*a1);
+       sx2 = (-a2 - Math.sqrt(a2*a2 - 4*a1*a3))/(2*a1);
+       sy1 = sx1*b1 + b2;
+       sy2 = sx2*b1 + b2;
+       return [{x:sx1, y:sy1}, {x:sx2, y:sy2}];
+       }
+
+    function DesignSurface(doc)
+       {
+       var firstPoint;
+       var firstControl;
+       var originX;
+       var originY;
+       var capturepoint;
+       var currentObject;
+       var v;
+       var c;
+       var objects = new Array();
+       var mode = "cursor";
+
+       function fix( p )
+          {
+          doc.insertBefore(p, firstPoint);
+          firstPoint = p;
+          }
+
+       this.setMode = function( m ) { mode = m; }
+       function mousemove(e) 
+          { capturepoint.move(e.clientX-200, e.clientY-10 ); }
+
+       function createIncidents( A, B )
+          {
+          var p0, p1;
+          if( A.type == "circle" && B.type == "circle" )
+             {              
+             p0 = createControlPoint();
+             p0.constrain( A, B, Incident_1, 0);        
+             p1 = createControlPoint();
+             p1.constrain( A, B, Incident_1, 1);
+             }
+          if( A.type == "line" && B.type == "line" )
+             {
+             p0 = createControlPoint();
+             p0.constrain( A, B, Incident_2, 0);        
+             }
+          if( A.type == "circle" && B.type == "line" )
+             {
+             p0 = createControlPoint();
+             p0.constrain( A, B, Incident_3, 0);        
+             p1 = createControlPoint();
+             p1.constrain( A, B, Incident_3, 1);
+             } 
+          if( A.type == "line" && B.type == "circle" )
+             {
+             p0 = createControlPoint();
+             p0.constrain( B, A, Incident_3, 0);        
+             p1 = createControlPoint();
+             p1.constrain( B, A, Incident_3, 1);
+             }
+          }
+
+       function capture( point )
+          {
+          var i;
+          if( mode == "line" )
+             {
+             if(capturepoint)
+                { 
+                currentObject = new EuclidLine( capturepoint, point );
+                doc.insertBefore( currentObject.getElement(), firstPoint); 
+                for(i = 0; i < objects.length; i++ )
+                   {
+                   createIncidents( currentObject, objects[i]);
+                   }
+                objects.push(currentObject);
+                capturepoint = null; 
+                }
+             else
+                { capturepoint = point; }
+             }
+          if( mode == "circle" )
+             {
+             if(capturepoint)
+                {
+                currentObject = new EuclidCircle( capturepoint, point );
+                doc.insertBefore(currentObject.getElement(), firstPoint);
+                for(i = 0; i < objects.length; i++ )
+                   {
+                   createIncidents( currentObject, objects[i]);
+                   }
+                objects.push(currentObject);
+                capturepoint = null; 
+                }
+             else
+                { capturepoint = point; }
+             }
+
+          if( mode == "cursor" && !point.constrained)
+             {
+             capturepoint = point;
+             doc.addEventListener("mousemove",mousemove,true);
+             }
+          
+          }
+
+       function uncapture( point )
+          {
+          capturepoint = null;
+          doc.removeEventListener("mousemove", mousemove, true);
+          }
+
+       function ControlPoint()
+          {
+          var circle_node = document.createElementNS("http://www.w3.org/2000/svg", "svg:circle");
+          var deps = new Array();
+          var parent1, parent2;
+          var incidence;
+          var solutionNumber;
+          this.constrained = false;
+          this.enabled = true;
+          circle_node.controller = this;
+
+          function move()
+             {
+             var v, i;
+             v = incidence(parent1.getConstraint(), parent2.getConstraint())[solutionNumber];
+             if( !isNaN(v.x) )
+                {
+                circle_node.setAttribute("cx", v.x);
+                circle_node.setAttribute("cy", v.y);
+                if( !circle_node.parentNode ) { doc.appendChild(circle_node);}
+                } else {
+                if( circle_node.parentNode ) { doc.removeChild(circle_node);}
+                }
+             for(i = 0; i < deps.length; i++)
+                {
+                deps[i]( v.x, v.y );
+                }
+             }
+
+          this.constrain = function( _parent1, _parent2, _incidence, _solutionNumber )
+             {
+             parent1 = _parent1;
+             parent2 = _parent2;
+             incidence = _incidence;
+             solutionNumber = _solutionNumber;
+             parent1.depend(move);
+             parent2.depend(move);
+             circle_node.setAttribute("style", "stroke:black;fill:grey");
+             move();
+             this.constrained = true;
+             fix( circle_node );
+             }
+
+          function onclick( e ) 
+             {
+             circle_node.setAttribute("style", "stroke:black;fill:blue");
+             circle_node.removeEventListener("click", onclick, true);
+             circle_node.addEventListener("click", onunclick, true);
+             e.stopPropagation();
+             
+             capture( this.controller );
+             }
+
+          function onunclick( e )
+             {
+             if(parent1)
+                { 
+                circle_node.setAttribute("style", "stroke:black;fill:grey");
+                } else {
+                circle_node.setAttribute("style", "stroke:grey;fill:skyblue");
+                }
+             circle_node.removeEventListener("click", onunclick, true);
+             circle_node.addEventListener("click", onclick, true);
+             e.stopPropagation();
+             uncapture( this.controller );
+             }
+             
+          circle_node.addEventListener("click", onclick, true);
+          circle_node.setAttribute("style", "stroke:grey;fill:skyblue");
+          circle_node.setAttribute("r", 4);      
+
+          this.move = function( x, y )
+             {
+             var i;
+             circle_node.setAttribute("cx", x);
+             circle_node.setAttribute("cy", y);
+             for(i = 0; i < deps.length; i++)
+                {
+                deps[i]( x, y );
+                }
+             }
+
+          this.depend = function( d ) 
+             { 
+             if(parent1)
+                { 
+                circle_node.setAttribute("style", "stroke:black;fill:grey");
+                } else {
+                circle_node.setAttribute("style", "stroke:grey;fill:skyblue");
+                }
+             circle_node.removeEventListener("click", onunclick, true);
+             circle_node.addEventListener("click", onclick, true);
+             deps.push( d ); 
+             d( circle_node.getAttribute("cx"), circle_node.getAttribute("cy")); 
+             }
+
+          this.getElement = function() { return circle_node; }
+
+          }
+
+       this.click = function( e )
+          {
+          var c = createControlPoint();
+          c.move( e.clientX-200, e.clientY-10 ); //todo wtf?? 
+          }
+
+       this.move = function( e )
+          {
+          if( this.capturePoint )
+             {
+             this.capturePoint.move( e.clientX-200, e.clientY-10 );
+             }
+          }
+       
+       doc.addEventListener("click", this.click, false);
+       doc.addEventListener("mousemove", this.move, false);
+
+       function createControlPoint(x, y)
+          {
+          c = new ControlPoint();
+          doc.appendChild(c.getElement());
+          if( firstControl ==  null ) { firstControl = c.getElement(); }
+          if( firstPoint == null) { firstPoint = c.getElement(); }
+          return c;
+          }
+
+       }
+
+    D = new DesignSurface( document.getElementById("c3d") );
+
+    </script>
+  <input type="button" value="line tool" onclick="D.setMode('line');"/><br/>
+  <input type="button" value="drag tool" onclick="D.setMode('cursor');" /><br/>
+  <input type="button" value="circle tool" onclick="D.setMode('circle');" />
+  </body>
+</html>

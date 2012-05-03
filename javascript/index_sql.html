@@ -1,0 +1,51 @@
+<html>
+  <title>token test</title>
+  <body>
+    <script src="datatable.js"></script>
+    <script src="lexer.js" ></script>
+    <script src="htmlcatalog.js"></script>
+    <script>
+
+
+      store = new database();
+
+      function sqlparse()
+      {
+      var a = new parser();
+      var s = document.getElementById("input").value;
+      var r;
+      /*a nasty case : "select a from x inner join y inner join z on x.y == y.z"*/
+      /*a.parse(" select a.* from (x) inner join (select y from z) sql left outer join (x inner join y) on [x.a == y.a]");
+      */
+      a.parse(s);
+      //alert(a.data());
+      r = a.getResult();
+      document.getElementById("parse").innerHTML = r.toString(0);
+      document.getElementById("output").innerHTML = store.execute(r);
+      }
+
+    </script>
+    <div id="parse" style = "position:absolute;left:400px;border:black"></div>
+    <textarea id="input" style="width:350">
+    </textarea>
+    <div id="output"></div>
+    <input type="button" onclick="sqlparse()"/>
+
+    <div id="root">
+       <table id="T1">
+       <tr><th>a</th><th>b</th><th>c</th></tr>
+       <tr><td>1</td><td>2</td><td>3</td></tr>
+       <tr><td>4</td><td>5</td><td>6</td></tr>
+       <tr><td>7</td><td>8</td><td>9</td></tr>
+       </table>
+       <table id="T2">
+       <tr><th>A</th><th>B</th><th>C</th><th>D</th></tr>
+       <tr><td>1</td><td>10</td><td>11</td><td>12</td></tr>
+       </table>
+    </div>
+    <script>
+    catalog = new HTMLCatalog( document.getElementById("root") );
+    store.addCatalog( catalog );
+    </script>
+  </body>
+</html>
