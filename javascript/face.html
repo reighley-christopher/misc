@@ -1,0 +1,363 @@
+<html>
+   <head>
+      <title>This is a toy about numbers</title>
+      <link href="spreadsheet.css" rel="stylesheet" type="text/css">
+      <script type="text/javascript" src="json2.js"></script>
+      <script type="text/javascript" src="jquery.js"></script>
+      <script type="text/javascript" src="underscore.js"></script>
+      <script type="text/javascript" src="backbone.js"></script>
+      <script type="text/javascript">
+
+      var Row = Backbone.Model.extend
+         ({       
+         idAttribute : "_id"
+         });
+      
+      var RowSet = Backbone.Collection.extend
+         ({
+         model : Row,
+         comparator : function(a, b) { if ( a.get("_index") > b.get("_index") ){return 1;} else {return -1;}}
+         });
+
+      var RowView = Backbone.View.extend
+         ({
+         tagName : "tr",
+         initialize : function()
+            {
+            var i;
+            var cell;
+            this.children = [];
+            this.$el.append($("<td class='label'><input type='text' value='"+ this.model.get("_index") +"' readonly/></td>"));
+            
+            for(i = 0; i< this.options.columns.length;i++) 
+               { 
+
+               cell = new CellView( { row : this, column : this.options.columns.at(i) } );
+               this.children.push(cell);
+               this.$el.append(cell.el);  
+               }
+            this.options.columns.on("add", this.add(this));
+            },
+         add : function( obj ) 
+            { 
+            return function(column)
+               {
+               var cell = new CellView({ row : obj, column : column } );
+               obj.children.push( cell );
+               obj.$el.append(cell.el);
+               }
+            },
+         render : function()
+            {
+            var i;    
+            var cell;        
+            for(i = 0; i < this.children.length; i++) 
+               {           
+               cell = this.children[i];
+               cell.render();
+               }
+            return this;
+            }
+         });
+
+      var Column = Backbone.Model.extend
+         ({
+         idAttribute : "_id"         
+         });
+      
+      var ColumnSet = Backbone.Collection.extend
+         ({
+         model : Column
+         });
+
+      var ColumnView = Backbone.View.extend
+         ({
+         tagName : "td" ,
+         className : "label", 
+         events :
+            {
+            "change input" : "rename" 
+            },
+         initialize : function()
+            {
+            $(this.el).html("<input type='text' />");
+            },
+         rename : function(value)
+            {
+            this.model.set({"name" : this.$('input').val() });
+          
+            },
+         render : function(value)
+            {
+            this.$("input").val(this.model.get("name"));
+            }
+         });
+
+      var CellView = Backbone.View.extend
+         ({
+         tagName : "td",
+         events : 
+            {
+            "change input" : "update_out" 
+            },
+         changeName : function( view )
+            {
+            return function()
+               {
+               if( view.options.name ) {view.options.row.model.unset( view.options.name );}
+               view.options.name = view.options.column.model.get("name");
+               view.update_out();
+               }
+            },
+         update_out : function()
+            {
+            arg = {};
+            if(this.options.name) 
+               {
+               arg[this.options.name] = this.$('input').val();
+               this.options.mask = true;
+               this.options.row.model.set( arg, {} );
+               alert(JSON.stringify(this.options.row.model));
+               }
+            },
+         update_in : function(obj) {
+            return function()
+               {
+               var val;
+               if(!obj.options.mask)
+                  {
+                  if(obj.options.name)
+                     {
+                     val = obj.options.row.model.get( obj.options.name );
+                     if( val && val[0] == "=")
+                        {
+                      
+                        var variables = "var ";
+                        var i;
+                        var addcomma = false;
+                        for(i in obj.options.row.model.toJSON())
+                           {
+                           variables = variables + (addcomma?",":"") + i + "='" + obj.options.row.escape(i) + "'";
+                           addcomma = true;
+                           }
+                        obj.$('input').val( ( eval( "(function(){" + variables + "; return "  + val.substring(1) + ";})" ) ).call( {} ) );
+                        } else {
+                        obj.$('input').val( val );
+                        }
+                     obj.options.mask = false;
+                     }
+                  }
+               }
+            },
+         initialize : function()
+            {
+            $(this.el).html("<input type='text' />");
+            this.options.name = this.options.column.$el.val();
+            this.options.column.model.on( 'change', this.changeName(this)  );
+            this.options.row.model.on( 'change', this.update_in(this) );
+            },
+         render : function()
+            {
+            this.options.name = this.options.column.$('input').val();
+            (this.update_in(this))();
+            }
+         })
+
+      var Dataset = Backbone.Model.extend
+         ({
+         url : function()
+            {
+            return("/" + this.get("name") + "/");
+            },
+         idAttribute : "_id",
+         add : function( el ) 
+            {
+            el._index = this.length+1;
+            this.get("rows").add(el);
+            this.length = this.get("rows").length;
+            },
+         addColumn : function()
+            {
+            this.get("columns").add({});
+            return this.get("columns").last();
+            },
+         length : 0,
+         initialize : function()
+            {
+            var table = this;
+            table.columns = new ColumnSet();
+            table.rows = new RowSet();
+            table.columns.on("add", function( col ) { col.set("_table",table.get("_id")); } );
+            table.rows.on("add", function( row ) {row.set("_table",table.get("_id")); } );
+            table.set('columns', this.columns);
+            table.set('rows', this.rows);
+            table.on('change:columns', function(){if( !this.settingcolumns ) {this.settingcolumns = true; this.set("columns", new ColumnSet(this.get("columns")) ); this.settingcolumns=false; } });
+            table.on('change:rows', function(){if(!this.settingrows) { this.settingrows=true; this.set("rows", new RowSet(this.get("rows"))); this.length = this.get("rows").length;this.settingrows = false; } });
+            }
+         });    
+
+      var GridView = Backbone.View.extend
+         ({
+            tagName : "table",
+            initialize : function()
+               {
+               var i, j;
+               var col;
+               var row;
+               
+               this.options.toprow = $("<tr><td></td></tr>");
+               this.columns = {array: [], push : function(v){this.array.push(v); this.length++; this.trigger("add", v);}, at: function(index){return this.array[index]}, length : 0};
+               _.extend( this.columns, Backbone.Events );
+               for(i = 0; i < this.model.get("columns").length; i++) 
+                  { 
+                  
+                  col = new ColumnView({model : this.model.get("columns").at(i)});
+                  this.columns.push( col );
+                  this.options.toprow.append(col.el);
+                  };
+               this.$el.append(this.options.toprow);
+               this.rows = [];
+               for(i = 0; i < this.model.get("rows").length; i++) 
+                  {
+                  row = new RowView({model : this.model.get("rows").at(i), columns:this.columns});
+                  this.rows.push( row );
+                  this.$el.append(row.el);
+                  }
+               this.model.get("columns").on("add", this.addcolumn(this) );
+               this.model.get("rows").on("add", this.addrow(this) );
+               this.model.on("change", (function(obj) {
+                  return function() {
+                  for( i = 0; i < obj.columns.length; i++ ) { obj.columns.at(i).model = this.get("columns").at(i); }
+                  for( i = 0; i < obj.rows.length; i++ ) { obj.rows[i].model = this.get("rows").at(i); obj.rows[i].options.columns = obj.columns; }
+                  obj.model.get("rows").on("add", obj.addrow(obj) );
+                  obj.model.get("columns").on("add", obj.addcolumn(obj));  
+                  obj.render();
+                  } } )(this) );
+            
+               },
+            addcolumn : function( obj ) { 
+               return function(col)
+                  {
+                  var view;
+                  view = new ColumnView({model : col});
+                  obj.columns.push( view );
+                  view.render();
+                  obj.options.toprow.append( view.el );
+                  }
+               },
+            addrow : function( obj) {
+               return function( row ) 
+                  {
+                  var view;
+                  view = new RowView({model : row, columns : obj.columns });
+                  obj.rows.push( view );
+                  obj.$el.append(view.el);
+                  }
+               },
+            render : function()
+               {
+               var i;
+               for( i = 0; i < this.columns.length; i++ )
+                  {
+                  this.columns.at(i).render();
+                  }
+               for( i = 0; i < this.rows.length; i++ )
+                  {
+                  this.rows[i].render();
+                  }
+               }
+         });
+
+      var dataset = new Dataset({name:"one"});
+      var gridview;
+      dataset.fetch({error:function(message){alert(message);}, success:function(){gridview = new GridView({model:dataset,el:$(".spreadsheet")}); gridview.render(); } });
+
+      var menus = 
+         {
+         "save" : function()
+            {
+            dataset.save();
+            },
+         "load sheet one" : function()
+            {
+            dataset = new Dataset({name:"one"});
+            dataset.fetch({error:function(message){alert(message);}, success:function(){gridview.$el.html("<table class='spreadsheet'></table>"); gridview = new GridView({model:dataset,el:$(".spreadsheet")}); gridview.render(); } });
+            },
+         "load sheet two" : function()
+            {
+            dataset = new Dataset({name:"two"});
+            dataset.fetch({error:function(message){alert(message);}, success:function(){gridview.$el.html("<table class='spreadsheet'></table>"); gridview = new GridView({model:dataset,el:$(".spreadsheet")}); gridview.render(); } });
+            },
+         "add column" : function()
+            {
+            var newCol =  dataset.addColumn();
+            gridview.render();
+            },
+         "add row" : function()
+            {
+            var i;    
+            var cell;        
+            dataset.add({"_index" : dataset.length });
+            gridview.render();     
+            },
+         "show data" : function()
+            {
+            alert(JSON.stringify(dataset));
+            }
+         }
+
+      function menufy( header, list )
+         {
+         list.hide();   
+         header.click( function()
+            {
+            list.toggle();
+            list.css("left", header.offset().left);
+            } )
+         }
+      $(document).ready( function()
+         {
+         $(".function").each( function()
+            {
+            $(this).click( menus[ $(this).html() ] );
+            } );
+
+         $(".menu").each( function()
+            {
+            menufy( $(this).children(".header"), $(this).children(".list") );
+            } );
+  
+
+
+
+         } );
+      
+      </script>
+   </head>
+   <body>
+      <span class="menu" >
+         <span class="header" >file</span>
+         <div class="list" id="t" >
+            <div class="function">load sheet one</div>
+            <div class="function">load sheet two</div>
+            <div class="function">save</div>
+            <div class="function">show data</div>
+         </div>
+      </span>
+      <span class="menu" >
+         <span class="header" >sheet</span>
+         <div class="list" >
+            <div class="function">add column</div>
+            <div class="function">add row</div>
+         </div>
+      </span>
+      <div class="dialog" style="visibility:hidden" id="new">
+          NEW DIALOG
+      </div>
+      <div>
+         <table class="spreadsheet" >
+            <tr><td></td></tr>
+         </table>
+      </div>
+   </body>
+</html>
