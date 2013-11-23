@@ -5,12 +5,14 @@
 #include "../execution/dij_misc.h"
 #include "dij_control.h"
 
+typedef long int DIJ_WORD;
+
 /*implementation of the iprocess interface including the main loop process_go*/
 
 /*a process consists of a series of machines which are to be run, one after the other using the same memory space.*/
 struct _process
    {
-   int *memory;
+   DIJ_WORD *memory;
    struct _object_type **types;
    int return_offset, return_size;
    struct _machine *head, *tail;
@@ -56,7 +58,7 @@ struct _machine
 
    void process_close( struct iChannel *self )
       {
-      /*TODO the semantics of this are undefined, 
+      /*TODO the semantics of this are undefined, */
       /*TODO perhaps both close and abandon should generate errors*/
       }
 
@@ -215,7 +217,7 @@ void process_initialize
    )
    {
    struct _process *p = (struct _process *)(self->P);
-   p->memory = (int *)malloc(sizeof(int)*memory_size);
+   p->memory = (DIJ_WORD *)malloc(sizeof(DIJ_WORD)*memory_size);
    p->types = (struct _object_type **)malloc(sizeof(struct _type *)*memory_size);
    p->return_offset = return_offset;
    p->return_size = return_size;
@@ -261,7 +263,7 @@ void process_detach(struct iProcess *self)
    p->last = 0;
    }
 
-void process_get_memory(struct iProcess *self, int **memory, struct _object_type ***types, struct iChannel **anonymous_out)
+void process_get_memory(struct iProcess *self, DIJ_WORD **memory, struct _object_type ***types, struct iChannel **anonymous_out)
    {
    struct _process *p = (struct _process *)(self->P);
    if(memory != 0) { *memory = p->memory; }
@@ -337,7 +339,7 @@ void run_process( struct _process *p )
       p->next = 0;
       last_process = p;
       }
-   if((int)result != -1 && result != 0) /*error case*/
+   if((long int)result != -1 && result != 0) /*error case*/
       {
       printf("**EXCEPTION :: %s\n", result->message(result) );      
       }

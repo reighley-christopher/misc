@@ -1,4 +1,5 @@
 /*TODO eliminate references to standard libraries*/
+/*TODO change long int to a typedef */
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -113,20 +114,19 @@ void invoke
    int left 
    )
    {
-   printf("invoke\n");
    /*this does all the leg work of abandoning control to another machine*/
    struct iProcess *p;
    /*create an iProcess*/
    p = self->fgraph->load( self->fgraph, fnode, &(self->wait_channel), left );
    /*this is what I want done with the result*/
-   printf("...load\n");
+   /*printf("...load\n");*/
    self->wait_channel.send = send;
    /*detach the current process*/
    self->process->detach( self->process );
-   printf("...detach\n");
+   /*printf("...detach\n");*/
    /*attach the new process*/
    p->attach(p);
-   printf("...attach\n");
+   /*printf("...attach\n");*/
    /*put this machine into waiting mode*/
    self->mode = MODE_WAIT;
    }
@@ -176,28 +176,28 @@ void curry( struct _hot_call *f )
 
 /*end hot call*/
 
-int *variable_address( struct _dij_machine *M, int code )
+long int *variable_address( struct _dij_machine *M, int code )
    {
    int i = 0;
    int j = 0;
-   printf("searching variables: \nparameters\n");
+   /*printf("searching variables: \nparameters\n");*/
    for( i = 0; i < M->context->num_parameters; i++ )
       {
-      printf("%d\n", j);
+      /*printf("%d\n", j);*/
       if( M->context->namespace[j] == code ) return M->variables+j;
       j++;
       }
-   printf("locals\n");
+   /*printf("locals\n");*/
    for( i = 0; i < M->context->num_locals; i++ )
       {
       printf("%d\n", j);
       if( M->context->namespace[j] == code ) return M->variables+j;
       j++;
       }
-   printf("returns\n");
+   /*printf("returns\n");*/
    for( i = 0; i < M->context->num_returns; i++ )
       {
-      printf("%d\n", j);
+      /*printf("%d\n", j);*/
       if( M->context->namespace[j] == code ) return M->variables+j;
       j++;
       }
@@ -230,7 +230,7 @@ void inst_check( struct _dij_machine *M )
    o = pop( &(M->stack) );
    if(o.type == &TYPE_HOT_CALL)
       {
-      printf("evaluate\n");
+      /*printf("evaluate\n");*/
       hc = (struct _hot_call *)(o.value);
       sploop = hc->p;
       if(sploop)
@@ -240,7 +240,7 @@ void inst_check( struct _dij_machine *M )
          if( !sploop->next && sploop->curry_flag ) { to_invoke = -1; fnode = hc->fnode; }
          while(sploop->next) 
             {
-            printf("\t%x\n", sploop->value.value);
+            /*printf("\t%lx\n", sploop->value.value);*/
             if(sploop->next->next) {sploop = sploop->next; }
             else 
                {
@@ -257,18 +257,18 @@ void inst_check( struct _dij_machine *M )
          {
          if( hc->fnode )
             {
-            printf("apply %x, %x, %x\n", M, hc, M->fgraph);
+            /*printf("apply %lx, %lx, %lx\n", (unsigned long int)M, (unsigned long int)hc, (unsigned long int)M->fgraph);*/
             fnode = M->fgraph->apply(M->fgraph, hc->fnode, hc->p);
             } else {
             fnode = M->fgraph->fcurry(M->fgraph, hc->p);
             }
          }
-      printf("exit apply %x\n", M->fgraph->is_loadable);
+      /*printf("exit apply %lx\n", (unsigned long int)M->fgraph->is_loadable);*/
       if( M->fgraph->is_loadable(M->fgraph, fnode, 0) && to_invoke )
          {
          invoke( M, fnode, dij_machine_ichannel_send, 0 );
          } else {
-         push( &(M->stack), object( (int)fnode, &TYPE_F_NODE ) );
+         push( &(M->stack), object( (long int)fnode, &TYPE_F_NODE ) );
          }
 
       } else { printf("dont evaluate\n"); push( &(M->stack), o ); };
@@ -280,7 +280,7 @@ void inst_push( struct _dij_machine *M )
    M->inst_pointer = M->inst_pointer+1;
    value = M->code[M->inst_pointer];
    push( &(M->stack), object( value, &TYPE_SCALAR ) );
-   printf("push %x\n", value);
+   /*printf("push %lx\n", (unsigned long int)value);*/
 }
 
 void inst_apply( struct _dij_machine *M )
@@ -288,44 +288,44 @@ void inst_apply( struct _dij_machine *M )
    struct _object func;
    struct _object param;
    struct _hot_call *p;
-   printf("apply\n");
+   /*printf("apply\n");*/
    param = pop( &(M->stack) );
-   printf("param = %x", param.value);
+   /*printf("param = %lx", (long unsigned int)param.value);*/
    func = pop( &(M->stack) );
-   printf("func = %x", func.value);
+   /*printf("func = %lx", (long unsigned int)func.value);*/
    if(func.type == &TYPE_HOT_CALL)
    {
-   printf("extend hot call\n");
+   /*printf("extend hot call\n");*/
    p = (struct _hot_call *)(func.value);
    } else {
-   printf("create hot call\n");
+   /*printf("create hot call\n");*/
    p = new_hot_call((void *)(func.value));
-   printf("copy\n");
+   /*printf("copy\n");*/
    }
    apply( p, param );
-   printf("apply\n");
-   push( &(M->stack), object((int)p, &TYPE_HOT_CALL) );
-   printf("complete apply\n");
+   /*printf("apply\n");*/
+   push( &(M->stack), object((long int)p, &TYPE_HOT_CALL) );
+   /*printf("complete apply\n");*/
 }
 
 void inst_curry( struct _dij_machine *M )
 {
    struct _object func;
    struct _hot_call *p;
-   printf("curry\n");
+   /*printf("curry\n");*/
    func = pop( &(M->stack) );
    if( func.type == &TYPE_HOT_CALL )
    {
-      printf("hot curry\n");
+      /*printf("hot curry\n");*/
       curry( (struct _hot_call *)(func.value) );
    } else {
-      printf("cold curry\n");
+      /*printf("cold curry\n");*/
       p = new_hot_call( (void *)(func.value ) );
-      func = object ( (int)p, &TYPE_HOT_CALL );
+      func = object ( (long int)p, &TYPE_HOT_CALL );
       curry( p );
    }
    push( &(M->stack), func);
-   printf("complete curry\n");
+   /*printf("complete curry\n");*/
 }
 
 void inst_halt( struct _dij_machine *M )
@@ -338,15 +338,15 @@ void inst_halt( struct _dij_machine *M )
 void inst_reference_variable( struct _dij_machine *M )
 {
    int ref;
-   printf("referencing variable\n");
+   /*printf("referencing variable\n");*/
    M->inst_pointer = M->inst_pointer+1;
    ref = M->code[M->inst_pointer];
-   printf("...  %d\n", ref);
+   /*printf("...  %d\n", ref);*/
    push( &(M->stack), object( *(variable_address(M, ref)), &TYPE_SCALAR ) );
 }
 
-int globals[1024];
-int max_global = -1;
+long int globals[1024];
+long int max_global = -1;
 
 void inst_reference_global( struct _dij_machine *M )
 {
@@ -359,16 +359,16 @@ void inst_reference_global( struct _dij_machine *M )
 void lvalue_name_liquidate( void *address, struct _parameter *parameters, struct _dij_machine *M )
 {
    int value = parameters->value.value;
-   int *target = (int *)address;
+   long int *target = (long int *)address;
    struct _parameter *new_parameter;
-   printf("liquidating name %x\n", address );
+   /*printf("liquidating name %lx\n", (long unsigned int)address );*/
    *target = value;
    /*parameters->consumed_flag = -1;*/
-   printf("success\n");
+   /*printf("success\n");*/
    while( parameters )
       {
       new_parameter = parameters;
-      printf(":-( %x %x\n", new_parameter, new_parameter->next );
+      /*printf(":-( %lx %lx\n", (long unsigned int)new_parameter, (long unsigned int)new_parameter->next );*/
       parameters = parameters->next;
       free(new_parameter);
       }
@@ -377,13 +377,13 @@ void lvalue_name_liquidate( void *address, struct _parameter *parameters, struct
 void inst_lvalue_name( struct _dij_machine *M )
 {
    int ref;
-   struct _lvalue *lvalue = (struct _lvalue *)malloc(sizeof(lvalue));
+   struct _lvalue *lvalue = (struct _lvalue *)malloc(sizeof(struct _lvalue));
    M->inst_pointer = M->inst_pointer+1;
    ref = M->code[M->inst_pointer];
    lvalue->liquidate = lvalue_name_liquidate;
    lvalue->parameter = variable_address(M, ref );
-   push(&(M->stack), object( (int)lvalue, &TYPE_LVALUE ) );
-   printf("lvalue named\n");
+   push(&(M->stack), object( (long int)lvalue, &TYPE_LVALUE ) );
+   /*printf("lvalue named\n");*/
 }
 
 void inst_assign( struct _dij_machine *M )
@@ -400,7 +400,7 @@ void inst_assign( struct _dij_machine *M )
       parameters = new_parameter;
       parameters->curry_flag = 0;
       parameters->value = sploop;
-      printf("assign %x\n", sploop.value);
+      /*printf("assign %lx\n", sploop.value);*/
       sploop = pop( &(M->stack) );
       }
    while( M->stack && sploop.type == &TYPE_LVALUE )
@@ -418,12 +418,12 @@ void inst_assign( struct _dij_machine *M )
       {
       lvalue = (struct _lvalue *)pop(&lvalue_stack).value;
       lvalue->liquidate( lvalue->parameter, parameters, M );
-      printf("back out at assignment\n");
+      /*printf("back out at assignment\n");*/
       free(lvalue);
 
-      printf("assignment\n");
+      /*printf("assignment\n");*/
       }
-   printf("assignment complete\n");
+   /*printf("assignment complete\n");*/
 }
 
 void inst_add( struct _dij_machine *M )
@@ -432,7 +432,7 @@ void inst_add( struct _dij_machine *M )
   left = pop( &(M->stack) ).value;
   right = pop( &(M->stack) ).value;
   push( &(M->stack), object( left+right, &TYPE_SCALAR ) );
-  printf("addition\n");
+  /*printf("addition\n");*/
 }
 
 void bit_bucket(struct iChannel *self, struct _stack_member *data)
@@ -442,7 +442,7 @@ void bit_bucket(struct iChannel *self, struct _stack_member *data)
    struct _stack_member *sploop;
    struct _dij_machine *m = ((struct _dij_machine *)(self->C));
    sploop = data;
-   printf("dumped to bit bucket\n");
+   /*printf("dumped to bit bucket\n");*/
    while( sploop )
       {
       kill_me = sploop;
@@ -521,17 +521,23 @@ void inst_lvalue_call( struct _dij_machine *M )
 /*
 the object on top of the stack had better be a hot call, because we are going to treat it like one.
 */
-   int pc = pop( &(M->stack) ).value;
+   long int pc = pop( &(M->stack) ).value;
    struct _lvalue *lv = (struct _lvalue *)malloc(sizeof(struct _lvalue) );
-   printf("lvalue call\n");
+   /*printf("lvalue call\n");*/
    lv->parameter = (void *)pc;
    lv->liquidate = lvalue_call_liquidate;
-   push( &(M->stack), object( (int)lv, &TYPE_LVALUE ) );
+   push( &(M->stack), object( (long int)lv, &TYPE_LVALUE ) );
 }
 
 void inst_anonymous_parameter( struct _dij_machine *M )
 {
    struct _object v;
+   /*printf("inst_anonymous_parameter %d %d %d %d %d", 
+     M->anonymous_in_ptr, 
+     M->context->num_parameters,
+     M->context->num_returns, 
+     M->context->num_locals,
+     M->context->num_anonymous );*/
    if(M->anonymous_in_ptr >= 
       (
       M->context->num_parameters+
@@ -542,9 +548,9 @@ void inst_anonymous_parameter( struct _dij_machine *M )
    v.value = M->variables[M->anonymous_in_ptr]; 
    v.type = M->types[M->anonymous_in_ptr];
    M->anonymous_in_ptr = M->anonymous_in_ptr + 1;
-   printf("anonymous parameter %x\n", v.value);
+   /*printf("anonymous parameter %lx\n", v.value);*/
    push( &(M->stack), v );
-   printf("fetched anonymous\n");
+   /*printf("fetched anonymous\n");*/
 }
 
 void anonymous_return_liquidate( void *address, struct _parameter *rvalues, struct _dij_machine *M )
@@ -576,7 +582,7 @@ void inst_anonymous_return( struct _dij_machine *M )
    struct _lvalue *lv = (struct _lvalue *)malloc(sizeof(struct _lvalue) );
    lv->parameter = 0;
    lv->liquidate = anonymous_return_liquidate;
-   push( &(M->stack), object( (int)lv, &TYPE_LVALUE ) );
+   push( &(M->stack), object( (long int)lv, &TYPE_LVALUE ) );
 }
 
 void inst_spawn( struct _dij_machine *M )
@@ -588,7 +594,7 @@ void inst_spawn( struct _dij_machine *M )
    void *fnode_out;
    fnode_in = (void *)(pop( &(M->stack) ).value);
    fnode_out = M->fgraph->spawn(M->fgraph, fnode_in);
-   push( &(M->stack), object((int)fnode_out, &TYPE_F_NODE ) );
+   push( &(M->stack), object((long int)fnode_out, &TYPE_F_NODE ) );
    }
 
 /*this is the previous implementation of this instruction.
@@ -636,7 +642,7 @@ All of this logic should end up in the control module*/
 /*this instruction is at the top of if and do loops to indicate that the value following is just a word of data and not an instruction*/
 void inst_noop( struct _dij_machine *M )
   {
-  printf("hit noop %d\n", M->code[M->inst_pointer+1]);
+  /*printf("hit noop %ld\n", M->code[M->inst_pointer+1]);*/
   M->inst_pointer = M->inst_pointer+1;
   }
 
@@ -648,7 +654,7 @@ void inst_test( struct _dij_machine *M )
   int value = pop(&(M->stack)).value;
   M->inst_pointer = M->inst_pointer+1;
   mark = M->code[M->inst_pointer];
-  if(value%2) { printf("not jumping\n"); } else { M->inst_pointer = M->inst_pointer+mark; printf("jumping %d\n", mark); } 
+  if(value%2) { /*printf("not jumping\n");*/ } else { M->inst_pointer = M->inst_pointer+mark; /*printf("jumping %d\n", mark);*/ } 
   }
 
 void inst_if_mark( struct _dij_machine *M )
@@ -658,7 +664,7 @@ void inst_if_mark( struct _dij_machine *M )
   int end;
   M->inst_pointer = M->inst_pointer+1;
   head = M->code[M->inst_pointer];
-  printf("hit if marker %d\n", head);
+  /*printf("hit if marker %d\n", head);*/
   end = M->code[M->inst_pointer - head ];
   M->inst_pointer = M->inst_pointer - head + end - 1;
   }
@@ -669,7 +675,7 @@ void inst_do_mark( struct _dij_machine *M )
   int head; /*markers include a distance back to the header*/
   M->inst_pointer = M->inst_pointer+1;
   head = M->code[M->inst_pointer];
-  printf("hit do marker %d\n", head );
+  /*printf("hit do marker %d\n", head );*/
   M->inst_pointer = M->inst_pointer - head;
   }
 
@@ -681,7 +687,7 @@ void inst_left_join( struct _dij_machine *M )
    fnode_right = (void *)(pop( &(M->stack) ).value);
    fnode_left = (void *)(pop( &(M->stack) ).value);
    fnode_out = M->fgraph->ljoin(M->fgraph, fnode_left, fnode_right);
-   push( &(M->stack), object((int)fnode_out, &TYPE_F_NODE ) );
+   push( &(M->stack), object((long int)fnode_out, &TYPE_F_NODE ) );
    }
   /*pervious implementation of inst_left_join*/
   /*
@@ -705,7 +711,7 @@ void inst_namespace_join( struct _dij_machine *M )
   void *first = (void *)(pop(&(M->stack)).value); 
   void *ret;
   ret = M->fgraph->njoin(M->fgraph, first, second);
-  push( &(M->stack), object((int)ret, &TYPE_F_NODE) );
+  push( &(M->stack), object((long int)ret, &TYPE_F_NODE) );
 }
 
 void inst_not( struct _dij_machine *M )
@@ -713,7 +719,7 @@ void inst_not( struct _dij_machine *M )
   int arg;
   arg = pop( &(M->stack) ).value;
   push( &(M->stack), object( ~arg, &TYPE_SCALAR ) );
-  printf("bitwise not\n");
+  /*printf("bitwise not\n");*/
 }
 
 void inst_neg( struct _dij_machine *M )
@@ -721,7 +727,7 @@ void inst_neg( struct _dij_machine *M )
   int arg;
   arg = pop( &(M->stack) ).value;
   push( &(M->stack), object( -arg, &TYPE_SCALAR ) );
-  printf("twos compliment negation\n");
+  /*printf("twos compliment negation\n");*/
 }
 
 void inst_equal( struct _dij_machine *M )
@@ -745,7 +751,7 @@ void print_stack( struct _dij_machine *M )
    printf("*PRINT_STACK*\n");
    while( sploop )
       {
-      printf("\tprint_stack: %x\n", sploop->value.value);
+      printf("\tprint_stack: %lx\n", sploop->value.value);
       sploop = sploop->under;
       }
    }
@@ -767,7 +773,7 @@ void constants( struct _dij_machine *M )
    int i;
    for(i = 0; i <= max_global; i++ )
       {
-      printf("\tconstants: %x\n", globals[i]);
+      printf("\tconstants: %lx\n", (long unsigned int)globals[i]);
       }
    }
 
@@ -779,19 +785,19 @@ void variables( struct _dij_machine *M )
    printf("\tvariables parameters\n");
    for(i = 0; i < md->num_parameters; i++ )
       {
-      printf("\tvariables %d:%x\n", md->namespace[i], M->variables[j]);
+      printf("\tvariables %d:%lx\n", md->namespace[i], M->variables[j]);
       j++;
       }
    printf("\tvariables locals\n");
    for(i = 0; i < md->num_locals; i++ )
       {
-      printf("\tvariables %d:%x\n", md->namespace[i+md->num_parameters], M->variables[j]);
+      printf("\tvariables %d:%lx\n", md->namespace[i+md->num_parameters], M->variables[j]);
       j++;
       }
    printf("\tvariables returns\n");
    for(i = 0; i < md->num_returns; i++ )
       {
-      printf("\tvariables %d:%x\n", md->namespace[i+md->num_parameters+md->num_locals], M->variables[j]);
+      printf("\tvariables %d:%lx\n", md->namespace[i+md->num_parameters+md->num_locals], M->variables[j]);
       j++;
       }
    }
@@ -816,13 +822,19 @@ void partial_call( struct _dij_machine *M )
    */
    }
 
+void inspect_fnode( struct _dij_machine *M )
+   {
+   fgraph_debug(M->fgraph, (void *)M->stack->value.value, 0);
+   }
+
 instruction debugs[] =
    {
    print_stack,
    machine_list,
    constants,
    variables,
-   partial_call
+   partial_call,
+   inspect_fnode
    };
 
 void debug( struct _dij_machine *M )
@@ -862,7 +874,7 @@ struct iException *dij_imachine_run( struct iMachine *self )
    while(M->mode == MODE_RUN)
       {
       instruction I;
-      printf(" ... %x . %d\n", M->code, M->inst_pointer );
+      printf(" ... %lx . %d\n", (unsigned long int)M->code, M->inst_pointer );
       I = (instruction)(M->code[M->inst_pointer]);
       I(M);
       M->inst_pointer = M->inst_pointer+1;
@@ -916,10 +928,11 @@ struct iMachine *dij_icode_new
 
    }
 
-struct iCode *dij_box( int *code  )
+struct iCode *dij_box( long int *code  )
    {
    struct iCode *ret = (struct iCode *)malloc(sizeof(struct iCode));
    ret->C = code;
    ret->new = dij_icode_new;
+   printf("dij box %x", ret);
    return ret;
    }

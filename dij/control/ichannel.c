@@ -96,7 +96,7 @@ struct iChannel *channel_new()
    c->last_client = 0;
    ret->C = c;
    ret->send = channel_send;
-   ret->recieve = channel_recieve;
+   ret->receive = channel_recieve;
    ret->abandon = channel_abandon;
    ret->close = channel_close;
    return ret;

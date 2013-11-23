@@ -8,6 +8,8 @@
 /*the apply iMachine implimentation just makes substitutions according to a specific
   list of name/value pairs, the list will be terminated with a name=-1*/
 
+typedef long int DIJ_WORD;
+
 struct _apply_controller *new_apply_controller( int nsize, int asize )
    {
    struct _apply_controller *ret = 
@@ -28,14 +30,14 @@ struct iException *foperation_apply_iMachine_run( struct iMachine *self )
    int anon = 0;
    struct _apply_machine *am = 
       (struct _apply_machine *)self->M;
-   int *memory = am->memory;
+   DIJ_WORD *memory = am->memory;
    struct _object_type **types = am->types;
    printf("begin variable substitution\n");
    while( am->substitutions[index].name != -1 )
       {
       memory[am->substitutions[index].name] = am->substitutions[index].value.value;
       types[am->substitutions[index].name] = am->substitutions[index].value.type;
-      printf("... %d gets %x(%x)\n", am->substitutions[index].name, am->substitutions[index].value.value, am->substitutions[index].value.type);
+      printf("... %d gets %lx(%lx)\n", am->substitutions[index].name, am->substitutions[index].value.value, am->substitutions[index].value.type);
       index = index+1;
       }
    printf("finished a variable substitution\n");

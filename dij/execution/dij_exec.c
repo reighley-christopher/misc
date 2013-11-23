@@ -8,9 +8,11 @@
 
 /*initialization code*/
 
+typedef long int DIJ_WORD;
+
 struct _buffer_chunk
 {
-  int data[1024];
+  DIJ_WORD data[1024];
   int size;
   struct _buffer_chunk *next;
 };
@@ -46,9 +48,9 @@ void open_buffer()
   new_buffer->first.next = 0;
 }
 
-int *close_buffer()
+long int *close_buffer()
 {
-  int *ret;
+  long int *ret;
   int size = 0;
   int w_index = 0;
   int r_index = 0;
@@ -60,7 +62,7 @@ int *close_buffer()
     size = size + sploop->size;
     sploop = sploop->next;
   }
-  ret = malloc( sizeof(int) * size );
+  ret = malloc( sizeof(long int) * size );
   sploop = &(write_buffer->first);
   while( sploop )
   {
@@ -75,11 +77,11 @@ int *close_buffer()
   kill_buffer = write_buffer;
   write_buffer = write_buffer->up;
   free(kill_buffer);
-  printf("close buffer %x\n", ret);
+  printf("close buffer %lx\n", (unsigned long int)ret);
   return ret;
 }
 
-void dij_write( int word )
+void dij_write( long int word )
 {
    if( write_buffer == 0 ) { open_buffer(); }
    write_buffer->last->data[write_buffer->last->size] = word;
@@ -97,9 +99,9 @@ void dij_write( int word )
   because it will never be used at 0, and it will always be used in the global
   space, which shouldn't get larger than about 3 words long*/
 /*TODO make dij_unwrite less painful in the edge cases that "never" happen*/
-int dij_unwrite()
+long int dij_unwrite()
 {
-  int ret;
+  long int ret;
   write_buffer->last->size--;
   ret = write_buffer->last->data[ write_buffer->last->size ];
   return ret;
@@ -112,8 +114,8 @@ void dij_push_data()
 
 void dij_pop_data()
    {
-   int *result = close_buffer();
-   dij_write( (int)result );
+   long int *result = close_buffer();
+   dij_write( (long int)result );
    }
 
 void dij_push_code()
@@ -149,7 +151,7 @@ void dij_pop_code()
    write_code->payload->namespace = 
       malloc
          (
-         sizeof(int)*
+         sizeof(long int)*
             (
             write_code->payload->num_parameters + 
             write_code->payload->num_locals + 
@@ -172,9 +174,9 @@ void dij_pop_code()
          [i+write_code->payload->num_parameters+write_code->payload->num_locals] = 
          write_code->returns[i]; 
       }
-   printf("fgraph->ground %x %x\n", fgraph, fgraph?fgraph->ground:0);
+   printf("fgraph->ground %lx %lx\n", (unsigned long int)fgraph, fgraph?(unsigned long int)fgraph->ground:0);
    fnode = fgraph->ground(fgraph, write_code->payload);
-   printf("code::%x\n fnode: %x\n", write_code->payload->head, fnode );
+   printf("code::%lx\n fnode: %lx\n", (unsigned long int)write_code->payload->head, (unsigned long int)fnode );
    kill_me = write_code;
 
    write_code = write_code->under;
@@ -185,19 +187,19 @@ void dij_pop_code()
       if( kill_me->returns) free(kill_me->returns);
       free(kill_me);
       }
-   dij_write( (int) fnode );
+   dij_write( (long int) fnode );
    printf("exit pop_code\n");
    }
 
 void dij_define_global()
 {
    int number;
-   int value;
+   long int value;
    printf("define global\n");
    number = dij_unwrite();
    value = dij_unwrite();
    globals[number] = value;
-   printf("\t%d %x\n", number, value);
+   printf("\t%d %lx\n", number, (unsigned long int)value);
    if( number > max_global ) max_global = number;
 }
 
@@ -285,8 +287,8 @@ void dij_record_number( int later )
 struct _control_structure
 {
   int control_type; /*-1 == if ; 0 == do */
-  int *control_edit;
-  int *marker_edit;
+  DIJ_WORD *control_edit;
+  DIJ_WORD *marker_edit;
   struct _control_structure *next;
 };
 
@@ -310,7 +312,7 @@ void dij_push_do()
 {
   push_control_structure();
   current_control_structure->control_type = 0;
-  dij_write((int)inst_noop);
+  dij_write((DIJ_WORD)inst_noop);
   current_control_structure->control_edit = 
     write_buffer->last->data + write_buffer->last->size;
   dij_write(0);
@@ -320,13 +322,13 @@ void dij_push_if()
 {
   push_control_structure();
   current_control_structure->control_type = -1;
-  dij_write((int)inst_noop);
+  dij_write((long int)inst_noop);
   current_control_structure->control_edit = 
      write_buffer->last->data + write_buffer->last->size;
   dij_write(0);
 }
 
-int final_distance(int *target)
+int final_distance(DIJ_WORD *target)
    {   
    struct _buffer_chunk *sploop;
    int chunks;
@@ -353,7 +355,7 @@ void dij_pop_control()
 
 void dij_control_test()
    {
-   dij_write((int)inst_test);
+   dij_write((long int)inst_test);
    current_control_structure->marker_edit = 
       write_buffer->last->data + write_buffer->last->size;
    dij_write(0);
@@ -363,14 +365,14 @@ void dij_control_marker()
    {
    if(current_control_structure->control_type)
       {
-      dij_write((int)inst_if_mark);
+      dij_write((long int)inst_if_mark);
       } else {
-      dij_write((int)inst_do_mark);
+      dij_write((long int)inst_do_mark);
       }
    *(current_control_structure->marker_edit) = 
       final_distance(current_control_structure->marker_edit);
    dij_write(final_distance(current_control_structure->control_edit));
-   printf("edit marker : %d\n", *(current_control_structure->marker_edit) );
+   printf("edit marker : %ld\n", *(current_control_structure->marker_edit) );
    }
 
 /*end control structures*/
@@ -387,8 +389,12 @@ struct _partial_call *c_box( int func_ptr )
 
 void *dynamic_load( char *library, char *symbol )
    {
-   printf( "!!!!!!!!!!load: %s, %s\n", library, symbol );
-   return c_box( dlsym( dlopen(library, 1), symbol ), fgraph );
+   void *sym = dlsym( dlopen(library, 1), symbol);
+   void *box;
+   printf("sym\n");
+   box = c_box(sym, fgraph);
+   printf( "!!!!!!!!!!load: %x %s, %x %s -> %x\n", library, library, symbol, symbol, box );
+   return box;
    }
 
 /*end initialization code*/
@@ -396,7 +402,7 @@ void *dynamic_load( char *library, char *symbol )
 void initialize()
    {
    fgraph = fgraph_new();
-   globals[0] = (int)c_box( (void *)dynamic_load, fgraph );
+   globals[0] = (long int)c_box( (void *)dynamic_load, fgraph );
    write_code = 0;
    write_buffer = 0;
    }

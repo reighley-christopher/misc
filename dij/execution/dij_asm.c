@@ -576,7 +576,9 @@ char *yytext;
 #include "../control/dij_control.h"
 #include "dij_exec.h"
 
-#line 580 "dij_asm.c"
+typedef long int DIJ_WORD;
+
+#line 582 "dij_asm.c"
 
 #define INITIAL 0
 
@@ -763,10 +765,10 @@ YY_DECL
 	register char *yy_cp, *yy_bp;
 	register int yy_act;
     
-#line 10 "dij_asm.l"
+#line 12 "dij_asm.l"
 
 
-#line 770 "dij_asm.c"
+#line 772 "dij_asm.c"
 
 	if ( !(yy_init) )
 		{
@@ -852,179 +854,179 @@ do_action:	/* This label is used only to access EOF actions. */
 case 1:
 /* rule 1 can match eol */
 YY_RULE_SETUP
-#line 12 "dij_asm.l"
+#line 14 "dij_asm.l"
 { }
 	YY_BREAK
 case 2:
 YY_RULE_SETUP
-#line 14 "dij_asm.l"
-{ int d; sscanf(yytext, "%d", &d ); dij_write(d); dij_record_number( d ); }
+#line 16 "dij_asm.l"
+{ DIJ_WORD d; sscanf(yytext, "%ld", &d ); dij_write(d); dij_record_number( d ); }
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 16 "dij_asm.l"
-{ dij_write((int)inst_push); }
+#line 18 "dij_asm.l"
+{ dij_write((long int)inst_push); }
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 18 "dij_asm.l"
+#line 20 "dij_asm.l"
 {} 
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
-#line 20 "dij_asm.l"
-{ dij_write((int)inst_apply); }
+#line 22 "dij_asm.l"
+{ dij_write((long int)inst_apply); }
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 22 "dij_asm.l"
-{ dij_write((int)inst_curry); }
+#line 24 "dij_asm.l"
+{ dij_write((long int)inst_curry); }
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 24 "dij_asm.l"
-{ dij_write((int)inst_check); }
+#line 26 "dij_asm.l"
+{ dij_write((long int)inst_check); }
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 26 "dij_asm.l"
-{ dij_write((int)inst_halt); }
+#line 28 "dij_asm.l"
+{ dij_write((long int)inst_halt); }
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 28 "dij_asm.l"
+#line 30 "dij_asm.l"
 { dij_push_code();  }
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
-#line 30 "dij_asm.l"
+#line 32 "dij_asm.l"
 { dij_pop_code(); printf("'pop_code\n");}
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 32 "dij_asm.l"
+#line 34 "dij_asm.l"
 { dij_push_data(); }
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-#line 34 "dij_asm.l"
+#line 36 "dij_asm.l"
 { dij_pop_data(); }
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 36 "dij_asm.l"
-{ dij_write((int)inst_reference_variable); dij_note_number( dij_note_rvalue ); } 
+#line 38 "dij_asm.l"
+{ dij_write((long int)inst_reference_variable); dij_note_number( dij_note_rvalue ); } 
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 38 "dij_asm.l"
+#line 40 "dij_asm.l"
 {dij_define_global(); }
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 40 "dij_asm.l"
-{ dij_write((int)inst_reference_global); }
+#line 42 "dij_asm.l"
+{ dij_write((long int)inst_reference_global); }
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 42 "dij_asm.l"
-{ dij_write((int)inst_assign); }
+#line 44 "dij_asm.l"
+{ dij_write((long int)inst_assign); }
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
-#line 44 "dij_asm.l"
-{ dij_write((int)inst_add); }
+#line 46 "dij_asm.l"
+{ dij_write((long int)inst_add); }
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
-#line 46 "dij_asm.l"
-{dij_write((int)inst_lvalue_name); dij_note_number( dij_note_lvalue ); }
+#line 48 "dij_asm.l"
+{dij_write((long int)inst_lvalue_name); dij_note_number( dij_note_lvalue ); }
 	YY_BREAK
 case 19:
 YY_RULE_SETUP
-#line 48 "dij_asm.l"
-{dij_write((int)inst_lvalue_call); }
+#line 50 "dij_asm.l"
+{dij_write((long int)inst_lvalue_call); }
 	YY_BREAK
 case 20:
 YY_RULE_SETUP
-#line 50 "dij_asm.l"
-{dij_write((int)inst_anonymous_parameter); }
+#line 52 "dij_asm.l"
+{dij_write((long int)inst_anonymous_parameter); }
 	YY_BREAK
 case 21:
 YY_RULE_SETUP
-#line 52 "dij_asm.l"
-{dij_write((int)inst_anonymous_return); }
+#line 54 "dij_asm.l"
+{dij_write((long int)inst_anonymous_return); }
 	YY_BREAK
 case 22:
 YY_RULE_SETUP
-#line 54 "dij_asm.l"
-{dij_write((int)inst_spawn); }
+#line 56 "dij_asm.l"
+{dij_write((long int)inst_spawn); }
 	YY_BREAK
 case 23:
 YY_RULE_SETUP
-#line 56 "dij_asm.l"
-{dij_write((int)debug); }
+#line 58 "dij_asm.l"
+{dij_write((long int)debug); }
 	YY_BREAK
 case 24:
 YY_RULE_SETUP
-#line 58 "dij_asm.l"
-{ dij_write((int)inst_left_join); }
+#line 60 "dij_asm.l"
+{ dij_write((long int)inst_left_join); }
 	YY_BREAK
 case 25:
 YY_RULE_SETUP
-#line 60 "dij_asm.l"
-{dij_write((int)inst_namespace_join); }
+#line 62 "dij_asm.l"
+{dij_write((long int)inst_namespace_join); }
 	YY_BREAK
 case 26:
 YY_RULE_SETUP
-#line 62 "dij_asm.l"
+#line 64 "dij_asm.l"
 {dij_push_if(); }
 	YY_BREAK
 case 27:
 YY_RULE_SETUP
-#line 64 "dij_asm.l"
+#line 66 "dij_asm.l"
 {dij_push_do(); }
 	YY_BREAK
 case 28:
 YY_RULE_SETUP
-#line 66 "dij_asm.l"
+#line 68 "dij_asm.l"
 {dij_control_test(); }
 	YY_BREAK
 case 29:
 YY_RULE_SETUP
-#line 68 "dij_asm.l"
+#line 70 "dij_asm.l"
 {dij_control_marker(); }
 	YY_BREAK
 case 30:
 YY_RULE_SETUP
-#line 70 "dij_asm.l"
+#line 72 "dij_asm.l"
 {dij_pop_control(); }
 	YY_BREAK
 case 31:
 YY_RULE_SETUP
-#line 72 "dij_asm.l"
-{ dij_write((int)inst_not); }
+#line 74 "dij_asm.l"
+{ dij_write((long int)inst_not); }
 	YY_BREAK
 case 32:
 YY_RULE_SETUP
-#line 74 "dij_asm.l"
-{ dij_write((int)inst_neg); }
+#line 76 "dij_asm.l"
+{ dij_write((long int)inst_neg); }
 	YY_BREAK
 case 33:
 YY_RULE_SETUP
-#line 76 "dij_asm.l"
-{ dij_write((int)inst_equal); }
+#line 78 "dij_asm.l"
+{ dij_write((long int)inst_equal); }
 	YY_BREAK
 case YY_STATE_EOF(INITIAL):
-#line 78 "dij_asm.l"
+#line 80 "dij_asm.l"
 {printf("finished\n"); yyterminate(); }
 	YY_BREAK
 case 34:
 YY_RULE_SETUP
-#line 80 "dij_asm.l"
+#line 82 "dij_asm.l"
 ECHO;
 	YY_BREAK
-#line 1028 "dij_asm.c"
+#line 1030 "dij_asm.c"
 
 	case YY_END_OF_BUFFER:
 		{
@@ -2020,4 +2022,4 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 80 "dij_asm.l"
+#line 82 "dij_asm.l"

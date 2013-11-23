@@ -70,7 +70,7 @@ struct iProcess
    void (*get_memory)
       (
       struct iProcess *self, 
-      int **memory, 
+      long int **memory, 
       struct _object_type ***types, 
       struct iChannel **exit_channel
       );
@@ -134,4 +134,5 @@ struct iCode
 
 struct iFGraph *fgraph_new();
 struct iProcess *new_iProcess();
+void fgraph_debug(struct iFGraph *self, void *fnode, int operation );
 void process_go();

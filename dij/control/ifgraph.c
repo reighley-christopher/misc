@@ -7,6 +7,8 @@
 #include "apply_icode.h"
 #include "spawn_icode.h"
 
+typedef long int DIJ_WORD;
+
 union _foperand
    {
    struct _fcontext *context;
@@ -128,7 +130,7 @@ void foperation_apply
    result->namespace = 
       malloc
          ( 
-         sizeof(int) *
+         sizeof(DIJ_WORD) *
             (
             result->num_parameters +
             result->num_locals +
@@ -219,7 +221,7 @@ union _foperand fnode_eval_recursive( void *fnode, int left )
    union _foperand new_operand;
    printf
       (
-      "fgraph_eval_recursive %x %x %x %x %x %x\n", 
+      "fgraph_eval_recursive %lx %lx %lx %lx %lx %lx\n", 
       node, 
       node->op,
       node->left_result, 
@@ -470,7 +472,7 @@ void *fgraph_spawn( struct iFGraph *self, void *fnode )
 
    /*I will now start your node, but first I need to apply your node*/
    /*TODO at some point in the process this gets turned into an TYPE_SCALAR in the coroutine unit test*/
-   p->value.value = (int)yours;
+   p->value.value = (long int)yours;
    p->value.type = &TYPE_F_NODE;
    p->curry_flag = 0;
    node = fgraph_apply( self, fnode, p);
@@ -593,6 +595,7 @@ void foperation_njoin( struct _fcontext *first, union _foperand second_o, struct
   m->num_parameters = num_parameters;
   m->num_locals = num_locals;
   m->num_returns = num_returns;
+  m->num_anonymous = first->num_anonymous + second->num_anonymous;
   for( i = 0; i < num_parameters; i++ )
      {
      m->namespace[i] = temp_parameters[i];
@@ -694,4 +697,68 @@ struct iFGraph *fgraph_new()
    ret->is_loadable = fgraph_is_loadable;
    printf("made an fgraph %x\n", ret);
    return ret;
+   }
+
+/*debugging calls*/
+void debug_describe_parameter_list( struct iFGraph *self, void *node )
+   {
+   struct _fnode *fnode = (struct _fnode *)node;
+   struct _parameter *psploop;
+   printf("DESCRIBE PARAMS --");
+   psploop = fnode->right_result.parameters;
+   while(psploop)
+     {
+     if(psploop->curry_flag)
+       {
+       printf(".");
+       } else {
+       printf("X");
+       }
+     psploop = psploop->next;
+     }
+   printf("\n");
+   }
+
+void debug_describe_fnode( struct iFGraph *self, void *node )
+   {
+   struct _fnode *fnode = (struct _fnode *)node;
+   fnode_eval_recursive(fnode, 0);
+   fnode_eval_recursive(fnode, -1);
+   int i;
+   printf("DESCRIBE FNODE -- {\n");
+   if( fnode->right && fnode->op != foperation_apply ) 
+     { 
+     debug_describe_fnode(self, fnode->right); 
+     }
+   if( fnode->right && fnode->op == foperation_apply )
+     {
+     debug_describe_parameter_list(self, fnode->right);
+     }
+   if( fnode->left ) { debug_describe_fnode(self, fnode->left); }
+   if( fnode->op == foperation_apply ) { 
+     printf("DESCRIBE FNODE -- apply\n");
+    }
+   if( fnode->op == foperation_njoin ) { printf("DESCRIBE FNODE -- njoin\n"); }
+   if( fnode->left_result.context)
+     {
+     printf("DESCRIBE FNODE -- %d %d %d %d\n", 
+       fnode->left_result.context->num_parameters,
+       fnode->left_result.context->num_locals,
+       fnode->left_result.context->num_returns,
+       fnode->left_result.context->num_anonymous);
+     printf("DESCRIBE FNODE -- ");
+     for(i = 0; i < fnode->left_result.context->num_parameters +
+       fnode->left_result.context->num_locals +
+       fnode->left_result.context->num_returns; i++)
+       {
+       printf("%d", fnode->left_result.context->namespace[i]);
+       }
+     printf("\n");
+     }
+   printf("DESCRIBE FNODE -- }\n");
+   }
+
+void fgraph_debug( struct iFGraph *self, void *fnode, int option)
+   {
+   debug_describe_fnode( self, fnode );
    }
