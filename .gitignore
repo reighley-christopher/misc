@@ -2,3 +2,4 @@
 *~
 dij/compilation/scanner.c
 dij/compilation/y.tab.h
+javascript/node_modules/*
