@@ -2,10 +2,10 @@ struct _dij_machine
    {
    char mode;
    struct _stack_member *stack;
-   int *code;
+   long int *code;
    int inst_pointer;
    int anonymous_in_ptr;
-   int *variables;
+   long int *variables;
    struct _object_type **types;
    struct iChannel *anonymous_out;
    struct _fcontext *context;
@@ -64,7 +64,7 @@ void inst_neg( struct _dij_machine *M );
 
 void inst_equal( struct _dij_machine *M );
 
-void dij_write( int word );
+void dij_write( long int word );
 
 void dij_push_data();
 
@@ -98,7 +98,7 @@ void debug( struct _dij_machine *M );
 
 void *c_box( void *f, struct iFGraph *fgraph);
 
-struct iCode *dij_box( int *code );
+struct iCode *dij_box( long int *code );
 
 struct iFGraph *fgraph;
 

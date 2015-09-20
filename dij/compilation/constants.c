@@ -1,15 +1,17 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-typedef int (*constantizer)( char *rep, int *constant, int *segment );
+typedef long int DIJ_WORD;
 
-int c_string( char *rep, int *constant, int *segment  )
+typedef int (*constantizer)( char *rep, DIJ_WORD *constant, DIJ_WORD *segment );
+
+int c_string( char *rep, DIJ_WORD *constant, DIJ_WORD *segment  )
 {
-  char wordsize = sizeof( int );
+  char wordsize = sizeof( DIJ_WORD );
   char *c = rep;
   int i;
-  unsigned int accum;
-  unsigned int mask;
+  DIJ_WORD accum;
+  DIJ_WORD mask;
   int test_endian = 1;
   int ret = 0;
   int termed = 0;
@@ -28,7 +30,8 @@ int c_string( char *rep, int *constant, int *segment  )
                case '\\': *c = '\\'; break;
                }
              }
-          mask = *c<<(i*8);
+          mask = *c; /*this was a hard bug to find, it used to be a single line : mask = *c<<i*8;  that's wrong*/
+          mask = mask<<(i*8);
           accum = accum | mask;
           if( *c != '\0' ) { c = c + 1; } else {termed = 1;}
         }
@@ -44,7 +47,7 @@ void *constant_table[3] =
   { "[c-string:", c_string, 0
 };
 
-int process_constant( char *kind, char *rep, int *constant, int *segment )
+int process_constant( char *kind, char *rep, DIJ_WORD *constant, DIJ_WORD *segment )
 {
   constantizer fun;
   void **table = constant_table;

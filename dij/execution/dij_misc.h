@@ -15,7 +15,7 @@ extern struct _object_type
 struct _object
    {
    struct _object_type *type;
-   int value;
+   long int value;
    };
 
 /*a linked list of parameters to a function (some of which may be blank)*/
@@ -33,8 +33,8 @@ struct _coderef
    struct iCode *payload;
    };
 
-extern int globals[];
-extern int max_global;
+extern long int globals[];
+extern long int max_global;
 
 struct _stack_member
    {

@@ -8,7 +8,7 @@ char xscheme_buffer[ XSCHEME_SIZE];
 int xscheme_index;
 char *xscheme_stack_top = xscheme_buffer;
 /*Scheme_Env *env;*/
-int process_constant( char *a, char *b, int *c, int *d );
+int process_constant( char *a, char *b, long int *c, long int *d );
 extern int current_label;
 
 static SCM xscheme_dij_respond( SCM args )
@@ -25,7 +25,7 @@ static SCM xscheme_dij_respond( SCM args )
          cdr = SCM_CDR(cdr);
        }
      printf("\n");
-     return 0;
+     return SCM_BOOL_F;
    }
 
 SCM xscheme_dij_constant(SCM stype, SCM encoding)
@@ -33,8 +33,8 @@ SCM xscheme_dij_constant(SCM stype, SCM encoding)
    /*takes two string parameters, type and encoding, calls process constant*/
    char *type;
    char *buffer;
-   int constant;
-   int constant_buffer[1024];
+   long int constant;
+   long int constant_buffer[1024];
    int length;
    int i = 0;
    long n;
@@ -43,17 +43,17 @@ SCM xscheme_dij_constant(SCM stype, SCM encoding)
    length = process_constant( type, buffer, &constant, constant_buffer );
    if( !length )
       {
-      printf("%d\n%d\nDEFINE-GLOBAL\n", constant, current_label); 
+      printf("%ld\n%d\nDEFINE-GLOBAL\n", constant, current_label); 
       } else {
       printf("PUSH-DATA\n");
       for(i = 0; i < length; i++) {
-      printf("%d\n", constant_buffer[i] ); }
+      printf("%ld\n", constant_buffer[i] ); }
       printf("POP-DATA\n%d\nDEFINE-GLOBAL\n", current_label);
       } 
    current_label = current_label+1;
    free(type);
    free(buffer);
-   return scm_int2num( current_label-1 );
+   return scm_from_int( current_label-1 );
    }
 
 SCM code_tree( SCM list);
@@ -69,7 +69,7 @@ SCM xscheme_prettyprint( SCM v )
   str = scm_object_to_string( v, scm_c_eval_string("write") );
   s = scm_to_locale_string( str );
   n = scm_c_string_length( str );
-  printf("%s %d\n", s, n );
+  printf("%s %ld \n", s, n );
   while( index < n )
     {
       while( s[index] != '(' && s[index] != ')' && s[index] != ' ' ) 
@@ -95,7 +95,7 @@ SCM xscheme_prettyprint( SCM v )
     }
    printf("\n");
    free(s);
-   return 0;
+   return SCM_BOOL_F;
 }
 
 /*
@@ -118,7 +118,7 @@ void code_element( SCM element )
       { 
       code_tree( element );
       } else if (scm_integer_p(element) == SCM_BOOL_T ) {
-      printf("REFERENCE-GLOBAL\n%d\n", scm_num2int(element, 0, "code_element"));
+      printf("REFERENCE-GLOBAL\n%d\n", scm_to_int(element));
    } else { printf("CURRY\n"); } 
    /*anything not an integer and not a list is a place holder*/
    /*note: this doesn't really work the way it should, I'll have to come back to it*/
@@ -140,7 +140,7 @@ SCM code_tree( SCM list )
       printf("APPLY\n");
       }
    printf("CURRY\nCHECK\n");
-   return 0;
+   return SCM_BOOL_F;
    }
 
 SCM xscheme_dij_code(SCM ct)
@@ -150,7 +150,7 @@ SCM xscheme_dij_code(SCM ct)
    printf("PUSH-CODE\n");
    code_tree( ct );
    printf("HALT\nPOP-CODE\n1\nDEFINE-GLOBAL\n");
-   return 0;
+   return SCM_BOOL_F;
    }
 
 /*this is a workaround so that I can use namespace-defined to find the correct value for dij-respond and others*/
@@ -292,7 +292,12 @@ void xscheme_eval( char *index )
    if( !index ) { return; }
    if( xscheme_stack_top < index ) 
       { 
-      printf("scheme parsing error %d < %d\n", xscheme_stack_top, index); 
+      printf
+         (
+         "scheme parsing error %ld < %ld\n", 
+         (long)xscheme_stack_top, 
+         (long)index
+         ); 
       }
    v = scm_c_eval_string(index);
    /*xscheme_prettyprint( v );*/

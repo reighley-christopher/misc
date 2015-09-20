@@ -8,9 +8,11 @@
 
 #define YYSTYPE struct _tree *
 
+typedef long int DIJ_WORD;
+
 extern char *yytext;
 extern int constant;
-extern int const_buffer[];
+extern DIJ_WORD const_buffer[];
 extern int const_size;
 
 char name_table[1024];
@@ -51,22 +53,22 @@ char *decode_name( int code )
 struct _constant_block
 {
    int size;
-   int *data;
+   DIJ_WORD *data;
 };
 
-struct _constant_block *create_constant_block( int size, int *data )
+struct _constant_block *create_constant_block( int size, DIJ_WORD *data )
 {
    struct _constant_block *ret;
    int i;
    ret = malloc( sizeof(struct _constant_block) );
-   ret->data = malloc( sizeof(int) * size );
+   ret->data = malloc( sizeof(DIJ_WORD) * size );
    ret->size = size;
    for( i = 0; i < size; i++ ) { ret->data[i] = data[i]; }
    return ret;
 }
 
 void nil( int arg ) { /*printf(".\n");*/ }
-void dump( int arg ) { printf( (char *)arg ); }
+void dump( DIJ_WORD arg ) { printf( (char *)arg ); }
 void literal( int arg ) { printf("%d\n", arg ); }
 void push_literal(int arg) {printf("PUSH\n%d\n", arg ); }
 void define( int arg) { printf("%d\nDEFINE-GLOBAL\n", arg); }
@@ -80,7 +82,7 @@ void constant_block( int arg )
    printf("PUSH\nPUSH-DATA\n");
    for(i = 0; i < cb->size; i++)
    {
-      printf("%d\n", cb->data[i]);
+      printf("%ld\n", cb->data[i]);
    }
    printf("POP-DATA\n");
    free(cb->data);
@@ -157,7 +159,7 @@ scheme begin_function command_list end_function
   xscheme_eval( (char *)$1 );
 }
 ;
-
+/*TODO DIJ_WORD is not really the same as tree node pointer size*/
 function_constant:
 scheme begin_function command_list end_function
 {
@@ -166,7 +168,7 @@ scheme begin_function command_list end_function
   empty_buffer( $3 );
   $$ = pop_code_scope();
   xscheme_leaf( "segment", seg); */
-  $$ = create_tree( dump, (int)"CHECK\nHALT\nPOP-CODE\n", create_tree(dump, (int)"PUSH\nPUSH-CODE\n", 0, 0), $3 );
+  $$ = create_tree( dump, (DIJ_WORD)"CHECK\nHALT\nPOP-CODE\n", create_tree(dump, (DIJ_WORD)"PUSH\nPUSH-CODE\n", 0, 0), $3 );
   xscheme_node( "block", 1 ); 
 //  xscheme_pop_scope();
   xscheme_eval( (char *)$1 );
@@ -217,13 +219,13 @@ command:
 lvalue_list TOKEN_ASSIGN expression_list
 {
   xscheme_node("assignment", 2);
-  $$ = create_tree( dump, (int)"ASSIGN\n", $1, $3 );
+  $$ = create_tree( dump, (DIJ_WORD)"ASSIGN\n", $1, $3 );
 }
 |
 terminated_combinator_expression
 {
   xscheme_node("function-call", 1);
-  $$ = create_tree( dump, (int)"CHECK\n", $1, 0 );
+  $$ = create_tree( dump, (DIJ_WORD)"CHECK\n", $1, 0 );
 }
 |
 if_statement
@@ -240,7 +242,7 @@ do_statement
 lvalue_list: 
 {
   xscheme_ground("lvalue-list");
-  $$ = create_tree(dump, (int)"ANONYMOUS-RETURN\n", 0, 0);
+  $$ = create_tree(dump, (DIJ_WORD)"ANONYMOUS-RETURN\n", 0, 0);
 }
 |
 lvalue
@@ -260,7 +262,7 @@ lvalue TOKEN_COMMA lvalue_list
 expression_list:
 {
   xscheme_ground("expression-list");
-  $$ = create_tree(dump, (int)"ANONYMOUS-PARAMETER\n", 0, 0);
+  $$ = create_tree(dump, (DIJ_WORD)"ANONYMOUS-PARAMETER\n", 0, 0);
 }
 |
 expression
@@ -273,7 +275,7 @@ expression
 expression TOKEN_COMMA expression_list
 {
   xscheme_list("expression-list");
-  $$ = create_tree( dump, (int)"EXPRESSION LIST\n", $1, $3 );
+  $$ = create_tree( dump, (DIJ_WORD)"EXPRESSION LIST\n", $1, $3 );
   if( $1 == 0 || $3 == 0 ) { printf("one of the list items is 0\n"); }
 }
 ;
@@ -281,7 +283,7 @@ expression TOKEN_COMMA expression_list
 if_statement:
 TOKEN_IF guarded_command_list TOKEN_FI
 {
-  $$ = create_tree( dump, (int)"POP-CONTROL\n", create_tree( dump, (int)"PUSH-IF\n", 0, 0 ), $2 );
+  $$ = create_tree( dump, (DIJ_WORD)"POP-CONTROL\n", create_tree( dump, (DIJ_WORD)"PUSH-IF\n", 0, 0 ), $2 );
   xscheme_node("if", 1 );
 }
 ;
@@ -289,7 +291,7 @@ TOKEN_IF guarded_command_list TOKEN_FI
 do_statement:
 TOKEN_DO guarded_command_list TOKEN_OD
 {
-  $$ = create_tree( dump, (int)"POP-CONTROL\n", create_tree( dump, (int)"PUSH-DO\n", 0, 0 ), $2 );
+  $$ = create_tree( dump, (DIJ_WORD)"POP-CONTROL\n", create_tree( dump, (DIJ_WORD)"PUSH-DO\n", 0, 0 ), $2 );
   xscheme_node( "do", 1 );
 }
 ;
@@ -298,20 +300,20 @@ lvalue:
 scheme_name
 {
   xscheme_node("lvalue-name", 1);
-  $$ = create_tree( nil, 0, create_tree( dump, (int)"LVALUE-NAME\n", 0, 0 ), $1 );
+  $$ = create_tree( nil, 0, create_tree( dump, (DIJ_WORD)"LVALUE-NAME\n", 0, 0 ), $1 );
 }
 |
 TOKEN_DEREFERENCE atomic_expression
 {
   printf("dereference\n");
   xscheme_node("lvalue-address", 0);
-  $$ = create_tree( dump, (int)"LVALUE-ADDRESS\n", $2, 0 );
+  $$ = create_tree( dump, (DIJ_WORD)"LVALUE-ADDRESS\n", $2, 0 );
 }
 |
 terminated_combinator_expression
 {
   xscheme_node("lvalue-call", 1);
-  $$ = create_tree( dump, (int)"LVALUE-CALL\n", $1, 0 );
+  $$ = create_tree( dump, (DIJ_WORD)"LVALUE-CALL\n", $1, 0 );
 }
 ;
 
@@ -330,7 +332,7 @@ guarded_command guarded_command_list
 guarded_command :
 expression TOKEN_GUARD command_list TOKEN_END_GUARD
 {
-  $$ = create_tree( dump, (int)"MARK\n", create_tree( dump, (int)"TEST\n", $1, 0 ), $3 );
+  $$ = create_tree( dump, (DIJ_WORD)"MARK\n", create_tree( dump, (DIJ_WORD)"TEST\n", $1, 0 ), $3 );
   xscheme_node("guarded-command", 2);
 }
 ;
@@ -360,13 +362,13 @@ TOKEN_FUNCTION_APPLICATION uninitiated_combinator_expression
 terminated_combinator_expression:
 proper_combinator_expression TOKEN_FUNCTION_APPLICATION
 {
-$$ = create_tree( dump, (int)"CURRY\n", $1, 0 );
+$$ = create_tree( dump, (DIJ_WORD)"CURRY\n", $1, 0 );
 xscheme_node("curry", 1);
 }
 |
 terminated_combinator_expression TOKEN_FUNCTION_APPLICATION
 {
-$$ = create_tree( dump, (int)"CURRY\n", $1, 0 );
+$$ = create_tree( dump, (DIJ_WORD)"CURRY\n", $1, 0 );
 xscheme_node("curry", 1);
 }
 ;
@@ -379,19 +381,19 @@ $$ = $1;
 |
 proper_combinator_expression TOKEN_FUNCTION_APPLICATION tier0_expression
 {
-$$ = create_tree( dump, (int)"APPLY\n", $1, $3 );
+$$ = create_tree( dump, (DIJ_WORD)"APPLY\n", $1, $3 );
 xscheme_node("apply", 2 );
 }
 |
 terminated_combinator_expression TOKEN_FUNCTION_APPLICATION tier0_expression
 {
-$$ = create_tree( dump, (int)"APPLY\n", $1, $3 );
+$$ = create_tree( dump, (DIJ_WORD)"APPLY\n", $1, $3 );
  xscheme_node("apply", 2 );
 }
 |
 proper_combinator_expression TOKEN_COLON tier0_expression
 {
-  $$ = create_tree( dump, (int)"NAMESPACE-JOIN\n", $1, $3);
+  $$ = create_tree( dump, (DIJ_WORD)"NAMESPACE-JOIN\n", $1, $3);
   xscheme_node("namespace-join", 2);
 }
 ;
@@ -413,7 +415,7 @@ uninitiated_combinator_expression
 |
 functional_expression TOKEN_BACKSLASH atomic_expression
 {
-  $$ = create_tree( dump, (int)"LEFT-JOIN\n", $1, $3 );
+  $$ = create_tree( dump, (DIJ_WORD)"LEFT-JOIN\n", $1, $3 );
   xscheme_node( "left-join", 2 );
 }
 ;
@@ -426,32 +428,32 @@ TOKEN_REFERENCE tier1_expression
 |
 TOKEN_NOT tier1_expression
 {
-  $$ = create_tree( dump, (int)"NOT\n", $2, 0 );
+  $$ = create_tree( dump, (DIJ_WORD)"NOT\n", $2, 0 );
   xscheme_node( "not", 1 );
 }
 |
 TOKEN_SUBTRACT tier1_expression
 {
-  $$ = create_tree( dump, (int)"NEG\n", $2, 0 );
+  $$ = create_tree( dump, (DIJ_WORD)"NEG\n", $2, 0 );
   xscheme_node( "neg", 1 );
 }
 |
 TOKEN_TILDE tier1_expression
 {
-  $$ = create_tree( dump, (int)"SPAWN\n", $2, 0 );
+  $$ = create_tree( dump, (DIJ_WORD)"SPAWN\n", $2, 0 );
   xscheme_node( "spawn", 1 );
 }
 |
 functional_expression
 {
-  $$ = create_tree( dump, (int)"CHECK\n", $1, 0 );
+  $$ = create_tree( dump, (DIJ_WORD)"CHECK\n", $1, 0 );
 }
 ;
 
 tier2_expression :
 TOKEN_ADD expression
 {
-  $$ = create_tree(dump, (int)"ADD\n", $2, 0 );
+  $$ = create_tree(dump, (DIJ_WORD)"ADD\n", $2, 0 );
   xscheme_node ( "+", 2 );
 }
 ;
@@ -482,7 +484,7 @@ tier2_expression
 tier3_point_5_expression :
 TOKEN_TEST_EQUALITY expression
 {
-  $$ = create_tree( dump, (int)"EQUAL\n", $2, 0 ); 
+  $$ = create_tree( dump, (DIJ_WORD)"EQUAL\n", $2, 0 ); 
   xscheme_node( "eq?", 2 );
 }
 |
@@ -544,7 +546,7 @@ TOKEN_CONSTANT
       {
       $$ = create_tree( literal, constant, 0, 0 );
       } else {
-      $$ = create_tree( constant_block, (int)create_constant_block(const_size, const_buffer), 0, 0 );
+      $$ = create_tree( constant_block, (DIJ_WORD)create_constant_block(const_size, const_buffer), 0, 0 );
       }
     xscheme_node("const", 2);
   }
@@ -556,7 +558,7 @@ function_constant
 |
 scheme_name
   {
-    $$ = create_tree( nil, 0, create_tree( dump, (int)"REFERENCE-VARIABLE\n", 0, 0 ), $1 );
+    $$ = create_tree( nil, 0, create_tree( dump, (DIJ_WORD)"REFERENCE-VARIABLE\n", 0, 0 ), $1 );
   }
 |
 TOKEN_OPEN_PAREN expression TOKEN_CLOSE_PAREN

@@ -2,6 +2,7 @@ dij_c_call:
 	pushq	%rbp
 	movq	%rsp, %rbp
 	pushq	%rbx
+        pushq   %r12
 	movq	%rdi, %r10 /*the function to be called*/
 	movq	%rsi, %rbx /*the size in bytes of the parameter array*/
        /* movq    %rdx, %rbx /*the address of the parameter array*/
@@ -16,8 +17,7 @@ stack_loop:
         pushq   (%rbx)
         jmp    stack_loop   
 
-pass_registers:
-        movq    %rdx, %rbx	
+pass_registers:	
 	subq	$8, %rbx
 	movq	(%rbx), %r9
 	subq	$8, %rbx
@@ -30,13 +30,10 @@ pass_registers:
 	movq	(%rbx), %rsi
 	subq	$8, %rbx
 	movq	(%rbx), %rdi
-        /*I do not know why clearing eax is important but it is*/
-        /*gcc does it religiously, it carries some information of use*/
-        /*to the varargs macro*/
-        movl    $0, %eax
 	call	*%r10
-        movq	%rbp, %rsp
-	subq	$8, %rsp
+	movq	%r12, %rax
+	addq	$40, %rsp
+        popq    %r12
 	popq	%rbx
 	popq	%rbp
 	ret

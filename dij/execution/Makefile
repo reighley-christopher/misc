@@ -58,5 +58,8 @@ add.o : add.s dijrt.s
 add : add.o dijrtc.o
 	gcc add.o dijrtc.o -ggdb -o add
 
+experiment : dij_c_call_test.o  dij_c_call.o
+	gcc dij_c_call_test.o dij_c_call.o -ggdb -o experiment
+
 	
 	

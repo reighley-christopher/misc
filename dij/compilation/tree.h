@@ -1,4 +1,5 @@
-typedef void (*command)( int arg );
+typedef long int DIJ_WORD;
+typedef void (*command)( DIJ_WORD arg );
 
 struct _tree
 {

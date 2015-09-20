@@ -14,7 +14,7 @@ struct _apply_substitution
 
 struct _apply_machine
    {
-   int *memory;
+   long int *memory;
    struct _object_type **types;
    struct _apply_substitution *substitutions;
    };
