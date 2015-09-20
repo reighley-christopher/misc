@@ -1,7 +1,7 @@
 %option noyywrap
 
 %{
-#include "dij_misc.h"
+#include "../util/dij_misc.h"
 #include "../control/dij_control.h"
 #include "dij_exec.h"
 

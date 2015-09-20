@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "dij_misc.h"
+#include "../util/dij_misc.h"
 #include "../control/dij_control.h"
 #include "dij_exec.h"
 
@@ -26,7 +26,7 @@ typedef void (*instruction)( struct _dij_machine *M );
 struct _lvalue
   {
   void *parameter;
-  void (*liquidate)(void *parameter, struct _parameter *rvalues, struct _dij_machine *M );
+  struct _parameter *(*liquidate)(void *parameter, struct _parameter *rvalues, struct _dij_machine *M );
   };
 
 void graft( struct _stack_member **stack, struct _stack_member *addme );
@@ -176,32 +176,6 @@ void curry( struct _hot_call *f )
 
 /*end hot call*/
 
-long int *variable_address( struct _dij_machine *M, int code )
-   {
-   int i = 0;
-   int j = 0;
-   /*printf("searching variables: \nparameters\n");*/
-   for( i = 0; i < M->context->num_parameters; i++ )
-      {
-      /*printf("%d\n", j);*/
-      if( M->context->namespace[j] == code ) return M->variables+j;
-      j++;
-      }
-   /*printf("locals\n");*/
-   for( i = 0; i < M->context->num_locals; i++ )
-      {
-      printf("%d\n", j);
-      if( M->context->namespace[j] == code ) return M->variables+j;
-      j++;
-      }
-   /*printf("returns\n");*/
-   for( i = 0; i < M->context->num_returns; i++ )
-      {
-      /*printf("%d\n", j);*/
-      if( M->context->namespace[j] == code ) return M->variables+j;
-      j++;
-      }
-   }
 
 char *print_general_error( struct iException *self )
    {
@@ -230,7 +204,7 @@ void inst_check( struct _dij_machine *M )
    o = pop( &(M->stack) );
    if(o.type == &TYPE_HOT_CALL)
       {
-      /*printf("evaluate\n");*/
+      printf("evaluate\n");
       hc = (struct _hot_call *)(o.value);
       sploop = hc->p;
       if(sploop)
@@ -240,7 +214,7 @@ void inst_check( struct _dij_machine *M )
          if( !sploop->next && sploop->curry_flag ) { to_invoke = -1; fnode = hc->fnode; }
          while(sploop->next) 
             {
-            /*printf("\t%lx\n", sploop->value.value);*/
+            printf("\t%lx\n", sploop->value.value);
             if(sploop->next->next) {sploop = sploop->next; }
             else 
                {
@@ -257,7 +231,7 @@ void inst_check( struct _dij_machine *M )
          {
          if( hc->fnode )
             {
-            /*printf("apply %lx, %lx, %lx\n", (unsigned long int)M, (unsigned long int)hc, (unsigned long int)M->fgraph);*/
+            printf("apply %lx, %lx, %lx\n", (unsigned long int)M, (unsigned long int)hc, (unsigned long int)M->fgraph);
             fnode = M->fgraph->apply(M->fgraph, hc->fnode, hc->p);
             } else {
             fnode = M->fgraph->fcurry(M->fgraph, hc->p);
@@ -342,7 +316,7 @@ void inst_reference_variable( struct _dij_machine *M )
    M->inst_pointer = M->inst_pointer+1;
    ref = M->code[M->inst_pointer];
    /*printf("...  %d\n", ref);*/
-   push( &(M->stack), object( *(variable_address(M, ref)), &TYPE_SCALAR ) );
+   push( &(M->stack), object( M->variables[M->context->i_namespace->variable_offset(M->context->i_namespace,  ref)], &TYPE_SCALAR ) ); /*TODO shouldn't that TYPE_SCALAR actually depend on what is in memory?*/
 }
 
 long int globals[1024];
@@ -356,7 +330,7 @@ void inst_reference_global( struct _dij_machine *M )
    push( &(M->stack), object(globals[ref], &TYPE_SCALAR ) );
 }
 
-void lvalue_name_liquidate( void *address, struct _parameter *parameters, struct _dij_machine *M )
+struct _parameter *lvalue_name_liquidate( void *address, struct _parameter *parameters, struct _dij_machine *M )
 {
    int value = parameters->value.value;
    long int *target = (long int *)address;
@@ -365,13 +339,11 @@ void lvalue_name_liquidate( void *address, struct _parameter *parameters, struct
    *target = value;
    /*parameters->consumed_flag = -1;*/
    /*printf("success\n");*/
-   while( parameters )
-      {
-      new_parameter = parameters;
-      /*printf(":-( %lx %lx\n", (long unsigned int)new_parameter, (long unsigned int)new_parameter->next );*/
-      parameters = parameters->next;
-      free(new_parameter);
-      }
+   new_parameter = parameters;
+   printf(":-( %lx %lx\n", (long unsigned int)new_parameter, (long unsigned int)new_parameter->next );
+   parameters = parameters->next;
+   free(new_parameter);
+   return parameters;
 }
 
 void inst_lvalue_name( struct _dij_machine *M )
@@ -381,7 +353,7 @@ void inst_lvalue_name( struct _dij_machine *M )
    M->inst_pointer = M->inst_pointer+1;
    ref = M->code[M->inst_pointer];
    lvalue->liquidate = lvalue_name_liquidate;
-   lvalue->parameter = variable_address(M, ref );
+   lvalue->parameter = &(M->variables[M->context->i_namespace->variable_offset(M->context->i_namespace, ref )]);
    push(&(M->stack), object( (long int)lvalue, &TYPE_LVALUE ) );
    /*printf("lvalue named\n");*/
 }
@@ -393,31 +365,31 @@ void inst_assign( struct _dij_machine *M )
    struct _lvalue *lvalue;
    struct _parameter *parameters = 0;
    struct _parameter *new_parameter;
+   struct _parameter *head = 0;
    sploop = pop( &(M->stack) );
    while( sploop.type != &TYPE_LVALUE ) {
       new_parameter = (struct _parameter *)malloc(sizeof(struct _parameter) );
-      new_parameter->next = parameters;
+      if(!head) { head = new_parameter; parameters = new_parameter;  }
+      else { parameters->next = new_parameter; }
       parameters = new_parameter;
+      parameters->next = 0;
       parameters->curry_flag = 0;
       parameters->value = sploop;
-      /*printf("assign %lx\n", sploop.value);*/
+      printf("assign-to %lx\n", sploop.value);
       sploop = pop( &(M->stack) );
       }
+   if( !(M->stack)) { push(&lvalue_stack, sploop); }
    while( M->stack && sploop.type == &TYPE_LVALUE )
       {
+      printf("assign-from %lx\n", sploop.value);
       push( &lvalue_stack, sploop);
       sploop = pop( &(M->stack) );
       }
-   if( sploop.type != &TYPE_LVALUE) 
-      {
-      push( &(M->stack), sploop );
-      } else {
-      push( &lvalue_stack, sploop );
-      }
+   push( &(M->stack), sploop );
    while( lvalue_stack )
       {
       lvalue = (struct _lvalue *)pop(&lvalue_stack).value;
-      lvalue->liquidate( lvalue->parameter, parameters, M );
+      head = lvalue->liquidate( lvalue->parameter, head, M );
       /*printf("back out at assignment\n");*/
       free(lvalue);
 
@@ -452,7 +424,7 @@ void bit_bucket(struct iChannel *self, struct _stack_member *data)
    m->process->attach(m->process);
    }
 
-void lvalue_call_liquidate( void *address, struct _parameter *rvalues, struct _dij_machine *M )
+struct _parameter *lvalue_call_liquidate( void *address, struct _parameter *rvalues, struct _dij_machine *M )
    {
    void *fnode;
    struct _hot_call *hc = (struct _hot_call *)address;
@@ -479,7 +451,8 @@ void lvalue_call_liquidate( void *address, struct _parameter *rvalues, struct _d
       free(hc->p);
       fnode = M->fgraph->apply( M->fgraph, hc->fnode, rvalues );
       }
-   invoke( M, fnode, bit_bucket, 1 ); 
+   invoke( M, fnode, bit_bucket, 1 );
+   return 0;
    }
 /*
 this is the previous implementation
@@ -540,10 +513,7 @@ void inst_anonymous_parameter( struct _dij_machine *M )
      M->context->num_anonymous );*/
    if(M->anonymous_in_ptr >= 
       (
-      M->context->num_parameters+
-      M->context->num_returns+
-      M->context->num_locals + 
-      M->context->num_anonymous
+      M->context->i_namespace->get_size(M->context->i_namespace)
       ) ) { general_error( M, "overused anonymous inputs" ); }
    v.value = M->variables[M->anonymous_in_ptr]; 
    v.type = M->types[M->anonymous_in_ptr];
@@ -553,7 +523,7 @@ void inst_anonymous_parameter( struct _dij_machine *M )
    /*printf("fetched anonymous\n");*/
 }
 
-void anonymous_return_liquidate( void *address, struct _parameter *rvalues, struct _dij_machine *M )
+struct _parameter *anonymous_return_liquidate( void *address, struct _parameter *rvalues, struct _dij_machine *M )
 {
    /*address is meaningless, send the rvalues out on the anonymous output channel*/
    struct _stack_member *head = 0;
@@ -575,6 +545,7 @@ void anonymous_return_liquidate( void *address, struct _parameter *rvalues, stru
       p_sploop = p_sploop->next;
       }
    M->anonymous_out->send( M->anonymous_out, head );
+   return 0;
 }
 
 void inst_anonymous_return( struct _dij_machine *M )
@@ -748,10 +719,9 @@ void print_stack( struct _dij_machine *M )
    {
    struct _stack_member *sploop;
    sploop = M->stack;
-   printf("*PRINT_STACK*\n");
    while( sploop )
       {
-      printf("\tprint_stack: %lx\n", sploop->value.value);
+      printf("\tPRINT STACK -- %lx %d\n", sploop->value.value, sploop->value.type->placeholder);
       sploop = sploop->under;
       }
    }
@@ -781,25 +751,27 @@ void variables( struct _dij_machine *M )
    {
    int i;
    int j = 0;
-   struct _fcontext *md = M->context;
-   printf("\tvariables parameters\n");
-   for(i = 0; i < md->num_parameters; i++ )
-      {
-      printf("\tvariables %d:%lx\n", md->namespace[i], M->variables[j]);
-      j++;
-      }
-   printf("\tvariables locals\n");
-   for(i = 0; i < md->num_locals; i++ )
-      {
-      printf("\tvariables %d:%lx\n", md->namespace[i+md->num_parameters], M->variables[j]);
-      j++;
-      }
-   printf("\tvariables returns\n");
-   for(i = 0; i < md->num_returns; i++ )
-      {
-      printf("\tvariables %d:%lx\n", md->namespace[i+md->num_parameters+md->num_locals], M->variables[j]);
-      j++;
-      }
+   struct iNamespace *md = M->context->i_namespace;
+   int num_parameters, num_locals, num_returns;
+   md->get_sizes(md, &num_parameters, &num_locals, &num_returns, 0);
+   printf("\tTODO variables parameters\n");
+//   for(i = 0; i < num_parameters; i++ )
+//      {
+//      printf("\tvariables %d:%lx\n", md->namespace[i], M->variables[j]);
+//      j++;
+//      }
+//   printf("\tvariables locals\n");
+//   for(i = 0; i < num_locals; i++ )
+//      {
+//      printf("\tvariables %d:%lx\n", md->namespace[i+md->num_parameters], M->variables[j]);
+//      j++;
+//      }
+//   printf("\tvariables returns\n");
+//   for(i = 0; i < num_returns; i++ )
+//      {
+//      printf("\tvariables %d:%lx\n", md->namespace[i+md->num_parameters+md->num_locals], M->variables[j]);
+//      j++;
+//      }
    }
 
 void partial_call( struct _dij_machine *M )
@@ -897,13 +869,15 @@ void dij_machine_ichannel_send(struct iChannel *self, struct _stack_member *data
 struct iMachine *dij_icode_new
    (
    struct iCode *self,
-   struct _fcontext *context,
+   struct iContext *context,
    struct iProcess *process,
    struct iFGraph *fgraph
    )
    {
    struct iMachine *ret = (struct iMachine *)malloc(sizeof(struct iMachine));
    struct _dij_machine *M = (struct _dij_machine *)malloc(sizeof(struct _dij_machine));
+   int num_parameters, num_locals, num_returns;
+   context->i_namespace->get_sizes(context->i_namespace, &num_parameters, &num_locals, &num_returns, 0);
    ret->M = M;
 
    ret->run = dij_imachine_run;
@@ -917,7 +891,7 @@ struct iMachine *dij_icode_new
    M->inst_pointer = 0;
    M->code = self->C;
    M->anonymous_in_ptr = 
-      (context->num_parameters + context->num_locals + context->num_returns); 
+      (num_parameters + num_locals + num_returns); 
 
    M->wait_channel.C = M;
    M->wait_channel.send = dij_machine_ichannel_send;

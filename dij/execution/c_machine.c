@@ -1,7 +1,7 @@
 /*TODO eliminate references to standard libraries*/
 #include <stdlib.h>
 
-#include "dij_misc.h"
+#include "../util/dij_misc.h"
 #include "../control/dij_control.h"
 #include "dij_exec.h"
 
@@ -42,7 +42,7 @@ struct iException *cbox_imachine_run(struct iMachine *self)
 struct iMachine *cbox_icode_new
    (
    struct iCode *self,
-   struct _fcontext *context,
+   struct iContext *context,
    struct iProcess *process,
    struct iFGraph *fgraph
    )
@@ -50,6 +50,8 @@ struct iMachine *cbox_icode_new
    struct iMachine *ret;
    struct _cbox_machine *cm;
    long int *memory;
+   int num_parameters, num_locals, num_returns, num_anonymous;
+   context->i_namespace->get_sizes(context->i_namespace, &num_parameters, &num_locals, &num_returns, &num_anonymous );
    ret = (struct iMachine *)malloc(sizeof(struct iMachine));
    ret->run = cbox_imachine_run;
    ret->destroy = cbox_imachine_destroy;
@@ -60,10 +62,10 @@ struct iMachine *cbox_icode_new
    process->get_memory(process, &memory, 0, &(cm->anonymous_out));
    cm->parameters = 
       memory+
-      context->num_parameters + 
-      context->num_locals + 
-      context->num_returns;
-   cm->size = context->num_anonymous * sizeof(DIJ_WORD);
+      num_parameters + 
+      num_locals + 
+      num_returns;
+   cm->size = num_anonymous * sizeof(DIJ_WORD);
 //   cm->anonymous_out = anonymous_out;
    return ret;
    }
@@ -105,19 +107,14 @@ void C_execution_mechanism( struct _function_metadata *meta, struct _parameter *
 void *c_box( void *c_function, struct iFGraph *fgraph )
    {
    struct iCode *code = (struct iCode *)malloc(sizeof(struct iCode));
-   struct _fcontext *context;
+   struct iContext *context;
    void *fnode;
    printf("started cbox\n");
    code->new = cbox_icode_new;
    code->C = c_function;
-   context = (struct _fcontext *)malloc(sizeof(struct _fcontext));
-   context->head = (struct _coderef *)malloc(sizeof(struct _coderef));
-   context->tail = context->head;
-   context->head->next = 0;
-   context->head->payload = code;
-   context->num_parameters = 0;
-   context->num_locals = 0;
-   context->num_returns = 0;
+   context = new_context();
+   context->append_codeblock(context, code);
+   context->i_namespace->size_namespace(context->i_namespace, 0, 0, 0, 0);
    fnode = fgraph->ground(fgraph, context);
    printf("finished cbox %x\n", fnode);
    return fnode;

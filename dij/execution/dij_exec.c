@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <dlfcn.h>
-#include "dij_misc.h"
+#include "../util/dij_misc.h"
 #include "../control/dij_control.h"
 #include "dij_exec.h"
 
@@ -28,8 +28,10 @@ struct _buffer *write_buffer = 0;
 
 struct _context_stack
    {
-   struct _fcontext *payload;
    struct _context_stack *under;
+   int num_parameters;
+   int num_locals;
+   int num_returns;
    int *parameters;
    int *locals;
    int *returns;
@@ -124,11 +126,9 @@ void dij_push_code()
    printf("enter push_code\n");
    open_buffer();
    f = (struct _context_stack *)malloc(sizeof(struct _context_stack));
-   f->payload = (struct _fcontext *)malloc(sizeof(struct _fcontext));
-   f->payload->num_parameters = 0;
-   f->payload->num_locals = 0;
-   f->payload->num_returns = 0;
-   f->payload->num_anonymous = 0;
+   f->num_parameters = 0;
+   f->num_locals = 0;
+   f->num_returns = 0;
    f->parameters = 0;
    f->locals = 0;
    f->returns = 0;
@@ -142,41 +142,23 @@ void dij_pop_code()
    struct _fnode *fnode; 
    struct iCode *icode;
    struct _context_stack *kill_me;
+   struct iContext *context;
    int i;
    printf("enter pop_code\n");
-   write_code->payload->head = malloc(sizeof( struct _coderef)); 
-   write_code->payload->head->payload = dij_box( close_buffer() );
-   write_code->payload->tail = write_code->payload->head;
-   write_code->payload->head->next = 0;
-   write_code->payload->namespace = 
-      malloc
-         (
-         sizeof(long int)*
-            (
-            write_code->payload->num_parameters + 
-            write_code->payload->num_locals + 
-            write_code->payload->num_returns
-            )
+   context = new_context();
+   context->append_codeblock(context, dij_box( close_buffer() ));
+   context->i_namespace->size_namespace(context->i_namespace,
+            write_code->num_parameters , 
+            write_code->num_locals , 
+            write_code->num_returns,
+            0
          );
-   printf("1\n");
-   for(i = 0; i < write_code->payload->num_parameters; i++) 
-      { 
-      write_code->payload->namespace[i] = write_code->parameters[i]; 
-      }
-   for(i = 0; i < write_code->payload->num_locals; i++) 
-      { 
-      write_code->payload->namespace[i+write_code->payload->num_parameters] =
-         write_code->locals[i]; 
-      }
-   for(i = 0; i < write_code->payload->num_returns; i++) 
-      { 
-      write_code->payload->namespace
-         [i+write_code->payload->num_parameters+write_code->payload->num_locals] = 
-         write_code->returns[i]; 
-      }
-   printf("fgraph->ground %lx %lx\n", (unsigned long int)fgraph, fgraph?(unsigned long int)fgraph->ground:0);
-   fnode = fgraph->ground(fgraph, write_code->payload);
-   printf("code::%lx\n fnode: %lx\n", (unsigned long int)write_code->payload->head, (unsigned long int)fnode );
+   context->i_namespace->write_namespace(context->i_namespace,
+        write_code->parameters,
+        write_code->locals,
+        write_code->returns
+        );    
+   fnode = fgraph->ground(fgraph, context);
    kill_me = write_code;
 
    write_code = write_code->under;
@@ -219,26 +201,26 @@ void dij_note_lvalue( int later )
       array_contains
          (
          write_code->parameters, 
-         write_code->payload->num_parameters, 
+         write_code->num_parameters, 
          later 
          ) || 
       array_contains
          (
          write_code->locals, 
-         write_code->payload->num_locals, 
+         write_code->num_locals, 
          later
          ) || 
       array_contains
          (
          write_code->returns, 
-         write_code->payload->num_returns, 
+         write_code->num_returns, 
          later
          ) 
       ) )
       { 
       write_code->returns = 
-         array_add(write_code->returns, write_code->payload->num_returns, later);
-        write_code->payload->num_returns++;  
+        array_add(write_code->returns, write_code->num_returns, later);
+        write_code->num_returns++;  
       }
    }
 
@@ -249,21 +231,21 @@ void dij_note_rvalue( int later )
      otherwise, we now know that it is not a return value, so move it out of that group.*/
    if
       ( ! (
-          array_contains(write_code->parameters, write_code->payload->num_parameters, later ) || 
-          array_contains(write_code->locals, write_code->payload->num_locals, later ) 
+          array_contains(write_code->parameters, write_code->num_parameters, later ) || 
+          array_contains(write_code->locals, write_code->num_locals, later ) 
       ) )
       {
-      if( array_contains(write_code->returns, write_code->payload->num_returns, later ) )
+      if( array_contains(write_code->returns, write_code->num_returns, later ) )
          {
           write_code->returns = 
-             array_remove(write_code->returns, write_code->payload->num_returns, later);
-          write_code->locals = array_add(write_code->locals, write_code->payload->num_locals, later);
-          write_code->payload->num_returns--;
-          write_code->payload->num_locals++;
+             array_remove(write_code->returns, write_code->num_returns, later);
+          write_code->locals = array_add(write_code->locals, write_code->num_locals, later);
+          write_code->num_returns--;
+          write_code->num_locals++;
           } else {
           write_code->parameters = 
-             array_add(write_code->parameters, write_code->payload->num_parameters, later);
-          write_code->payload->num_parameters++;
+             array_add(write_code->parameters, write_code->num_parameters, later);
+          write_code->num_parameters++;
           }
        }
    }

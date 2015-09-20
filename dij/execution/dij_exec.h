@@ -8,7 +8,7 @@ struct _dij_machine
    long int *variables;
    struct _object_type **types;
    struct iChannel *anonymous_out;
-   struct _fcontext *context;
+   struct iContext *context;
    struct iProcess *process;
    struct iFGraph *fgraph;
    /*the machine has a dedicated channel interface
