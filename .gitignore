@@ -1,0 +1,4 @@
+*.o
+*~
+dij/compilation/scanner.c
+dij/compilation/y.tab.h
