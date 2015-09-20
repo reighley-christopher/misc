@@ -11,7 +11,7 @@ module noisemunger(clk, nois, in, out);
   input [7:0] in;
   output [0:0] out;
   always @(posedge clk) begin
-    out <= in[0] & nois[0];
+    out <= in[0] | nois[0];
   end
 endmodule
 
