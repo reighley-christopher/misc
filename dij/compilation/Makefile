@@ -1,6 +1,6 @@
 
 dij : main.o tree.o scanner.o y.tab.o scheme.o semantic.o constants.o events.o
-	cc -o dij -pedantic tree.o constants.o main.o scanner.o y.tab.o scheme.o semantic.o events.o -lfl -lguile-2.0
+	cc -o dij -pedantic tree.o constants.o main.o scanner.o y.tab.o scheme.o semantic.o events.o ../util/util.a -lfl -lguile-2.0
 
 tree.o : tree.c tree.h
 
