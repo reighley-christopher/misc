@@ -1,3 +1,9 @@
+/*prototypes and forshadowing of things to come*/
+struct iCode;
+struct iFGraph;
+struct iProcess;
+struct iContext;
+
 /*interfaces for the control of the running dij system*/
 
 /*an iChannel is a simple abstraction for both blocking io, and context switches
@@ -29,7 +35,54 @@ struct iChannel
    void (*close)( struct iChannel *self );
    };
 
+/*this is a persistant object representing the different bodies of code in the system
+  the method new initializes a new iMachine to execute a given block of code.
+  The parameter context tells the new method how the variables will be bound to the
+  memory.
+*/
+struct iCode
+   {
+   void *C;
+   struct iMachine *(*new)
+      ( 
+      struct iCode *self,
+      struct iContext *context,
+      struct iProcess *process,
+      struct iFGraph *fgraph
+      );
+   };
+
 struct iChannel *channel_new();
+
+struct iNamespace
+   {
+   void *N;
+   int (*variable_offset)
+      (
+      struct iNamespace *self,
+      int code
+      );
+   int (*what_name)(struct iNamespace *self, int offset);
+   void (*size_namespace)(struct iNamespace *self, int num_parameters, int num_locals, int num_returns, int num_anonymous); 
+   void (*write_namespace)(struct iNamespace *self, int *parameters, int *locals, int *returns);
+   int (*get_size)(struct iNamespace *self);
+   void (*get_sizes)(struct iNamespace *self, int *num_parameters, int *num_locals, int *num_returns, int *num_anonymous);
+   void (*merge)(struct iNamespace *self, struct iNamespace *first, struct iNamespace *second);
+   void (*open)(struct iNamespace *self, struct iNamespace *source);
+   void (*close)(struct iNamespace *self);
+   int (*bind)(struct iNamespace *self);
+   void (*curry)(struct iNamespace *self);
+   };
+
+struct iContext
+   {
+   void *C;
+   struct iNamespace *i_namespace;
+   void (*append_codeblock)(struct iContext *self, struct iCode *block);
+   void (*merge)(struct iContext *self, struct iContext *first, struct iContext *second);
+   struct iCode *(*iterate)(struct iContext *self, void **token);
+   };
+
 
 struct iMachine
    {
@@ -101,7 +154,7 @@ struct iFGraph
    void *(*ground)
       ( 
       struct iFGraph *self, 
-      struct _fcontext *context
+      struct iContext *context
       );
    void *(*apply)( struct iFGraph *self, void *fnode, struct _parameter *p );
    void *(*fcurry)( struct iFGraph *self, struct _parameter *p );
@@ -115,24 +168,11 @@ struct iFGraph
    void (*debug)( struct iFGraph *self, int n );
    };
 
-/*this is a persistant object representing the different bodies of code in the system
-  the method new initializes a new iMachine to execute a given block of code.
-  The parameter context tells the new method how the variables will be bound to the
-  memory.
-*/
-struct iCode
-   {
-   void *C;
-   struct iMachine *(*new)
-      ( 
-      struct iCode *self,
-      struct _fcontext *context,
-      struct iProcess *process,
-      struct iFGraph *fgraph
-      );
-   };
 
 struct iFGraph *fgraph_new();
 struct iProcess *new_iProcess();
+struct iContext *new_context();
+struct iNamespace *new_namespace();
+
 void fgraph_debug(struct iFGraph *self, void *fnode, int operation );
 void process_go();

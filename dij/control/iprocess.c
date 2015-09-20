@@ -2,7 +2,7 @@
 #include <stdlib.h>
 //TODO remove references to standard libraries.
 
-#include "../execution/dij_misc.h"
+#include "../util/dij_misc.h"
 #include "dij_control.h"
 
 typedef long int DIJ_WORD;
@@ -304,6 +304,7 @@ struct iProcess *new_iProcess()
    ret->attach = process_attach;
    ret->detach = process_detach;
    ret->get_memory = process_get_memory;
+   return ret;
    }
 
 /*run_process will run the first machine on its process list until it halts,

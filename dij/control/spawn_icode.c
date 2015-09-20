@@ -2,13 +2,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 /*iCode interface to implement the spawn method of the fgraph*/
-#include "../execution/dij_misc.h"
+#include "../util/dij_misc.h"
 #include "dij_control.h"
 
 struct _channel_send_machine
    {
    struct iProcess *process;
-   struct _fcontext *context;
+   struct iContext *context;
    struct iChannel *channel;
    };
 
@@ -16,7 +16,7 @@ struct _channel_receive_machine
    {
    int kill_flag;
    struct iProcess *process;
-   struct _fcontext *context;
+   struct iContext *context;
    struct iChannel *channel;
    struct iChannelClient *client;
    };
@@ -94,19 +94,21 @@ struct iException *channel_send_iMachine_run(struct iMachine *self)
    int i;
    struct _object_type **types;
    struct _stack_member *message, *sploop, *sploop_last;
-   struct _fcontext *context;
+   struct iContext *context;
+   int num_parameters, num_locals, num_returns, num_anonymous;
    printf("channel_send_iMachine_run\n");
    M->process->get_memory(M->process, &memory, &types, 0 );
    context = M->context;
    message = 0;
-   i = context->num_parameters + context->num_locals + context->num_returns;
+   context->i_namespace->get_sizes(context->i_namespace, &num_parameters, &num_locals, &num_returns, &num_anonymous);
+   i = num_parameters + num_locals + num_returns;
    while
       ( 
       i < 
-         context->num_parameters + 
-         context->num_locals +
-         context->num_returns +
-         context->num_anonymous 
+         num_parameters + 
+         num_locals +
+         num_returns +
+         num_anonymous 
       )
       {
       sploop = (struct _stack_member *)malloc(sizeof(struct _stack_member));
@@ -125,7 +127,7 @@ struct iException *channel_send_iMachine_run(struct iMachine *self)
 struct iMachine *channel_send_iCode_new
    ( 
    struct iCode *self,
-   struct _fcontext *context,
+   struct iContext *context,
    struct iProcess *process,
    struct iFGraph *fgraph
    )
@@ -145,7 +147,7 @@ struct iMachine *channel_send_iCode_new
 struct iMachine *channel_receive_iCode_new
    ( 
    struct iCode *self,
-   struct _fcontext *context,
+   struct iContext *context,
    struct iProcess *process,
    struct iFGraph *fgraph
    )

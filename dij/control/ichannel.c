@@ -3,7 +3,7 @@
 #include <stdlib.h>
 
 /*implementation of a simple channel for communication between processes*/
-#include "../execution/dij_misc.h"
+#include "../util/dij_misc.h"
 #include "dij_control.h"
 
 struct _message
@@ -28,13 +28,21 @@ struct _channel
 
 void channel_send( struct iChannel *self, struct _stack_member *data )
    {
+   /*SPEC channels need to starve out cleanly. They can't have bad pointers
+     SPEC to old clients hanging around in channel->last_client*/
    struct _channel *c = (struct _channel *)self->C;
    struct _channel_client *cc = c->first_client;
    struct _message *m;
    if( cc )
       {
       printf("send data ready\n");
-      c->first_client = cc->next;
+      if(c->last_client == cc)
+         {
+         c->last_client = 0;
+         c->first_client = 0;
+         } else {
+         c->first_client = cc->next;
+         }
       free(cc);
       cc->payload->wake( cc->payload, data );
       } else {
@@ -42,9 +50,11 @@ void channel_send( struct iChannel *self, struct _stack_member *data )
       m = malloc(sizeof( struct _message ) );
       m->message = data;
       m->next = 0;
+      if(!(c->first_message)) c->first_message = m;
       if(c->last_message) c->last_message->next = m;
       c->last_message = m;
       }
+   return;
    }
 
 void channel_recieve( struct iChannel *self, struct iChannelClient *M )
@@ -55,7 +65,13 @@ void channel_recieve( struct iChannel *self, struct iChannelClient *M )
    printf("receive??\n");
    if( m )
       {
-      c->first_message = m->next;
+      if(c->last_message == m)
+         {
+         c->last_message = 0;
+         c->first_message = 0;
+         } else {
+         c->first_message = m->next;
+         }
       M->wake( M, m->message );
       free(m);
       } else {
@@ -68,6 +84,7 @@ void channel_recieve( struct iChannel *self, struct iChannelClient *M )
       c->last_client = cc;
       }
    printf("motherfucker set to receive\n");
+   return;
    }
 
 void channel_abandon( struct iChannel *self, struct iChannelClient *client )
@@ -121,7 +138,7 @@ struct iException *recieve_code_run( struct iMachine *self )
 struct iMachine *send_code_new
    ( 
    struct iCode *self,
-   fcontext *context,
+   struct iContext *context,
    int *memory,
    struct _object_type *types,
    struct iFGraph *fgraph 
@@ -135,7 +152,7 @@ struct iMachine *send_code_new
 struct iMachine *recieve_code_new
    ( 
    struct iCode *self,
-   fcontext *context,
+   struct iContext *context,
    int *memory,
    struct _object_type *types,
    struct iFGraph *fgraph

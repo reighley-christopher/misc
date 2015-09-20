@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "../execution/dij_misc.h"
+#include "../util/dij_misc.h"
 #include "apply_icode.h"
 #include "dij_control.h"
 /*the apply iMachine implimentation just makes substitutions according to a specific
@@ -10,7 +10,7 @@
 
 typedef long int DIJ_WORD;
 
-struct _apply_controller *new_apply_controller( int nsize, int asize )
+struct _apply_controller *new_apply_controller( int nsize, int asize, int aoffset )
    {
    struct _apply_controller *ret = 
       (struct _apply_controller *)malloc(sizeof(struct _apply_controller) );
@@ -20,6 +20,7 @@ struct _apply_controller *new_apply_controller( int nsize, int asize )
    ret->named_i = 0;
    ret->anon_i = nsize+1;
    ret->nsize = nsize;
+   ret->aoffset = aoffset;
    return ret;
    }
 
@@ -47,6 +48,7 @@ struct iException *foperation_apply_iMachine_run( struct iMachine *self )
 void foperation_apply_iMachine_destroy( struct iMachine *self )
    {
    struct _apply_machine *am = (struct _apply_machine *)(self->M);
+   printf("destroying apply_machine %x\n", self);
    free( am->substitutions );
    free( self->M );
    free( self );
@@ -55,7 +57,7 @@ void foperation_apply_iMachine_destroy( struct iMachine *self )
 struct iMachine *foperation_apply_iCode_new
    ( 
    struct iCode *self,
-   fcontext context,
+   struct iContext *context,
    struct iProcess *process,
    struct iFGraph *fgraph
    )
@@ -65,7 +67,9 @@ struct iMachine *foperation_apply_iCode_new
       (struct _apply_substitution *)self->C;
    struct _apply_machine *m;
    int i, j;
-   int anon_ptr = context->num_locals+context->num_returns;
+   int num_locals, num_returns, anon_ptr;
+   context->i_namespace->get_sizes(context->i_namespace, 0, &num_locals, &num_returns, 0);
+   anon_ptr = num_locals+num_returns;
    ret = (struct iMachine *)malloc(sizeof(struct iMachine));
    m = (struct _apply_machine *)malloc(sizeof(struct _apply_machine));
    ret->destroy = foperation_apply_iMachine_destroy;
@@ -89,25 +93,26 @@ struct iMachine *foperation_apply_iCode_new
    i = 0;
    while( s[i].name != -1 )
       {
-      j = 0;
-      while( context->namespace[j] != s[i].name ) { j = j+1; }
+      j = context->i_namespace->variable_offset(context->i_namespace, s[i].name); 
+      //while( context->namespace[j] != s[i].name ) { j = j+1; }
       m->substitutions[i].name = j;
       m->substitutions[i].value = s[i].value;
-      printf("%d\n", i);
+      printf("%d [%d(%d) %d]\n", i, j, s[i].name, s[i].value.value);
       i = i+1;
       }
    i = i+1;
    while( s[i].name != -1 )
       {
-      m->substitutions[i-1].name = anon_ptr;
+      m->substitutions[i-1].name = anon_ptr + s[i].name;
       m->substitutions[i-1].value = s[i].value;
-      anon_ptr = anon_ptr+1;
+      /*anon_ptr = anon_ptr+1;*/
       printf("%d\n", i-1);
       i = i+1;
       }
    m->substitutions[i-1].name = -1;
    printf("%d\n", i);
    printf("built substitution map\n");
+   printf("created apply machine %x\n", ret);
    return ret;
 };
 
@@ -128,7 +133,7 @@ void add_named_substitution( struct _apply_controller *AC, int name, struct _obj
 
 void add_anonymous_substitution( struct _apply_controller *AC, struct _object value )
    {
-   AC->memory[AC->anon_i].name = AC->anon_i-AC->nsize-1; 
+   AC->memory[AC->anon_i].name = AC->anon_i-AC->nsize-1 + AC->aoffset; 
    AC->memory[AC->anon_i].value = value;
    AC->anon_i = AC->anon_i+1;
    }

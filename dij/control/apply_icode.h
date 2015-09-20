@@ -3,7 +3,7 @@
 struct _apply_controller
    {
    struct _apply_substitution *memory;
-   int named_i, anon_i, nsize;
+   int named_i, anon_i, nsize, aoffset;
    };
 
 struct _apply_substitution
@@ -19,7 +19,7 @@ struct _apply_machine
    struct _apply_substitution *substitutions;
    };
 
-struct _apply_controller *new_apply_controller( int nsize, int asize );
+struct _apply_controller *new_apply_controller( int nsize, int asize, int aoffset );
 
 struct iCode *apply_get_iCode( struct _apply_controller *AC );
 
