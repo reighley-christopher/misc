@@ -1,0 +1,185 @@
+<html>
+  <head>
+  <title>Process Flowchart</title>
+  <script src="jquery.js"></script>
+  <script src="underscore.js"></script>
+  <script src="backbone.js"></script>
+  <script src="backbone-relational.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="reighley-core.js"></script>
+  <link href="/static/font-awesome/css/font-awesome.css" rel="stylesheet" type="text/css">
+  <style>
+    body { background-color: mistyrose }
+    svg circle { fill: skyblue; stroke: black; }
+    svg polygon { fill: white; stroke: black; }
+    svg path { fill: none; stroke: black; }
+    svg marker path {fill:black}
+    div.section { bottom: 0; height:100%; }
+    div.left_console {background-color: #f0fff0; width:300px; height:600px}
+    div.editbox { border: solid black 2px; background-color: white; position: absolute }
+    #container .fa { color: white; cursor: pointer }
+  </style>
+
+  </head>
+   <body>
+
+  <div id="container" class="section" >
+  <i class="fa fa-floppy-o fa-lg" onclick="save();"></i>
+  <!-- &#x8535; &#x85cf; --!>
+  <i class="fa fa-play fa-lg" onclick="run();"></i>
+  <!-- &#x9a71;(run)&#x52b3(strive,toil); --!>
+  <i class="fa fa-cog fa-lg"></i>
+  <!-- <br>&#x56e0; (because, reason, cause) --!> 
+  <svg id="c3d" 
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   version="1.1"
+   height="0" width="0"
+   >
+    <defs>
+      <marker id="Triangle"
+        viewBox="0 0 10 10" refX="0" refY="5" 
+        markerUnits="strokeWidth"
+        markerWidth="4" markerHeight="4"
+        orient="auto">
+        <path d="M 0 0 L 10 5 L 0 10 z" />
+      </marker>
+      <g id="input_triangle">
+        <polygon points="0,0 1,1, 0,2" stroke-width="0.1" />
+        <circle id="out" cx="1" cy="1" r="0.2" stroke-width="0.1" />
+      </g>
+      <g id="process_rectangle">
+        <polygon points="0,0 1,0 1,2 0,2" stroke-width="0.1" />
+        <circle id="in" cx="0" cy="1" r="0.2" stroke-width="0.1" />
+        <circle id="out" cx="1" cy="1" r="0.2" stroke-width="0.1" />
+      </g>
+      <g id="output_triangle">
+        <polygon points="0,0 1,1, 0,2" stroke-width="0.1" />
+        <circle id="in" cx="0" cy="1" r="0.2" stroke-width="0.1" />
+      </g>
+    </defs>
+    <g id="main" transform="scale(20)">
+    </g>
+    <g id="main_menu" transform="translate(10, 10) scale(20)" >
+      <polygon points="0,0 3,0 3,10.5 0,10.5" stroke-width="0.1" style="fill: white"/>
+      <use id="InputTriangle" xlink:href="#input_triangle" x="1" y="0.5" />
+      <use id="ProcessRectangle" xlink:href="#process_rectangle" x="1" y="3.0" />
+      <use id="OutputTriangle" xlink:href="#output_triangle" x="1" y="5.5"/>
+    </g>
+  </svg>
+  <div class="editbox" style="display: none; width=2in">
+    <select class="task"><option value=""></option>
+    <option value="DELETE">DELETE</option></select><span class="close">X</span>
+    <div class="content"></div>
+  </div>
+  </div>
+<div id="ERR" style="visibility: hidden;height:200px ; width:200px ; background-color:violet ; position:absolute ; top:0px ; left:50% ; font-family:courier">
+HELLO WORLD
+</div>
+<script language="javascript">
+function ERR(x)
+  {
+  $("#ERR").append("<br>");
+  $("#ERR").append(x);
+  }
+</script>
+<!--
+  <div class="left_console section socket" data-socket="amqp" style="left:100px">
+  
+  </div>
+--!>
+    <script language="javascript" src="flowchart.js"></script>
+    <script language="javascript">
+    
+    function window_resize(){
+      $("svg").attr("width",  $("#container").width() );
+      $("svg").attr("height", $("#container").height() );
+    }
+
+    $(window_resize);
+    $(window).resize(window_resize);
+
+    var BasicSocketView = Backbone.View.extend({
+      initialize: function(){
+        this.model.on("message", function(data){
+          if(typeof(data) == "string"){
+            this.$el.append("<br/>");
+            this.$el.append(data);
+          }    
+        }, this);
+      }
+    });
+//    var basic_socket_model = new Backbone.Socket("amqp");
+//    var basic_socket = new BasicSocketView({model: basic_socket_model, el: $(".socket")});
+
+//    var test_data =
+//      { 
+//        inputs : { x : {coordinates : [5,5], task: {name: "test1"} } }, 
+//        outputs : { z : {coordinates : [15, 5], task: {}},
+//                    d : {coordinates : [10, 5]}},
+//        processes : {y : {coordinates : [10,10]},
+//                     a : {coordinates : [20, 10.5]}}, 
+//        connect : [
+//          { from:"x",to:"y"},   
+//          { from:"y",to:"z"}, 
+//          { from:"y",to:"a"},
+//          { from:"x",to:"d"}]
+//      }; 
+
+    function load()
+      {
+      var process_name = location.search.replace("?", "");
+      $.get("/riak/buckets/processes/keys/" + process_name, "json").done(function(a){
+        container = new Container({data: a, el : $("div#container")});
+        $.get("/run/glyphs").done(function(a){
+          container.menu.append(a);            
+          });
+        container.render();
+        }).fail(function(a){
+        container = new Container({data: {inputs:{}, outputs:{}, processes:{}, connect:[]}, el : $("div#container")});
+        $.get("/run/glyphs").done(function(a){
+          container.menu.append(a);            
+          });
+        container.render(); 
+        });
+
+      }
+
+    function save()
+      {
+      var process_name = location.search.replace("?", "");
+      $.ajax({
+        url: "/riak/buckets/processes/keys/" + process_name, 
+        data: JSON.stringify(container.data),
+        type: "PUT",
+        contentType: "application/json"});
+      }
+
+     function run()
+       {
+       var process_name = location.search.replace("?", "");
+       $.ajax({
+         url: "/run/start/" + process_name +"?output=websocket",
+         data: JSON.stringify(container.data),
+         type: "POST",
+         contentType: "application/json",
+         dataType: "text"
+         }).
+         done(function(data){executor(data);});
+       }
+  
+    var container;
+
+    $(load);
+    Input = Backbone.Model.extend({});
+    window.onerror = function(e, url, line){
+      ERR(e);
+      ERR(url);
+      ERR(line);
+    };
+    ERR("load complete");
+   
+    </script>
+  </body>
+</html>
