@@ -1,0 +1,130 @@
+<html><title>SOUND</title><body>
+<script>
+function Sound()
+  {
+  var context = new AudioContext(); //TODO fix for IE
+  var sampleRate = context.sampleRate;
+  var buffer = context.createBuffer( 1, sampleRate, sampleRate  );
+  window.test = Array(sampleRate);
+  this.play = function()
+    {
+    var frame = buffer.getChannelData(0);
+    var i;
+    for( i = 0; i < sampleRate; i++)
+      {
+      frame[i] = Math.cos(i*440/sampleRate)*0.5
+                 + Math.cos(i*600/sampleRate)*0.25
+                 + Math.cos(i*1200/sampleRate)*0.25;
+      window.test[i] = Math.sin(i*440/sampleRate)*0.5
+                 + Math.sin(i*600/sampleRate)*0.25
+                 + Math.sin(i*1200/sampleRate)*0.25;
+      //frame[i] = Math.random();
+      }
+    var source = context.createBufferSource();
+    source.buffer = buffer;
+    source.connect( context.destination );
+    source.start();
+    }
+  }
+
+// slow discrete fourier so that I can make sure fast fourier is correct
+function slow_fourier( data, offset, length )
+  {
+  var i, j; 
+  var output = Array(data.length);
+  for( i = 0; i < data.length ; i++ )
+    {
+    var r_acc = 0;
+    var i_acc = 0
+    for( j = 0; j < data.length ; j++ )
+      {
+      r_acc = r_acc + data[j] * Math.cos( 2*Math.PI*i*j/data.length );
+      i_acc = i_acc + data[j] * Math.sin( 2*Math.PI*i*j/data.length );
+      }
+    output[i] = r_acc*r_acc + i_acc*i_acc;
+    }
+  return output; 
+  }
+
+function normalize( data )
+  {
+  
+  }
+
+function paint_histogram(scale)
+  {
+  var canvas = document.getElementById("c");
+  var width = window.test.length;
+  var height = 255;
+  canvas.width = width; 
+  canvas.height = height; 
+  var context = canvas.getContext('2d');
+  var imagedata = context.createImageData(width,height);
+  var i, j;
+  slice = slow_fourier( window.test )
+  for ( i = 0; i < width; i ++ )
+    {
+  var gray = slice[i]/scale;
+  for ( j = 0; j < height; j++ )
+    {
+    if( j < gray ) {
+    imagedata.data[ (i + j*width)*4 + 0 ] = 255 ; 
+    imagedata.data[ (i + j*width)*4 + 1 ] = 255 ; 
+    imagedata.data[ (i + j*width)*4 + 2 ] = 255 ; 
+    imagedata.data[ (i + j*width)*4 + 3 ] = 255 ;
+    } else {
+    imagedata.data[ (i + j*width)*4 + 0 ] = 0 ; 
+    imagedata.data[ (i + j*width)*4 + 1 ] = 0 ; 
+    imagedata.data[ (i + j*width)*4 + 2 ] = 0 ; 
+    imagedata.data[ (i + j*width)*4 + 3 ] = 255 ;
+    }
+    }}
+  context.putImageData( imagedata, 0, 0 )
+
+  }
+
+//input stream is the whole of the data
+//resolution is the width of the window
+function paint_canvas( input_stream, resolution )
+  {
+  var canvas = document.getElementById("c");
+  var width = input_stream.length/resolution;
+  var height = resolution;
+  canvas.width = width; 
+  canvas.height = height; 
+  var context = canvas.getContext('2d');
+  var imagedata = context.createImageData(width,height);
+  var i, j;
+  for ( i = 0; i < width; i++ ) {
+  slice = slow_fourier( input_stream.slice( i*height , i*height+height ) )
+  
+  for ( j = 0; j < height/2; j++ )
+    {
+    var gray = Math.min( slice[j] * 255, 255 );
+    imagedata.data[ (i + j*width)*4 + 0 ] = gray ; 
+    imagedata.data[ (i + j*width)*4 + 1 ] = gray ; 
+    imagedata.data[ (i + j*width)*4 + 2 ] = gray ; 
+    imagedata.data[ (i + j*width)*4 + 3 ] = 255 
+    }}
+  context.putImageData( imagedata, 0, 0 )
+  }
+
+function test_paint()
+  {
+  paint_canvas( window.test, 2000 );
+  }
+
+// implementation of the cooley-tukey fft
+function cooley_tukey( data, offset, length, window )
+  {
+    
+  }
+
+</script>
+
+<input type=button onclick="window.S.play()" />
+<div style="border: solid black 1px ; display : inline-block" >
+<canvas id="c" ></canvas>
+</div>
+<script>window.onload = function(){ window.S = new Sound() } </script>
+</body></html>

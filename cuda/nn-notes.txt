@@ -1,0 +1,54 @@
+cross entropy loss l = p*log(q) + (1-p)*log(1-q)
+dl/dq = p/q + (1-p)/(1-q)
+p(1-q)/q(1-q) + (1-p)*q/q(1-q)
+[p-pq + q-pq]/q(1-q)
+
+o(j) = max(sum(w(i,j)*o(i)), 0) = max(n(j), 0)
+n(j) = sum(w(i,j)*o(i))
+
+dE/dw(i,j) = dE/do(j)*do(j)/dn(j)*dn(j)/dw(i,j)
+
+        dn(j)/dw(i,j) = o(i)
+        do(j)/dn(j) = 1 if n(j) > 0, 0 otherwise
+        dE/do(j) = sum(dE/dn2*do/dn2*dn2/dw(j,l)) = 
+                   backprop error * derivative of activation function
+                   * weight
+                 = backprop error * weight if n(j) > 0 ; 0 otherwise
+
+
+dE/do(j) = dE/dn(j+1) * dn(j+1)/do(j) = 
+dE/do(j+1) * do(j+1)/dn(j+1) * dn(j+1)/do(j)
+
+dE/do(j+1) is known (maybe)
+dn(j+1)/do(j) = w(i,j)
+do(j+1)/dn(j+1) is the derivative of the activation function
+
+dE/dw(j) = dE/do(j) * do(j)/dn(j) * dn(j)/dw(j)
+do(j)/dn(j) is also the derivative of the activation function 
+dn(j)/dw(j-1) = o(j-1)
+dE/do(j) = dE/dn(j+1) * dn(j+1)/do(j)
+dE/dn(j+1) = dE/do(j+1) * do(j+1)/dn(j+1)
+
+
+dE/dw(j) = dE/do(j+1) * 
+           do(j+1)/dn(j+1) * [ o' 
+           dn(j+1)/do(j) * [ w(j)
+           do(j)/dn(j) * [ o' 
+           dn(j)/dw(j) * [ o(j)
+   
+---
+(1) dE/dw(j) = dE/do(j) * do(j)/dn(j) * dn(j)/dw(j)
+(2) dn(j+1)/dw(j) = o(j)
+(3) do(j)/dn(j) = o'
+(4) dE/do(j) = dE/dn(j+1) * dn(j+1)/do(j) = dE/do(j+1) * 
+                 do(j+1)/dn(j+1) * dn(j+1)/do(j)
+(5) [from (1) and (4)] dE/dw(j) = dE/do(j+1) * do(j+1)/dn(j+1) * dn(j+1)/do(j) * do(j)/dn(j) * dn(j)/dw(j)
+(6) dn(j+1)/do(j) = w(j)
+(7) [from (5) and (6)] dE/dw(j) = dE/do(j+1) * do(j+1)/dn(j+1) * w(j) * do(j)/dn(j) * dn(j)/dw(j)
+
+-----
+at every layer what I need to track is dE/do * do/dn
+do/dn is just the derivative of the activation function.
+dE/do is the values from the layer above weighted
+
+
