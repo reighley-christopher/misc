@@ -1,0 +1,146 @@
+<html>
+<head>
+<title>
+FOCUS CHALLENGE
+</title>
+<script src="jquery.js"></script>
+<style>
+.button { 
+  font-family : sans-serif ; 
+  width : 170px ;
+  height : 34px;
+  font-size : 22;
+  border-radius : 12px ;
+  border : 0px }
+.button.active { 
+  color : white;
+  background-color : lightgrey ;
+}
+.button.ready {
+  color : white;
+  background-color : #FF6E4E
+  }
+
+.leaderboard {
+  font-family : sans-serif
+  }
+
+.leaderboard th {
+  font-size : 22 
+  }
+</style>
+</head>
+<body>
+  <div align="center" style="width:375px">
+  <div style="width:200px ; padding-top:40px">   
+  <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <style>
+     .clock { font-family : sans-serif ;
+              font-size: 22.15px}
+  </style>
+  <circle cx="50" cy="50" r="49" fill="lightgrey" fill-opacity="1"/>
+  <circle cx="50" cy="50" r="42" fill="white" fill-opacity="1"/>
+  <text class="clock" x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" fill="#FF6E4E"></text>
+  <path id="TickerPath" d="" fill="#FF6E4E"/> 
+  <path id="BreakTime" fill-opacity="0.2"/> 
+</svg>
+  </div>
+<div align="center" style="width:200px; padding-top:34px; padding-bottom:34px">
+<button class="button" align="center" ></button>
+</div>
+</div>
+<div style="padding-left:16">
+<table class="leaderboard" >
+<tr><th colspan=2>LEADER BOARD</th></th></tr>
+<tr><td>1000</td><td>Chris</td></tr>
+<tr><td>-1</td><td>Jed</td></tr>
+</table>
+</div>
+  <audio id="airwolf" src="airwolf.mp3"></audio>
+  <audio id="vader" src="vader.mp3"></audio>
+  <script language="javascript">
+  var graphics_parameters = { 
+     outer_radius : 49,
+     inner_radius : 42 
+     }
+ 
+  function ticker_path(degrees, id, graphics_parameters) {
+    var xo = graphics_parameters.outer_radius * Math.sin( degrees * Math.PI / 180 ) + 50; 
+    var yo = 50 - graphics_parameters.outer_radius*Math.cos( degrees * Math.PI / 180 );
+    var xi = graphics_parameters.inner_radius * Math.sin( degrees * Math.PI / 180 ) + 50; 
+    var yi = 50 - graphics_parameters.inner_radius *Math.cos( degrees * Math.PI / 180 );
+    var large_arc = (degrees > 180 ) ? "1" : "0"; 
+
+    var start_here = "M 50 " + ( 50 - graphics_parameters.inner_radius )
+    var vertical_line = " V " +(  50 - graphics_parameters.outer_radius )  
+    var outer_arc = " A " + graphics_parameters.outer_radius + " " + graphics_parameters.outer_radius + " 0 " + 
+                      large_arc + " 1 " + xo + " " + yo;
+    var diagonal_line = " L " + xi + " " + yi
+    var inner_arc = " A " + graphics_parameters.inner_radius + " " + graphics_parameters.inner_radius + " 0 " + 
+                      large_arc + " 0 50 " + ( 50 - graphics_parameters.inner_radius )
+
+    var path =  start_here + vertical_line + outer_arc + diagonal_line + inner_arc;
+    $("svg #"+id).attr("d", path);
+    }
+  var tick = 60*30;
+  var break_started = false;
+  var timerRef;
+
+  function start() {
+    console.log("start")
+    button_cancel()
+    ticker_path(359.99, "TickerPath", graphics_parameters)
+    update_clock(60*30)
+    tick = 60*30-1
+    timerRef = window.setInterval( timer_event, 1000 )
+    }
+
+  function cancel() {
+    console.log("cancel")
+    button_ready()
+    tick = 60*30
+    window.clearInterval(timerRef) 
+    }
+
+  function timer_event() {
+    /*30 minutes is 360  degrees  
+       1 minute is  12 degrees 
+       1 second is 0.2 degrees 
+       1 degree every 5 seconds */
+    ticker_path(tick*0.2, "TickerPath", graphics_parameters);
+    update_clock(tick)
+    tick--;
+    if(tick < 60*5 && !break_started ) { play_airwolf(); break_started = true }
+    if(tick < 0) { tick = 360*5; play_vader(); break_started=false };
+    }
+ 
+  function button_ready() {
+    $(".button").removeClass("active").addClass("ready").text("GO!").off("click").on("click", start) 
+    }
+
+  function button_cancel() {
+    $(".button").removeClass("ready").addClass("active").text("CANCEL").off("click").on("click", cancel)
+    } 
+
+
+  function update_clock(seconds) {
+    var minutes = Math.floor(seconds/60 )
+    var remainder = seconds - minutes*60
+    var minutes_zero = (minutes < 10) ? "0" : ""
+    var seconds_zero = (remainder < 10) ? "0" : ""
+    $(".clock").text(minutes_zero + minutes + ":" + seconds_zero + remainder) 
+
+    }
+  function play_airwolf() {
+    //$("#airwolf")[0].play()
+    }
+  function play_vader(){
+    //$("#vader")[0].play()
+    }
+    ticker_path(60, "BreakTime", graphics_parameters)
+    ticker_path(359.99, "TickerPath", graphics_parameters)
+    update_clock(60*30)
+    button_ready() 
+  </script>
+</body>
+</html>
