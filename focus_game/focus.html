@@ -4,6 +4,7 @@
 FOCUS CHALLENGE
 </title>
 <script src="jquery.js"></script>
+<script src="underscore.js"></script>
 <style>
 .button { 
   font-family : sans-serif ; 
@@ -52,10 +53,12 @@ FOCUS CHALLENGE
 </div>
 <div style="padding-left:10%">
 <table class="leaderboard" >
-<tr><th colspan=2>LEADER BOARD</th></th></tr>
-<tr><td>1000</td><td>Chris</td></tr>
-<tr><td>-1</td><td>Jed</td></tr>
 </table>
+</div>
+<div id="loginstub"  style="background:skyblue;position:fixed;top:100px;width:375px">
+login stub : this bit hasn't been specified<br>
+<input type="checkbox" name="id" onclick="login('chris')" autocomplete="off" > chris<br> 
+<input type="checkbox" name="id" onclick="login('jed')" autocomplete="off" > jed<br>
 </div>
   <audio id="airwolf" src="airwolf.mp3"></audio>
   <audio id="vader" src="vader.mp3"></audio>
@@ -64,6 +67,13 @@ FOCUS CHALLENGE
      outer_radius : 49,
      inner_radius : 42 
      }
+
+  var myId = ""
+
+  function login( name ) { 
+    myId = name
+    $("#loginstub").hide()
+    }
  
   function ticker_path(degrees, id, graphics_parameters) {
     var xo = graphics_parameters.outer_radius * Math.sin( degrees * Math.PI / 180 ) + 50; 
@@ -94,6 +104,7 @@ FOCUS CHALLENGE
     update_clock(60*30)
     tick = 60*30-1
     timerRef = window.setInterval( timer_event, 1000 )
+    post_event("start")
     }
 
   function cancel() {
@@ -102,7 +113,8 @@ FOCUS CHALLENGE
     update_clock(60*30)
     button_ready()
     tick = 60*30
-    window.clearInterval(timerRef) 
+    window.clearInterval(timerRef)
+    post_event("cancel") 
     }
 
   function timer_event() {
@@ -113,8 +125,11 @@ FOCUS CHALLENGE
     ticker_path(tick*0.2, "TickerPath", graphics_parameters);
     update_clock(tick)
     tick--;
-    if(tick < 60*5 && !break_started ) { play_airwolf(); break_started = true }
-    if(tick < 0) { tick = 360*5; play_vader(); break_started=false };
+    if(tick < 60*5 && !break_started ) { play_airwolf(); post_event("complete"); break_started = true }
+    if(tick < 0) { tick = 359.99*5; play_vader(); break_started=false; 
+    window.clearInterval(timerRef);
+    button_ready() };
+    update_clock(tick);
     }
  
   function button_ready() {
@@ -125,6 +140,36 @@ FOCUS CHALLENGE
     $(".button").removeClass("ready").addClass("active").text("CANCEL").off("click").on("click", cancel)
     } 
 
+  var leaderboard
+
+  function sanitize_record( record ) {
+    //a single record, change score to an int and the dates to dates
+    record.score = Number( record.score )
+    record.lastUpdate = Date.parse( record.lastUpdate)
+    record.period = Date.parse( record.period)
+    record.expectedUpdate = Date.parse( record.expectedUpdate )
+    }
+
+  function update_leaderboard() {
+    var line = _.template("<tr><td><%= id %><td><%= score  %></td></tr>")
+    $.ajax({url : "http://new.reighley-christopher.net/riak/buckets/focus/keys/focus", cache : false } ).
+      done(function(d){ 
+        $(".leaderboard").empty().
+        append("<tr><th colspan=2>LEADER BOARD</th></th></tr>")
+        _.forEach( d,  function(d) { 
+          sanitize_record(d)
+          $(".leaderboard").append( line(d) ) 
+          } )
+        leaderboard = d
+      } ).
+      fail( function(e) { console.log("ERROR"); console.log(e) } ) 
+    }
+    update_leaderboard()
+    window.setInterval( update_leaderboard, 10000 )
+  function post_event(event) {
+    var event = { id : myId, timestamp : new Date(), event : event }
+    $.ajax("http://localhost:8888", { type : "POST", data : JSON.stringify( event ) }  ).fail( function(e) { console.log("ERROR"); console.log(e) } )
+    }
 
   function update_clock(seconds) {
     var minutes = Math.floor(seconds/60 )
