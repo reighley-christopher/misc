@@ -168,7 +168,7 @@ login stub : this bit hasn't been specified<br>
     window.setInterval( update_leaderboard, 10000 )
   function post_event(event) {
     var event = { id : myId, timestamp : new Date(), event : event }
-    $.ajax("http://localhost:8888", { type : "POST", data : JSON.stringify( event ) }  ).fail( function(e) { console.log("ERROR"); console.log(e) } )
+    $.ajax("http://new.reighley-christopher.net/focus/", { type : "POST", data : JSON.stringify( event ) }  ).fail( function(e) { console.log("ERROR"); console.log(e) } )
     }
 
   function update_clock(seconds) {
