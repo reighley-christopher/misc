@@ -8,10 +8,9 @@ FOCUS CHALLENGE
 <style>
 .button { 
   font-family : sans-serif ; 
-  width : 170px ;
-  height : 34px;
-  font-size : 22;
-  border-radius : 12px ;
+  width : 50% ;
+  font-size : 5em;
+  border-radius : 0.4em ;
   border : 0px }
 .button.active { 
   color : white;
@@ -23,17 +22,19 @@ FOCUS CHALLENGE
   }
 
 .leaderboard {
-  font-family : sans-serif
+  font-family : sans-serif ;
   }
-
+.leaderboard td {
+  font-size : 3em
+  }
 .leaderboard th {
-  font-size : 22 
+  font-size : 4em 
   }
 </style>
 </head>
-<body>
-  <div align="center" style="width:375px">
-  <div style="width:200px ; padding-top:40px">   
+<body >
+  <div align="center" style="width:100%">
+  <div style="width : 53% ; padding-top:8%">   
   <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
   <style>
      .clock { font-family : sans-serif ;
@@ -46,11 +47,11 @@ FOCUS CHALLENGE
   <path id="BreakTime" fill-opacity="0.2"/> 
 </svg>
   </div>
-<div align="center" style="width:200px; padding-top:34px; padding-bottom:34px">
+<div align="center" style="width:100%; padding-top:10%; padding-bottom:10%" >
 <button class="button" align="center" ></button>
 </div>
 </div>
-<div style="padding-left:16">
+<div style="padding-left:10%">
 <table class="leaderboard" >
 </table>
 </div>
@@ -108,6 +109,8 @@ login stub : this bit hasn't been specified<br>
 
   function cancel() {
     console.log("cancel")
+    ticker_path(359.99, "TickerPath", graphics_parameters)
+    update_clock(60*30)
     button_ready()
     tick = 60*30
     window.clearInterval(timerRef)
@@ -165,7 +168,7 @@ login stub : this bit hasn't been specified<br>
     window.setInterval( update_leaderboard, 10000 )
   function post_event(event) {
     var event = { id : myId, timestamp : new Date(), event : event }
-    $.ajax("http://localhost:8888", { type : "POST", data : JSON.stringify( event ) }  ).fail( function(e) { console.log("ERROR"); console.log(e) } )
+    $.ajax("http://new.reighley-christopher.net/focus/", { type : "POST", data : JSON.stringify( event ) }  ).fail( function(e) { console.log("ERROR"); console.log(e) } )
     }
 
   function update_clock(seconds) {
