@@ -5,11 +5,17 @@ import chaintools.ChainTools._
 import org.apache.http.client.methods.HttpPut
 import org.apache.http.entity.StringEntity
 //import org.apache.http.impl.client.HttpClientBuilder
-import java.net.HttpURLConnection
-import java.net.http.HttpClient
-import java.net.http.HttpRequest
-import java.net.http.HttpResponse
-import java.net.URI
+//import java.net.HttpURLConnection
+//import java.net.http.HttpClient
+//import java.net.http.HttpRequest
+//import java.net.http.HttpResponse
+import org.apache.http.HttpRequest
+import org.apache.http.client.HttpClient
+import org.apache.http.impl.client.DefaultHttpClient
+import org.apache.http.HttpResponse
+import org.apache.http.client.methods.RequestBuilder
+import org.apache.http.entity.StringEntity
+//import java.net.URI
 
 // simplified Riak interface
 // for the purposes of the Focus Game we need to update a  
@@ -39,14 +45,21 @@ def from_riak() : String = {
 //  }
 
 def to_riak(payload : String ) : Unit = {
-  val client = HttpClient.newHttpClient
-  val request = HttpRequest.newBuilder()
-    .uri(URI.create("http://new.reighley-christopher.net/riak/buckets/focus/keys/focus") )
-    .PUT(HttpRequest.BodyPublishers.ofString( payload ) )
-    .header("Content-Type", "application/json" )
+  //val client = HttpClient.newHttpClient
+ val client : HttpClient = new DefaultHttpClient()
+
+val request = RequestBuilder 
+    .put("http://new.reighley-christopher.net/riak/buckets/focus/keys/focus" )
+    .addHeader("Content-Type", "application/json" )
+    .setEntity( new StringEntity( payload ) )
     .build
+//  val request = HttpRequest.newBuilder()
+//    .uri(URI.create("http://new.reighley-christopher.net/riak/buckets/focus/keys/focus") )
+//    .PUT(HttpRequest.BodyPublishers.ofString( payload ) )
+//    .header("Content-Type", "application/json" )
+//    .build
   try { 
-    client.send(request, HttpResponse.BodyHandlers.ofString() )
+    client.execute(request)
     } catch {  
       case ex : java.io.IOException => None  //riak returns a Content-Length header when sometimes it shouldn't, but that's okay
       case x : Throwable => throw x
