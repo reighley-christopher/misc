@@ -33,8 +33,5 @@ def register():
 def unregister():
     bpy.utils.unregister_class(ModalTimerOperator)
 
-if __name__ == "__main__":
-    register()
-
-    # test call
-    bpy.ops.wm.modal_timer_operator()
+register()
+bpy.ops.wm.modal_timer_operator() #start the server at once

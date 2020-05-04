@@ -11,7 +11,9 @@ class Interpocket():
     self.output_buffer = io.StringIO()
     self.interpreter = code.InteractiveConsole(namespace)
     self.socket = socket.socket(socket.AF_UNIX)
-    os.unlink(path)
+    self.path = path
+    if(os.path.exists(path) ) :
+    	os.unlink(path)
     self.socket.bind(path)    
     self.input_buffer = io.BytesIO()
     self.namespace = namespace
@@ -21,7 +23,8 @@ class Interpocket():
 
   def end(self):
     self.conn.close()
-    self.socket.shutdown()
+    self.socket.shutdown(socket.SHUT_RDWR)
+    os.unlink(self.path)
 
   def poll(self):
     leave_now = False
@@ -70,9 +73,11 @@ class Interpocket():
 
   def loop(self):
     self.start()
-    while(True):
-      self.poll()
-    self.end()
+    try :
+      while(True):
+        self.poll()
+    finally :
+      self.end()
 
 if __name__ == "__main__":
   ip = Interpocket("/home/reighley/test_socket", {"hello" : "hello world"})
