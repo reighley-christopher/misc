@@ -5,7 +5,7 @@ fileserver
 -ssh 192.168.1.2 
 
 Sqlite3
--/usr/bin/sqlite3 /home/reighley/Code/misc/c/testdata.sqllite -interactive
+-/usr/bin/sqlite3 /home/reighley/testdata.sqlite3 -interactive
 %SHUTDOWN
 -.quit
 
