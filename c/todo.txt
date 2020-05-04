@@ -1,0 +1,4 @@
+- sqlite3 errors do something weird wrt scroll, need to at least have a way to repaint the screen if it gets weird.
+- implement shutdown script, clean up and close the pipes on program termination
+- don't crash if I try to write to a terminal that is closed, just delete the entry in termset
+- create a key to go up one level instead of all the way back to the root, maybe make some paths sticky and some not.

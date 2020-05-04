@@ -1,0 +1,22 @@
+bash
+-/usr/bin/bash
+
+fileserver
+-ssh 192.168.1.2 
+
+Sqlite3
+-/usr/bin/sqlite3 /home/reighley/Code/misc/c/testdata.sqllite -interactive
+%SHUTDOWN
+-.quit
+
+Blender
+-/usr/bin/socat UNIX:/home/reighley/test_socket STDIO
+%SHUTDOWN
+-exit()
+
+Blender>hello
+-print("hello world\n")
+
+Blender>submenu>hello
+-print("HELLO WORLD\n")
+-print("FROM THE DEPTHS OF MY HEART\n") 
