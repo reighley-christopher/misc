@@ -130,6 +130,12 @@ int menu_mode_key_handler(char c, WINDOW *top, WINDOW *bottom)
     wprintw(bottom, selection->command);
     wprintw(bottom, "]");
     current_term = fork_a_thing( c-'a', bottom, selection->command );
+    if( selection->children != NULL )
+      {
+      current_menu = selection;
+      update_hotkey_table(current_menu);
+      render_menu(top);
+      }
     return 0;
     } else {
     write( current_term->writepipe, selection->command, strlen(selection->command) );

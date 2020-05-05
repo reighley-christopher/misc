@@ -1,6 +1,21 @@
 bash
 -/usr/bin/bash
 
+bash>netstat
+-netstat -ltnp
+
+bash>webadmin>nodemanager
+-firefox http://192.168.1.2:8042/node
+
+bash>webadmin>hadoopcluster
+-firefox http://192.168.1.2:8088/cluster
+
+bash>webadmin>mesos
+-firefox http://192.168.1.2:5050/#/
+
+bash>webadmin>hdfs
+-firefox http://192.168.1.2:9870/explorer.html#/
+
 fileserver
 -ssh 192.168.1.2 
 
@@ -19,4 +34,5 @@ Blender>hello
 
 Blender>submenu>hello
 -print("HELLO WORLD\n")
--print("FROM THE DEPTHS OF MY HEART\n") 
+-print("FROM THE DEPTHS OF MY HEART\n")
+
