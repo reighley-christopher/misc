@@ -113,7 +113,7 @@ int menu_mode_key_handler(char c, WINDOW *top, WINDOW *bottom)
     }
   if( c < 'a' || c > 'z' || selection == NULL ) return 1;
   wrefresh(top);
-  if( selection->command[0] == '\0' ) 
+  if( selection->command == NULL || selection->command[0] == '\0' ) 
     {
     if( selection->children == NULL )
       { 
@@ -138,7 +138,7 @@ int menu_mode_key_handler(char c, WINDOW *top, WINDOW *bottom)
       }
     return 0;
     } else {
-    write( current_term->writepipe, selection->command, strlen(selection->command) );
+    if(selection->command) write( current_term->writepipe, selection->command, strlen(selection->command) );
     } 
   return 1;
   }
