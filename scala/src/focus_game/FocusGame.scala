@@ -33,15 +33,24 @@ import org.apache.kafka.streams.state.KeyValueBytesStoreSupplier
 import org.apache.kafka.streams.state.KeyValueStore
 import org.apache.kafka.streams.scala.ByteArrayKeyValueStore
 import org.apache.kafka.streams.state.ValueAndTimestamp
-import java.util.Date
-import java.text.SimpleDateFormat
+import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
 
 import scala.util.{ Try, Success, Failure }
 
 import chaintools.Kafka.A
 import chaintools.Kafka.kafka 
 
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.annotation.PropertyAccessor
+import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility
+import com.fasterxml.jackson.annotation.JsonCreator
+
 import reighley.christopher.Properties.properties
+import reighley.christopher.ZonedDateTimeModule
+import reighley.christopher.EnumerationModule
+
+import scala.reflect._
 
 object ExceptionHandler extends java.lang.Thread.UncaughtExceptionHandler {
   def uncaughtException( t:Thread, e:Throwable ) {
@@ -72,7 +81,7 @@ def mapToJson( map : Map[String,String] ) : String = "{" + map.map( x => "\"" + 
 
 object Event extends Enumeration
   {
-  type Event = Value
+  type t_Event = Value
   val start = Value 
   val cancel = Value 
   val complete = Value 
@@ -81,30 +90,88 @@ object Event extends Enumeration
 
 import Event._
 
-case class Input(id:String, event:Event, timestamp: Date  )
+class Input { 
+  var id:String = _ 
+  var event:t_Event = _ 
+  var timestamp: ZonedDateTime = _ 
+  def copy( id:String=id, event:t_Event=event, timestamp:ZonedDateTime=timestamp ) = Input( id, event, timestamp )
+  }
+
+object Input {
+  def apply( id:String, event:t_Event, timestamp:ZonedDateTime ) : Input = {
+    val inp = new Input
+    inp.id = id
+    inp.event = event
+    inp.timestamp = timestamp
+    return inp 
+    } 
+  }
 
 object State extends scala.Enumeration
   {
-  type State = Value
-  val slacking = Value
-  val working = Value
-  val resting = Value
+  type t_State = Value
+  val slacking : t_State = Value
+  val working : t_State = Value
+  val resting : t_State = Value
+
   implicit def StateFromString(s : String) = withName(s)
   }
 
-val ISO8601 = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
-implicit def ISO8601Date(str : String) = ISO8601.parse(str) 
+val ISO8601 = DateTimeFormatter.ISO_ZONED_DATE_TIME 
+//implicit def ISO8601Date(str : String) = ISO8601.parse(str) 
+//implicit def ISO8601Date_sql(str : String ) = new java.sql.Date( ISO8601Date( str ).getTime())
+implicit def ISO8601Date_zdt(str : String ) = ZonedDateTime.parse( str )
 
 import State._
 
-case class Record(id:String, state:State, score:Int , period:Date, lastUpdate:Date, expectedUpdate:Date)
+class Record {
+  var id : String = _
+  var state : t_State = _
+  var score : Int = _
+  var period : ZonedDateTime = _
+  var lastUpdate : ZonedDateTime = _
+  var expectedUpdate : ZonedDateTime = _ 
+
+  def copy( id:String=id, state:t_State=state, score:Int=score, period:ZonedDateTime=period, lastUpdate:ZonedDateTime=lastUpdate, expectedUpdate:ZonedDateTime=expectedUpdate ) = Record( id, state, score, period, lastUpdate, expectedUpdate )
+ 
+}
+
+object Record
+  {
+  def apply( id : String, state : t_State, score : Int, period : ZonedDateTime, lastUpdate : ZonedDateTime, expectedUpdate : ZonedDateTime ) : Record = 
+    {
+    val rec = new Record
+    rec.id = id
+    rec.state = state
+    rec.score = score
+    rec.period = period
+    rec.lastUpdate = lastUpdate
+    rec.expectedUpdate = expectedUpdate
+    return rec
+    }
+  }
+
+var om = new ObjectMapper
+EnumerationModule.add[t_State](State)
+om.setVisibility(PropertyAccessor.FIELD, Visibility.ANY);
+om.registerModule(ZonedDateTimeModule())
+om.registerModule(EnumerationModule())
+val recordClass = classTag[Record].runtimeClass
 
 def RecordFromJson( j : String ) : Record = {
+  om.readValue(j, recordClass ).asInstanceOf[Record]  
+  }
+
+def JsonFromRecord( rec : Record ) : String = {
+  om.writeValueAsString(rec)
+  }
+
+def RecordFromJson2( j : String ) : Record = {
   val x = JSON.parseFull(j).get.asInstanceOf[Map[String,String]]
   return Record( x("id"), x("state"), x("score").toInt, x("period"), x("lastUpdate"), x("expectedUpdate") ) 
   }
 
-def JsonFromRecord( record : Record ) : String = {
+def JsonFromRecord2( record : Record ) : String = {
   val m : Map[String,String] = Map( "id" -> record.id, "state" -> record.state.toString , "score" -> record.score.toString, 
                                     "period" -> ISO8601.format(record.period), 
                                     "lastUpdate" -> ISO8601.format(record.lastUpdate) , 
