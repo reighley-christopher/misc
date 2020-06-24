@@ -111,10 +111,18 @@ void kill_term( term target )
   pthread_mutex_destroy(&(target->buffer_mutex));
   }
 
+void wback( WINDOW *w )
+  {
+  int x, y;
+  getyx(w, y, x);
+  wmove(w, y, x-1);
+  }
+
 void curses_display_callback( char c, void *p )
   {
   WINDOW *w = (WINDOW *)p;
-  waddch( w, c );
+  if( c == 127 ) wback( w );
+  else waddch( w, c );
   }
 
 void term_output_buffer(term terminal)

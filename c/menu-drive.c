@@ -23,7 +23,7 @@ menu mode : key inputs go to the menu
 terminal mode : key inputs go to the terminal
 
 several submodes can be distinguished later :
-- groups of menus for different applications, controlled by different threads
+- groups of menus for different applications, controlled by different threads [DONE]
 - ability to edit terminal commands before they are sent
 - ability to parameterize terminal commands 
 - do I keep history or do I let the active process do it?
@@ -49,10 +49,10 @@ int term_mode_key_handler(term terminal, char c)
   {
   char onechar[1];
   if( c < 128 && c != ERR && terminal) {
-    if(terminal->echo) terminal->display_callback(c , terminal->display_parameter ); 
+    if(terminal->echo) terminal->display_callback(c , terminal->display_parameter );
     onechar[0] = c;
     //TODO need to ensure that the pipe hasn't closed before using it
-    write(terminal->writepipe, onechar, 1); //always only write to 1
+    write(terminal->writepipe, onechar, 1); //always only write to 1 
     }
   return 0;
   }

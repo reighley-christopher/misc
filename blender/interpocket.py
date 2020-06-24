@@ -69,7 +69,11 @@ class Interpocket():
         else:
           self.conn.send(b'server>')
       else:
-        self.input_buffer.write(ch)
+        if(i == 127):
+           self.input_buffer.seek(self.input_buffer.tell()-1)
+           self.input_buffer.truncate()
+        else:
+          self.input_buffer.write(ch)
 
   def loop(self):
     self.start()
