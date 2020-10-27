@@ -1,12 +1,15 @@
 chaintools : chaintools/ChainTools.class chaintools/HTTPService.class chaintools/Riak.class chaintools/Kafka.class chaintools/Sql.class
 
+chaintools/AnnotatedString.class : src/chaintools/AnnotatedString.scala
+	scalac src/chaintools/AnnotatedString.scala
+
 chaintools/ChainTools.class : src/chaintools/ChainTools.scala
 	scalac src/chaintools/ChainTools.scala
 
 chaintools/HTTPService.class : src/chaintools/HttpService.scala
 	scalac src/chaintools/HttpService.scala
 
-chaintools/Riak.class : src/chaintools/Riak.scala
+chaintools/Riak.class : src/chaintools/Riak.scala chaintools/AnnotatedString.class 
 	scalac src/chaintools/Riak.scala
 
 chaintools/Sql.class : src/chaintools/Sql.scala
@@ -36,12 +39,12 @@ controlserver/Socket2.class : src/controlserver/Socket2.scala
 controlserver.jar : controlserver/Server.class controlserver/Socket2.class
 	jar cfm controlserver.jar src/META-INF/controlserver.MANIFEST.MF controlserver/*
 
-focus_game.jar : focus_game/FocusLogic.class reighley/christopher/Properties.class chaintools/Kafka.class 
+focus_game.jar : focus_game/FocusLogic.class reighley/christopher/Properties.class chaintools/Kafka.class chaintools/Riak.class 
 	jar cf focus_game.jar focus_game/* reighley/* chaintools/* 
 
 test : src/focus_game/tests.scala focus_game/FocusLogic.class  
 	scalac src/focus_game/tests.scala
-	scala org.scalatest.run focus_game.tests.RecordSpec focus_game.tests.InputSpec 
+	scala org.scalatest.run focus_game.tests.RecordSpec focus_game.tests.InputSpec focus_game.tests.MigrationSpec 
 
 clean :
 	rm controlserver/*.class

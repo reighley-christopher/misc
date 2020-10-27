@@ -20,10 +20,10 @@ import scala.util.control.NonFatal
 
 import scala.util.parsing.json.JSON
 
-import Serdes._
 import org.apache.kafka.streams.kstream.Materialized
 import org.apache.kafka.streams.scala.ImplicitConversions._
 import org.apache.kafka.streams.scala._
+import org.apache.kafka.streams.Serdes._
 import org.apache.kafka.streams.kstream.Transformer
 import org.apache.kafka.streams.kstream.TransformerSupplier
 import org.apache.kafka.streams.KeyValue

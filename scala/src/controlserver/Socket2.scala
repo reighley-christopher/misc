@@ -1,8 +1,10 @@
 package controlserver
 
 import scala.sys.process._
+import scala.io.Source
 import java.net.ServerSocket
 import java.net.Socket
+import java.io.IOException
 import java.io.OutputStream
 import java.io.InputStream
 import org.apache.commons.io.IOUtils
@@ -13,8 +15,6 @@ import java.io.FileInputStream
 
 object Socket2
   {
- 
- 
 
   class ProcessManager(jar : String, port : Int, bootscript : String ) extends Runnable 
     {
@@ -26,13 +26,14 @@ object Socket2
     var downstream_out:Option[OutputStream] = None 
     var buffer:Array[Byte] = new Array[Byte](255)
     val proc = Process("scala -classpath " + jar).run( new ProcessIO( 
-      {(o:OutputStream) => upstream_out = o },
+      {(o:OutputStream) => upstream_out = o; val s = Source.fromFile(bootscript); s foreach { c : Char => o.write(c.toInt) }; o.flush() },
       {(i:InputStream) => upstream_in = i },
       {(e:InputStream) => }
       ) )
 
    def loop():Unit =  
      {
+     try {
      downstream_in match {
      case Some( in ) => { 
        val bytes_up = in.available().min(255)
@@ -52,6 +53,12 @@ object Socket2
      out.write(buffer, 0, bytes_down)
      } 
      case None => 
+     }
+     } catch {
+     case _: IOException => {
+       downstream_out = None
+       downstream_in = None
+     }
      }
      Thread.`yield`() 
      }
@@ -94,8 +101,10 @@ object Socket2
     val proc = new ProcessManager(jar, port, bootscript)
     println("classpath : " + jar )
     println("port : " + port )
-    println("bootscript" + bootscript )
+    println("bootscript : " + bootscript )
     println("properties : " + params(0) )
+    val o : OutputStream  = Console.out 
+    //IOUtils.copy(f, o ) 
     //Java will refuse to halt while it's error and output streams are attached (bastard)
     //TODO handle logging now, and write a signal handler for this.
     System.out.close()

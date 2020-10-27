@@ -67,7 +67,7 @@ class KafkaIteratorRecord( _data : ConsumerRecords[String,String] ) {
   var data : ConsumerRecords[String,String] = _data
   }
 
-class KafkaIterator( name : String ) extends Iterator[String] {
+class KafkaIterator( name : String ) extends Iterator[AnnotatedString] {
 
   var rec = KafkaPollData.latest 
   var iter = rec.data.records(name).iterator()
@@ -94,8 +94,9 @@ class KafkaIterator( name : String ) extends Iterator[String] {
    return true
    }
  
-  def next = { 
-    val ret = iter.next.value 
+  def next = {
+    val item = iter.next 
+    val ret = new AnnotatedString( item.value, "key" -> item.key ) 
     ret
     }
 
@@ -113,7 +114,7 @@ object KafkaPollData {
     }
   }
 
-class KafkaInterface(name: String) extends ChainSink[String](  { (data) => A.producer.send( new ProducerRecord( name, data, data ) ) } ) with ChainHead[String] {
+class KafkaInterface(name: String) extends ChainSink[String](  { (data) => A.producer.send( new ProducerRecord( name, data, data ) ) } ) with ChainHead[AnnotatedString] {
   if( !A.topics.contains(name) ) { A.addTopic(name) }
   A.subscribe(name)
   def iterator = KafkaPollData.getIterator(name) 

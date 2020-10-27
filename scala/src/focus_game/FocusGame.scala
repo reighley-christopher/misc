@@ -34,6 +34,7 @@ import org.apache.kafka.streams.state.KeyValueStore
 import org.apache.kafka.streams.scala.ByteArrayKeyValueStore
 import org.apache.kafka.streams.state.ValueAndTimestamp
 import java.time.ZonedDateTime
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
 import scala.util.{ Try, Success, Failure }
@@ -45,6 +46,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.annotation.PropertyAccessor
 import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility
 import com.fasterxml.jackson.annotation.JsonCreator
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 
 import reighley.christopher.Properties.properties
 import reighley.christopher.ZonedDateTimeModule
@@ -90,6 +92,7 @@ object Event extends Enumeration
 
 import Event._
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 class Input { 
   var id:String = _ 
   var event:t_Event = _ 
@@ -124,21 +127,23 @@ implicit def ISO8601Date_zdt(str : String ) = ZonedDateTime.parse( str )
 
 import State._
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 class Record {
   var id : String = _
   var state : t_State = _
   var score : Int = _
-  var period : ZonedDateTime = _
+  var period : String = _
   var lastUpdate : ZonedDateTime = _
   var expectedUpdate : ZonedDateTime = _ 
 
-  def copy( id:String=id, state:t_State=state, score:Int=score, period:ZonedDateTime=period, lastUpdate:ZonedDateTime=lastUpdate, expectedUpdate:ZonedDateTime=expectedUpdate ) = Record( id, state, score, period, lastUpdate, expectedUpdate )
+  def primaryKey() = "%s_%s_%s".format(id, "focus", period) //TODO neither board name or user name can have an underscore in it 
+  def copy( id:String=id, state:t_State=state, score:Int=score, period:String=period, lastUpdate:ZonedDateTime=lastUpdate, expectedUpdate:ZonedDateTime=expectedUpdate ) = Record( id, state, score, period, lastUpdate, expectedUpdate )
  
 }
 
 object Record
   {
-  def apply( id : String, state : t_State, score : Int, period : ZonedDateTime, lastUpdate : ZonedDateTime, expectedUpdate : ZonedDateTime ) : Record = 
+  def apply( id : String, state : t_State, score : Int, period : String, lastUpdate : ZonedDateTime, expectedUpdate : ZonedDateTime ) : Record = 
     {
     val rec = new Record
     rec.id = id
@@ -173,7 +178,7 @@ def RecordFromJson2( j : String ) : Record = {
 
 def JsonFromRecord2( record : Record ) : String = {
   val m : Map[String,String] = Map( "id" -> record.id, "state" -> record.state.toString , "score" -> record.score.toString, 
-                                    "period" -> ISO8601.format(record.period), 
+                                    "period" -> record.period, 
                                     "lastUpdate" -> ISO8601.format(record.lastUpdate) , 
                                     "expectedUpdate" -> ISO8601.format(record.expectedUpdate) )
   return mapToJson( m ) 
@@ -200,8 +205,11 @@ object BusinessLogic extends Transformer[String, String, KeyValue[String, String
     } 
 
   //define the initial state
+
+  def get_current_period( timestamp : ZonedDateTime ):String = timestamp.withZoneSameInstant(ZoneId.of("America/Los_Angeles")).toLocalDate().toString() 
+
   def logic( inp : FocusLogic.Input ) : FocusLogic.Record = 
-    FocusLogic.Record( inp.id, FocusLogic.State.slacking, 0, inp.timestamp, inp.timestamp, inp.timestamp ) 
+    FocusLogic.Record( inp.id, FocusLogic.State.slacking, 0, get_current_period(inp.timestamp), inp.timestamp, inp.timestamp ) 
 
   var ctx : Option[ProcessorContext] = None  
   def init( context : ProcessorContext) = { ctx = Some(context) }
@@ -211,14 +219,15 @@ object BusinessLogic extends Transformer[String, String, KeyValue[String, String
       ctx.get.getStateStore("table-store").asInstanceOf[KeyValueStore[String, ValueAndTimestamp[String]]] 
     //TODO since I'm not checking the integrity of the data store, if it gets corrupted by a schema change or something
     //this transformer will crash, better make a smarter mechanism for fixing up the data store. 
-    val value2:Option[ValueAndTimestamp[String]] = Option(store.get(key))
     val inp = FocusLogic.InputFromJson(value)
+    val value2:Option[ValueAndTimestamp[String]] = Option(store.get("%s_%s_%s".format(key, "focus", get_current_period(inp.timestamp))))
     val rec = Try[FocusLogic.Record] { FocusLogic.RecordFromJson(value2.get.value) } match {
       case Success(rec) => rec 
       case Failure(err) => logic(inp) 
       } 
     val out_rec = logic(inp, rec)
-    return new KeyValue( inp.id, FocusLogic.JsonFromRecord(out_rec) )
+    print("bl : %s".format(FocusLogic.JsonFromRecord(out_rec)))
+    return new KeyValue( out_rec.primaryKey(), FocusLogic.JsonFromRecord(out_rec) )
     }
   }
 
@@ -247,24 +256,29 @@ object DataEdit extends Transformer[String, String, KeyValue[String, String]] {
     }
   }
 
-object RiakDumper extends Transformer[String, String, KeyValue[String, String]] {
+class RiakDumper(key : String) extends Transformer[String, String, KeyValue[String, String]] {
   var ctx : Option[ProcessorContext] = None
   def init( context : ProcessorContext) = { ctx = Some(context) }
   def close() = {}
+  def parseKey(key : String):Tuple3[String,String,String] = { var args = key.split('_').padTo(3, "") ; (args(0), args(1), args(2))  }
   def transform( key : String, value : String ):KeyValue[String, String] = {
-    //this dumps the whole of the table into the riak out stream
+    //the key is of the form id|board|period, we will want to dump everything with the same board and period
+    val (id, board, period) = parseKey(key) 
     val store : KeyValueStore[String,ValueAndTimestamp[String]] = 
       ctx.get.getStateStore("table-store").asInstanceOf[KeyValueStore[String, ValueAndTimestamp[String]]]
     val iter = store.all()
     val siter = iter.asScala
-    val out =  "[" + siter.map( {x => x.value.value} ).mkString(",") + "]" 
+    def filter(board : String, period : String):KeyValue[String, ValueAndTimestamp[String]]=>Boolean = { x => var (rid , rboard, rperiod) = parseKey(x.key); println("%s %s %s".format(rid, rboard, rperiod)) ; (board == rboard && period == rperiod) } 
+    //def filter(board : String, period : String):KeyValue[String, ValueAndTimestamp[String]]=>Boolean = { x => var _ , rboard, rperiod = parseKey(x.key) ; true } 
+    val out =  "[" + siter.filter( filter(board, period)  ).map( {x => x.value.value} ).mkString(",") + "]"
+    print("riak dumper %s".format(out)) 
     iter.close()
-    return new KeyValue("riak" , out )
+    return new KeyValue("%s_%s".format(board, period) , out )
     }
   }
 
 object BLSupplier extends TransformerSupplier[String, String, KeyValue[String, String]] { def get = BusinessLogic }
-object DumpSupplier extends TransformerSupplier[String, String, KeyValue[String, String]] { def get = RiakDumper }
+object DumpSupplier extends TransformerSupplier[String, String, KeyValue[String, String]] { def get = new RiakDumper("focus") }
 object EditSupplier extends TransformerSupplier[String, String, KeyValue[String, String]] { def get = DataEdit }
 
 object EntryPoint { 
@@ -292,7 +306,7 @@ def createStream = {
   detach( http("localhost", properties.get("focus_game.http-in").asInstanceOf[String].toInt, "/") ) > kafka("http-in")
   detach( http("localhost", properties.get("focus_game.heartbeat").asInstanceOf[String].toInt, "/") ) > kafka("heartbeat")
   detach( http("localhost", properties.get("focus_game.edits").asInstanceOf[String].toInt, "/") ) > kafka("edits")
-  detach( kafka("riak-out") ) > riak
+  detach( kafka("riak-out") ) > riak("focus")
   println("started http server threads")
   val builder = new StreamsBuilder()
   val tablevar : KTable[String,String] = builder.

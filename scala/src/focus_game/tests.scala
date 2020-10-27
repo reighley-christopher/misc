@@ -52,3 +52,18 @@ class InputSpec extends FunSuite {
 
   }
 
+class MigrationSpec extends FunSuite {
+  //what if the Record is mangled, ie what if we have changed the schema
+  //if we are deserializing a mangled record from the local store then we need to ignore old columns and give new columns reasonable defaults
+ 
+  test("unfamiliar value") {
+    val testjson = "{\"id\":\"test\",\"state\":\"resting\",\"score\":1,\"period\":\"2020-05-01T01:01:10.123Z\",\"lastUpdate\":\"2020-05-01T01:01:10.123Z\",\"expectedUpdate\":\"2020-05-01T01:01:10.123Z\", \"foo\":\"bar\"}"
+   assert( FocusLogic.RecordFromJson(testjson).id == "test" )
+   }
+
+  test("missing value") {
+    val testjson = "{\"id\":\"test\",\"state\":\"resting\",\"score\":1,\"period\":\"2020-05-01T01:01:10.123Z\",\"lastUpdate\":\"2020-05-01T01:01:10.123Z\", \"foo\":\"bar\"}"
+    assert( FocusLogic.RecordFromJson(testjson).id == "test" )
+    }
+  }
+

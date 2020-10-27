@@ -30,9 +30,16 @@ trait ChainHead[X] extends Iterable[X] {
 
 object ChainTools {
 
+def literal[X]( iterable : Iterable[X] ) : ChainHead[X] = new ChainHead[X] {
+  def iterator = iterable.iterator
+  } 
+
 def delimit(delimiter:String) = new ChainLink[Map[String,String], String]({(map:Map[String,String]) => map.values.reduce( {(a,b) => a ++ delimiter ++ b} )  })
 
-def throughprint = new ChainLink[String, String]({ (input:String) => println(input);input })
+def throughprint[X] = new ChainLink[X, X]({ (input:X) => input match { 
+    case a : String => println(a); a.asInstanceOf[X]
+    case b : AnnotatedString => println(b.body); b.asInstanceOf[X]
+    } })
 
 def sinkprint = new ChainSink[String]( println )
 
