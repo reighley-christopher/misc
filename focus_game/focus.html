@@ -68,6 +68,10 @@ login stub : this bit hasn't been specified<br>
      inner_radius : 42 
      }
 
+  var network_parameters = {
+    event_service : "http://new.reighley-christopher.net/focus/"
+    }
+
   var myId = ""
 
   function login( name ) { 
@@ -142,6 +146,15 @@ login stub : this bit hasn't been specified<br>
 
   var leaderboard
 
+  function current_board() {
+    var dt = new Date()
+    //TODO: Is this the only way to format the local time?
+    var y = (dt.getYear() + 1900).toString()
+    var m = (dt.getMonth() + 1).toString()
+    var d = (dt.getDate()).toString()
+    return "focus_" + (dt.getYear()+1900) + "-" + (dt.getMonth()+1) + "-" + dt.getDate()
+    }
+
   function sanitize_record( record ) {
     //a single record, change score to an int and the dates to dates
     record.score = Number( record.score )
@@ -152,7 +165,7 @@ login stub : this bit hasn't been specified<br>
 
   function update_leaderboard() {
     var line = _.template("<tr><td><%= id %><td><%= score  %></td></tr>")
-    $.ajax({url : "http://new.reighley-christopher.net/riak/buckets/focus/keys/focus", cache : false } ).
+    $.ajax({url : "http://new.reighley-christopher.net/riak/buckets/focus/keys/"+current_board(), cache : false } ).
       done(function(d){ 
         $(".leaderboard").empty().
         append("<tr><th colspan=2>LEADER BOARD</th></th></tr>")
@@ -165,10 +178,10 @@ login stub : this bit hasn't been specified<br>
       fail( function(e) { console.log("ERROR"); console.log(e) } ) 
     }
     update_leaderboard()
-    window.setInterval( update_leaderboard, 10000 )
+    window.setInterval( update_leaderboard, 2000 )
   function post_event(event) {
     var event = { id : myId, timestamp : new Date(), event : event }
-    $.ajax("http://new.reighley-christopher.net/focus/", { type : "POST", data : JSON.stringify( event ) }  ).fail( function(e) { console.log("ERROR"); console.log(e) } )
+    $.ajax(network_parameters.event_service, { type : "POST", data : JSON.stringify( event ) }  ).fail( function(e) { console.log("ERROR"); console.log(e) } )
     }
 
   function update_clock(seconds) {
