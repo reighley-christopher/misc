@@ -150,9 +150,9 @@ login stub : this bit hasn't been specified<br>
     var dt = new Date()
     //TODO: Is this the only way to format the local time?
     var y = (dt.getYear() + 1900).toString()
-    var m = (dt.getMonth() + 1).toString()
-    var d = (dt.getDate()).toString()
-    return "focus_" + (dt.getYear()+1900) + "-" + (dt.getMonth()+1) + "-" + dt.getDate()
+    var m = (dt.getMonth() + 1).toString().padStart(2, '0')
+    var d = (dt.getDate()).toString().padStart(2, '0')
+    return "focus_" + (dt.getYear()+1900) + "-" + m + "-" + d
     }
 
   function sanitize_record( record ) {
