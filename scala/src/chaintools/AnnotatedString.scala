@@ -15,5 +15,7 @@ class AnnotatedString( _body : String, header : Tuple2[String, String]* )
     case Failure(exp) => println(exp) ; throw(exp)
     } 
 
+  def annotations:Seq[(String,String)] = header
+
   def body : String = _body 
   }

@@ -114,7 +114,8 @@ object KafkaPollData {
     }
   }
 
-class KafkaInterface(name: String) extends ChainSink[String](  { (data) => A.producer.send( new ProducerRecord( name, data, data ) ) } ) with ChainHead[AnnotatedString] {
+/*TODO to make focus_game work I will need a chaintools node index which takes a string and gives it attributes*/
+class KafkaInterface(name: String) extends ChainSink[AnnotatedString](  { (data) => A.producer.send( new ProducerRecord( name, data.get("key"), data.body ) ) } ) with ChainHead[AnnotatedString] {
   if( !A.topics.contains(name) ) { A.addTopic(name) }
   A.subscribe(name)
   def iterator = KafkaPollData.getIterator(name) 
