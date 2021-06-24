@@ -1,6 +1,7 @@
 package chaintools
 
 class ChainSink[X](f : X => Unit) {
+  def func = f
   def absorb(iter:Iterable[X]):Unit = iter.foreach( f )
   }
 
@@ -43,4 +44,6 @@ def throughprint[X] = new ChainLink[X, X]({ (input:X) => input match {
 
 def sinkprint = new ChainSink[String]( println )
 
+def strip_annotations = new ChainLink[AnnotatedString, String]({ x => x.body })
+def flatten_annotations = new ChainLink[AnnotatedString, String]({ x => x.annotations.map({x => x._1 + "=" + x._2}).reduceOption({(y, x) => y  + "\n" +  x }).getOrElse("") + "\n" + x.body + "\n" } )
 }
