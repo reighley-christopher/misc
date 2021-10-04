@@ -1,6 +1,12 @@
 pipefitter : pipefitter.c
 	gcc pipefitter.c -o pipefitter --pedantic
 
+faninout : faninout.c bytebuffer.c bytebuffer.h
+	gcc faninout.c bytebuffer.c -lpthread -o faninout --pedantic
+
+bytebuffer_tests : bytebuffer.c bytebuffer_tests.c bytebuffer.h
+	gcc bytebuffer_tests.c bytebuffer.c -o bytebuffer_tests --pedantic
+
 test/test_exec : test/test_exec.c
 	gcc test/test_exec.c -o test/test_exec --pedantic
 
