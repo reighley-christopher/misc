@@ -19,6 +19,8 @@ e /usr/bin/executable
 x
 */
 
+completer_module *get_yajl_completer_module();
+
 char name_table[1024];
 int name_max = 0;
 
@@ -347,14 +349,14 @@ void *input_pthread_loop(void *d)
   struct inputfifo inp = *( (struct inputfifo *)d )  ;
   bytebuffer buffer;
   bytebuffer_iter iter;
-  char *data;
+  unsigned char *data;
   unsigned int length;
   int fifo;
   int mark = -1;
   
   /*TODO how to ensure that the bytebuffer is cleaned up when the thread stops*/
   bytebuffer_init(&buffer);
-  bytebuffer_set_completer(&buffer, complete, 0); 
+  bytebuffer_set_completer(&buffer, get_yajl_completer_module()); 
   /*I will open the fifo, I will loop waiting for data, as data comes I will read it into a buffer
     it is in blocking mode because I will only care to read it if there is data to be read*/
   fifo = open( inp.name, O_RDONLY ); 
@@ -390,9 +392,9 @@ void *input_pthread_loop(void *d)
       pthread_mutex_lock(&write_mutex);
       while( bytebuffer_iter_next( &iter, &data, &length ) ) 
         {
-        printf("what gives\n"); 
         write(write_pipe, data, length);
-        write(0, ">", 1); write(0, data, length); write(0, "<", 1);
+        printf("faninout.c:369 sending %d characters to process:", length);  
+        write(0, data, length); write(0, "[]\n", 3 );
         }
       /*release mutex here*/
       pthread_mutex_unlock(&write_mutex);
@@ -423,12 +425,12 @@ void *output_inner_loop(void *d)
   {
   bytebuffer buffer;
   bytebuffer_iter iter;
-  char *data;
+  unsigned char *data;
   unsigned int length;
   int err;
   int i, out_index;
   bytebuffer_init(&buffer);
-  bytebuffer_set_completer(&buffer, complete, 0);
+  bytebuffer_set_completer(&buffer, get_yajl_completer_module());
   while(1)
     { /*TODO I should sleep the thread if there is no read pipe, and starting the executable should wake the thread*/ if(read_pipe) { bytebuffer_append_start(&buffer, &data, &length); length = read(read_pipe, data, length); for(i = 0; i < length; i++) printf("%c.", data[i]); bytebuffer_append_trim(&buffer, length);
       if( bytebuffer_record_available(&buffer) )
@@ -442,6 +444,7 @@ void *output_inner_loop(void *d)
             /*write until the buffer is empty or I get a write error, write error will close the output and drop the rest of the 
               record, if the write is incomplete oh well*/
             //TODO handle incomplete writes
+            printf("emmitting %d bytes\n", length);
             err = write(fanout_buffer[out_index].fd, data, length );
             if(err == -1) 
               {

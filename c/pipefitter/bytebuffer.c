@@ -7,8 +7,8 @@
 
 /*
 to ensure :
-completer_func should be called on each byte in sequence (in blocks of course)
-completer_func should ignore everything after the complete byte (it will be called again on those bytes later)
+completer->func should be called on each byte in sequence (in blocks of course)
+completer->func should ignore everything after the complete byte (it will be called again on those bytes later)
 */
 
 void bytebuffer_init(bytebuffer *buffer)
@@ -21,7 +21,7 @@ void bytebuffer_init(bytebuffer *buffer)
   buffer->write_offset = 0;
   buffer->read_offset = 0;
   buffer->complete_mark = -1;
-  block->data = (char *)malloc( BYTEBUFFER_BLOCK_SIZE );
+  block->data = (unsigned char *)malloc( BYTEBUFFER_BLOCK_SIZE );
   block->next = block;
   block->size = BYTEBUFFER_BLOCK_SIZE;
   }
@@ -29,7 +29,7 @@ void bytebuffer_init(bytebuffer *buffer)
 void bytebuffer_add_block(bytebuffer *buffer)
   {
   struct bytebuffer_block *new_block = (struct bytebuffer_block *)malloc(sizeof(struct bytebuffer_block));
-  new_block->data = (char *)malloc( BYTEBUFFER_BLOCK_SIZE );
+  new_block->data = (unsigned char *)malloc( BYTEBUFFER_BLOCK_SIZE );
   printf("bytebuffer.c:28 new block %x\n", new_block);
   new_block->size = BYTEBUFFER_BLOCK_SIZE; 
   new_block->next = buffer->first_block;
@@ -43,15 +43,16 @@ void bytebuffer_set_complete_mark(bytebuffer *buffer, int mark)
   buffer->complete_mark = offset_mark;
   }
 
-void bytebuffer_set_completer(bytebuffer *buffer, int (*complete)(void *d, char *data, int length), void *d)
+void bytebuffer_set_completer(bytebuffer *buffer, completer_module *complete)
   {
-  buffer->completer_func = complete;
-  buffer->completer_data = d;
+  buffer->completer = complete;
+  buffer->completer_data = complete->alloc();
+  complete->init(buffer->completer_data);
   }
 
 int bytebuffer_record_available(bytebuffer *buffer)
   {
-  return !(buffer->completer_func && buffer->complete_mark == -1);
+  return !(buffer->completer && buffer->complete_mark == -1);
   } 
 
 void acceptable_intervals(bytebuffer *buffer, struct bytebuffer_block *block, int *front, int *length)
@@ -81,7 +82,7 @@ void bytebuffer_rotate_record(bytebuffer *buffer)
   while(buffer->complete_mark == -1)
     {
     acceptable_intervals(buffer, sploop, &front, &length);
-    buffer->complete_mark = buffer->completer_func(buffer->completer_data, sploop->data+front, length);
+    buffer->complete_mark = buffer->completer->func(buffer->completer_data, sploop->data+front, length);
     if(buffer->complete_mark != -1) buffer->complete_block = sploop; 
     sploop = sploop->next;
     if(sploop == buffer->first_block) break;
@@ -98,7 +99,7 @@ void bytebuffer_advance_block(bytebuffer *buffer)
   } 
 
 /*this will give me a block of memory for the next buffer contents*/
-void bytebuffer_append_start(bytebuffer *buffer, char **data, unsigned int *length)
+void bytebuffer_append_start(bytebuffer *buffer, unsigned char **data, unsigned int *length)
   {
   *length = buffer->offset_block->size - buffer->write_offset;
   if(*length <= 0)
@@ -117,10 +118,10 @@ void bytebuffer_append_trim(bytebuffer *buffer, unsigned int length)
   /*once I know the amount of data I can check if this block is the end of the next record*/
   int mark;
   if(length == 0) return; /*this is a noop, otherwise I will rerun completer_func and it should do nothing*/
-  if(buffer->completer_func && buffer->complete_mark == -1) 
+  if(buffer->completer && buffer->complete_mark == -1) 
     {
     printf("bytebuffer.c:107 invoke completer_func write offset = %d\n", buffer->write_offset);
-    mark = buffer->completer_func(buffer->completer_data, buffer->offset_block->data + buffer->write_offset, length);
+    mark = buffer->completer->func(buffer->completer_data, buffer->offset_block->data + buffer->write_offset, length);
     if(mark >= 0) buffer->complete_mark = mark + buffer->write_offset;
     } else {
     printf("bytebuffer.c:111 do not invoke completer_func complete_mark = %d\n", buffer->complete_mark);
@@ -141,7 +142,7 @@ void bytebuffer_iter_init(bytebuffer_iter *iter, bytebuffer *buffer)
   } 
 
 /*returns length of data block, 0 if EOF*/
-unsigned int bytebuffer_iter_next(bytebuffer_iter *iter, char **buffer, unsigned int *length)
+unsigned int bytebuffer_iter_next(bytebuffer_iter *iter, unsigned char **buffer, unsigned int *length)
   {
   int start_offset;
   int end_offset;
@@ -150,7 +151,6 @@ unsigned int bytebuffer_iter_next(bytebuffer_iter *iter, char **buffer, unsigned
                       (iter->current_block == iter->header->complete_block && iter->header->complete_mark != -1 );
   bytebuffer *bbuf = iter->header;
   last_block_end_offset = iter->header->complete_mark == -1 ? iter->header->write_offset : iter->header->complete_mark; 
-  printf("bytebuffer.c:98 %x\n", iter->current_block ); 
   if(iter->current_block == 0) return 0;
   start_offset = iter->current_block == bbuf->first_block ? bbuf->read_offset : 0;
   end_offset = is_last_block ? 
@@ -159,7 +159,6 @@ unsigned int bytebuffer_iter_next(bytebuffer_iter *iter, char **buffer, unsigned
   *buffer = iter->current_block->data + start_offset;
   if( is_last_block  )
     {
-    printf("bytebuffer.c:152 %d %d\n", end_offset, start_offset);
     *length = end_offset - start_offset; 
     } else {
     *length = iter->current_block->size - start_offset;

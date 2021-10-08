@@ -2,6 +2,13 @@
 #include "bytebuffer.h"
 
 int mark;
+
+completer_module c1;
+completer_module c2;
+
+void *null_alloc() { return 0; }
+void null_init_free(void *m) { }
+
 int test_completer(void *d, char *data, int length)
   {
   printf("updating mark %d\n", *(int *)d);
@@ -28,7 +35,7 @@ int test1(int argc, char **argv)
   bytebuffer_iter iter;
   mark = -1;
   bytebuffer_init(&buffer); /*record starts at 0:0*/
-  bytebuffer_set_completer(&buffer, test_completer, &mark);
+  bytebuffer_set_completer(&buffer, &c1);
   bytebuffer_append_start(&buffer, &data, &length);
   bytebuffer_append_trim(&buffer, 16); /*0:0-0:16*/
 
@@ -123,7 +130,7 @@ int test2(int argc, char **argv)
   bytebuffer buffer;
   bytebuffer_iter iter;
   bytebuffer_init(&buffer); /*record starts at 0:0*/
-  bytebuffer_set_completer(&buffer, test_completer2, 0);
+  bytebuffer_set_completer(&buffer, &c2);
 
   printf("*** 1) append 16\n"); 
   bytebuffer_append_start(&buffer, &data, &length);
@@ -173,6 +180,14 @@ int test2(int argc, char **argv)
 
 int main(int argc, char **argv)
   {
+  c1.func = test_completer;
+  c1.alloc = null_alloc;
+  c1.init = null_init_free;
+  c1.free = null_init_free;
+  c2.func = test_completer2;
+  c2.alloc = null_alloc;
+  c2.init = null_init_free;
+  c2.free = null_init_free;
   test2(argc, argv);
   }
 

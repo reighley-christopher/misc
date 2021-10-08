@@ -1,8 +1,8 @@
 pipefitter : pipefitter.c
 	gcc pipefitter.c -o pipefitter --pedantic
 
-faninout : faninout.c bytebuffer.c bytebuffer.h
-	gcc faninout.c bytebuffer.c -lpthread -o faninout --pedantic
+faninout : faninout.c bytebuffer.c bytebuffer.h yajl_module.c
+	gcc faninout.c bytebuffer.c yajl_module.c -lyajl -lpthread -o faninout --pedantic
 
 bytebuffer_tests : bytebuffer.c bytebuffer_tests.c bytebuffer.h
 	gcc bytebuffer_tests.c bytebuffer.c -o bytebuffer_tests --pedantic
