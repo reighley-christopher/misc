@@ -11,12 +11,22 @@
 
 /*
 faninout command examples :
+l /usr/lib/module.so
 o fifo1
 i fifo2
 d fifo1
+s +a
 e /usr/bin/executable 
 ?
 x
+*/
+
+/*
+s enables or disables options
+options should be :
+insert 0xE0 record separator on inputs 
+synchronous, the fifos take turns
+insert 0x1E record spearator on output (if synchronous is set use 0x1D group separator between batches)
 */
 
 completer_module *get_yajl_completer_module();
@@ -420,6 +430,7 @@ void check_open(struct outputfifo *out)
   }
 
 
+
 /*there only needs to be one output loop thread, because the records are read one at a time*/
 void *output_inner_loop(void *d)
   {
@@ -457,6 +468,7 @@ void *output_inner_loop(void *d)
         }  
       }
   /*TODO :*/
+  /*tell this thread to stop when the main process terminates*/
   /*transform the output according to a rule*/
   /*I decide which outputs deserve to see this record*/
     } 
@@ -511,6 +523,7 @@ void delete(char *name)
   int i = 0;
   char *n = locate_name(name);
 
+  pthread_cancel(fanin_buffer[i].thread);
   for(i = 0; i < fanin_count; i++)
     {
     if(n == fanin_buffer[i].name)
@@ -551,10 +564,11 @@ void execute(char *name)
   if( !f )
     {
     system(name); //TODO I am going to reuse name, does system need it?
+    exit(0);
     } else {
     current_process = f;
     }
-  
+   
   }
 
 void questionmark()
@@ -600,11 +614,28 @@ void evaluate(int command, char *value)
     }
   }
 
+pthread_t output_thread;
+void cleanup()
+  {
+  int i;
+  pthread_kill(output_thread, SIGKILL);
+  for(i = 0; i < fanin_count; i++)
+    {
+    pthread_kill(fanin_buffer[i].thread, SIGKILL);
+    } 
+  if( current_process ) { kill( current_process, SIGKILL ); }
+  }
+
 void sighandler(int sig)
   {
   if(sig == SIGPIPE)
     {
     printf("signal handler : SIGPIPE\n");
+    }
+  if(sig == SIGTERM)
+    {
+    cleanup();
+    exit(0);
     }
   }
 
@@ -614,13 +645,13 @@ int main( int argc, char *argv[] )
   int state = 0;
   int accumulator = 0;
   int from, to;
-  pthread_t output_thread;
   char c = fgetc(stdin);
   char path_buffer[256]; //TODO expand this buffer?
   char *path_ptr = name_table + name_max;
   pthread_create(&output_thread, NULL, output_inner_loop, NULL);
   signal(SIGPIPE, sighandler);
-  while(command != 'x')
+  signal(SIGTERM, sighandler);
+ while(command != 'x')
     {
     switch(state)
       {
@@ -633,6 +664,7 @@ int main( int argc, char *argv[] )
         break;
       case(2):
         /*the character is part of a path*/
+        if( c == EOF ) state = 3;
         if(c != '\n')
           {
           path_ptr[accumulator] = c;
@@ -646,10 +678,11 @@ int main( int argc, char *argv[] )
           state = 0;
           }            
         break;
+      case(3): break; //we don't need to do anything else
       }
     c = fgetc(stdin);
     }
-  if( current_process ) { kill( current_process, SIGTERM ); } //TODO move cleanup into separate function, call from signal handler 
+  cleanup(); 
 //  start_execs();
 //  start_tees();
 //  close_filehandles();
