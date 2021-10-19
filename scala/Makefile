@@ -36,6 +36,9 @@ reighley/christopher/EnumerationModule.class : src/reighley/christopher/Enumerat
 reighley/christopher/Interactive.class : src/reighley/christopher/Interactive.scala
 	scalac src/reighley/christopher/Interactive.scala
 
+reighley/christopher/Tableizer.class : src/reighley/christopher/Tableizer.scala
+	scalac src/reighley/christopher/Tableizer.scala
+
 controlserver/Server.class : src/controlserver/Server.scala
 	scalac src/controlserver/Server.scala
 
@@ -51,7 +54,10 @@ focus_game.jar : focus_game/FocusLogic.class reighley/christopher/Properties.cla
 funnybench/worker/Worker.class : src/funnybench/worker/Worker.scala chaintools/HTTPService.class
 	scalac src/funnybench/worker/Worker.scala
 
-funnybench : funnybench/worker/Worker.class
+funnybench.jar : funnybench/worker/Worker.class
+	jar cf funnybench.jar funnybench/* reighley/* chaintools/*
+
+funnybench : funnybench/worker/Worker.jar
 
 test : src/focus_game/tests.scala focus_game/FocusLogic.class  
 	scalac src/focus_game/tests.scala
