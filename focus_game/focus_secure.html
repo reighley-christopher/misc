@@ -55,10 +55,10 @@ FOCUS CHALLENGE
 <table class="leaderboard" >
 </table>
 </div>
-<div id="loginstub"  style="background:skyblue;position:fixed;top:100px;width:375px">
+<div id="loginstub"  style="background:skyblue;position:fixed;top:0px;width:100%;font-size:5em">
 login stub : this bit hasn't been specified<br>
-<input type="checkbox" name="id" onclick="login('chris')" autocomplete="off" > chris<br> 
-<input type="checkbox" name="id" onclick="login('jed')" autocomplete="off" > jed<br>
+<input type="button" name="id" onclick="login('chris')" value="chris" autocomplete="off" style="font-size:5em" ><br> 
+<input type="button" name="id" onclick="login('jed')" value="jed" autocomplete="off" style="font-size:5em"  ><br>
 </div>
   <audio id="airwolf" src="airwolf.mp3"></audio>
   <audio id="vader" src="vader.mp3"></audio>
@@ -69,13 +69,31 @@ login stub : this bit hasn't been specified<br>
      }
 
   var network_parameters = {
-    event_service : "http://new.reighley-christopher.net/focus/"
+    event_service : "https://new.reighley-christopher.net/focus/"
     }
 
   var myId = ""
+  var keepalive_counter = 0
+  var worker_counter;
 
   function login( name ) { 
-    myId = name
+    myId = name;
+    Notification.requestPermission();
+    clock_worker = new Worker('/secure/focus_worker3.js')
+    navigator.serviceWorker.register('/secure/focus_worker2.js').then(function(reg) {
+      clock_worker.onmessage = function(m){
+        switch(m.data.type) { 
+          case "keepalive":
+            keepalive_counter = keepalive_counter+1
+            worker_counter = m.data.payload
+            break;
+          case "notification":
+            reg.showNotification(m.data.payload + " " + ( worker_counter - keepalive_counter ) )
+            break;
+          }
+        }
+      })
+    //new Notification("DOES IT WORK", {});
     $("#loginstub").hide()
     }
  
@@ -100,16 +118,22 @@ login stub : this bit hasn't been specified<br>
   var tick = 60*25;
   var break_started = false;
   var timerRef;
+  var debug = false;
+  var clock_worker;
 
   function start() {
     console.log("start")
+    console.log(clock_worker) 
     button_cancel()
     ticker_path(359.99, "TickerPath", graphics_parameters)
     update_clock(60*25)
     tick = 60*25-1
     timerRef = window.setInterval( timer_event, 1000 )
+    //navigator.serviceWorker.controller.postMessage("")
+    clock_worker.postMessage("")
     post_event("start")
     }
+
 
   function cancel() {
     console.log("cancel")
@@ -165,7 +189,7 @@ login stub : this bit hasn't been specified<br>
 
   function update_leaderboard() {
     var line = _.template("<tr><td><%= id %><td><%= score  %></td></tr>")
-    $.ajax({url : "http://new.reighley-christopher.net/riak/buckets/focus/keys/"+current_board(), cache : false } ).
+    $.ajax({url : "https://new.reighley-christopher.net/riak/buckets/focus/keys/"+current_board(), cache : false } ).
       done(function(d){ 
         $(".leaderboard").empty().
         append("<tr><th colspan=2>LEADER BOARD</th></th></tr>")
@@ -178,7 +202,7 @@ login stub : this bit hasn't been specified<br>
       fail( function(e) { console.log("ERROR"); console.log(e) } ) 
     }
     update_leaderboard()
-    window.setInterval( update_leaderboard, 2000 )
+    //window.setInterval( update_leaderboard, 2000 )
   function post_event(event) {
     var event = { id : myId, timestamp : new Date(), event : event }
     $.ajax(network_parameters.event_service, { type : "POST", data : JSON.stringify( event ) }  ).fail( function(e) { console.log("ERROR"); console.log(e) } )
@@ -186,10 +210,12 @@ login stub : this bit hasn't been specified<br>
 
   function update_clock(seconds) {
     var minutes = Math.floor(seconds/60 )
-    var remainder = seconds - minutes*60
+    var remainder = Math.round(seconds - minutes*60)
     var minutes_zero = (minutes < 10) ? "0" : ""
     var seconds_zero = (remainder < 10) ? "0" : ""
-    $(".clock").text(minutes_zero + minutes + ":" + seconds_zero + remainder) 
+    var text = minutes_zero + minutes + ":" + seconds_zero + remainder
+    //console.log(text)
+    $(".clock").text(text) 
 
     }
   function play_airwolf() {
