@@ -9,6 +9,23 @@ import scala.collection.mutable.Queue
 does not clean up the thread if an exception is thrown in the UI loop
 */
 
+/*
+these are the commands for the interactive block
+switch from data entry mode to command mode via ^U (negative acknowledge)
+: - to enter a command
+h, j, k, l - vi cursor commands
+i - switch to data entry mode
+x - delete character under cursor
+d - print column number into buffer
+commands :
+attr - set the attributes of the block, keys = values
+body - set the body of the block
+flush - send the block out the output channel
+info - display the current contents, both body and annotations
+echo - print "hello world" to test 
+quit - exits interactive block
+*/
+
 object AnnotatedInteractiveDelegate extends ChainSink[String]( { x => Unit } ) with CommandDelegate with ChainHead[AnnotatedString] {
   /*acts as delegate for UI commands, manages the UI thread, acts as chainhead and chainsink for */
   var body:String = ""
