@@ -1,0 +1,312 @@
+<html><head>
+<title>JED WIDGET</title>
+<script src="jquery.js"></script>
+<script src="underscore.js"></script>
+<script src="backbone.js"></script>
+
+<style>
+.template { 
+   background-color:mistyrose;
+   position:absolute;
+   left:200px;
+   top:100px; 
+   width:400px;
+   border:1px solid
+   }
+
+.widget { 
+   background-color:cornsilk;
+   position:absolute;
+   left:200px;
+   top:100px; 
+   width:400px;
+   border:1px solid
+   }
+
+.plus {
+  font-size:30pt;font-weight:bold;
+  cursor:default
+  }
+
+#template_list { 
+  height:100%;
+  float:left;
+  border:solid 1px black;
+  background-color:mistyrose
+  }
+
+#template_list tr td {
+  cursor:default;
+  border-bottom:dashed 1px black;
+  }
+
+#instance_list { 
+  height:100%;
+  float:right;
+  border:solid 1px black;
+  background-color:cornsilk
+  }
+
+#instance_list tr td {
+  cursor:default;
+  border-bottom:dashed 1px black;
+  } 
+
+.widget input[type="button"] {
+   background-color:cornsilk
+   }
+
+.widget input[type="button"].button_active {
+   background-color:mintcream;
+   float:left;
+    }
+
+.subsectionheader td {
+  font-size:small;
+  font-style:italic;
+  border-top: 1px dashed black; 
+  }
+
+</style>
+
+</head>
+<body>
+<script>
+DB = {"widgets":[], "types":[]};
+current_template = null
+//current_template = {"name":"test name", "elements":[{"type":"P","subtype":"text", "label":"field1"}, {"type":"S", "subtype":"foo", "label":"subfoo"}, {type:"C", "subtype":"foo", "label":"childfoos"}] }
+current_widget = null 
+current_sublist = null
+current_listtype = null
+
+function generate_dropdown()
+  {
+  var ret = "<option value='Ptext'>primitive:text</option>";
+  for( i in DB.types) { ret = ret.concat("<option <%= e.type+e.subtype == 'S", DB.types[i].name ,"' ? 'selected' : '' %> value='S",DB.types[i].name, "'>subsection:", DB.types[i].name, "</option>"); };
+  for( i in DB.types) { ret = ret.concat("<option <%= e.type+e.subtype == 'C", DB.types[i].name ,"' ? 'selected' : '' %> value='C",DB.types[i].name, "'>list:", DB.types[i].name, "</option>"); };
+  return ret;
+  }
+
+function label_change_handler(t, i)
+  {
+  current_template.elements[i].label = t.value;
+  }
+
+function type_change_handler(t, i)
+  {
+  current_template.elements[i].type = t.value[0];
+  current_template.elements[i].subtype = t.value.substr(1);
+  }
+
+function type_name_change_handler(t)
+  {
+  current_template.name = t.value;
+  render_template_list();
+  }
+
+function delete_handler(i)
+  {
+  current_template.elements.splice(i, 1);
+  render_template( current_template, $(".template")); 
+  }
+
+function add_row()
+  {
+  current_template.elements[current_template.elements.length] = { "type":"P", "subtype":"text", "label":""};
+  render_template( current_template, $(".template")); 
+  }
+
+function update_name(t)
+  {
+  current_template.name = t.value;
+  }
+
+function render_template( template, div )
+  {
+  div.html("");
+  div.attr("class", "template");
+  div.append("<input type='text' value='" + template.name + "', onchange='type_name_change_handler(this)' >");
+  div.append("<br><table><th>label</th><th>type</th><th>delete</th></table>");
+  var tab = div.find("table");
+  var templ = _.template("<tr><td><input type='text' onchange='label_change_handler(this, <%- i %> )' value='<%- e.label %>'></td><td><select onchange='type_change_handler(this, <%- i  %>)' value='<%- e.type %><%- e.subtype %>'>".concat( generate_dropdown(), "</select></td><td><input type='button' onclick='delete_handler(<%- i %>)'></td></tr>"));
+  for(i in  template.elements)
+    { 
+    tab.append(templ({"e" : template.elements[i], "i" : i }));
+    }
+  div.append("<span class='plus' onclick='add_row()' >+</span>");
+  render_instance_list();
+  }
+
+function locate_type( typename )
+  {
+  for( i in DB.types) { if( DB.types[i].name == typename ) return DB.types[i] };
+  return "not found"  
+  }
+
+function open_subobjects( el, member, type )
+  {
+  current_template = null;
+  $(el).attr("class", "button_active");
+  current_listtype = locate_type(type);
+  var path = member.split(".");
+  current_sublist = current_widget.data;
+  while( path.length > 0) { console.log(path[0]); current_sublist = current_sublist[path.shift()]; } 
+  render_subinstance_list(); 
+  }
+
+function update_prim(t, label)
+  {
+  var path = label.split(".");
+  var data = current_widget.data;
+  while(path.length > 1)
+    {
+    data = data[path.shift()]; 
+    }
+  data[path[0]] = t.value
+  }
+
+function generate_subtemplate(type, path)
+  {
+  var ret = "";
+  _.each(type.elements, function(e){
+    switch(e.type) {
+      case "P" : ret = ret.concat("<tr><td>", e.label , "</td><td><input type='text' onchange=\"update_prim(this, '", path, e.label  ,"')\" value='<%- ", path  , e.label,  " %>' ></td></tr>"); break;
+      case "S" : ret = ret.concat("<tr class='subsectionheader'><td colspan=2>", e.label, "</td></tr><tr>", 
+                                   generate_subtemplate(locate_type(e.subtype) , path + e.label + "." ) ,  "</tr>"
+                                 ); break;
+      case "C" : ret = ret.concat("<tr><td>", e.label , "</td><td><input type='button' onclick='open_subobjects(this, \"", path, e.label  , "\",\"",e.subtype,"\")'></td></tr>"); break;
+      }
+  }, null);
+  return ret;
+  }
+
+function generate_template(type)
+  {
+  return _.template( "<table>" +  generate_subtemplate(type, "") + "</table>" );
+  }
+
+function repair(type, data)
+  {
+  _.each(type.elements, function(e) {
+    if( !data.hasOwnProperty(e.label) ) 
+      { 
+      switch(e.type)
+        {
+        case "P" : data[e.label] = ""; break;
+        case "S" : data[e.label] = {}; repair(locate_type(e.subtype), data[e.label]); break;
+        case "C" : data[e.label] = []; 
+        } 
+      }
+    }, null); 
+  }
+
+function render_widget( widget, div )
+  {
+  div.html("");
+  div.attr("class", "widget");
+  var typ = locate_type(widget.type);
+  repair( typ , widget.data);
+  console.log(widget);
+  div.append(generate_template(typ)(widget.data)); 
+  }
+
+function test()
+  {
+  render_template_list();
+  }
+
+function new_template()
+  {
+  render_template_list();
+  current_template = { name:"", elements:[] };
+  DB.types.push(current_template);
+  render_template(current_template, $("#edit"));
+  }
+
+function edit_template(i)
+  {
+  current_template = DB.types[i];
+  render_template(current_template, $("#edit"));
+  }
+
+function new_widget()
+  {
+  var widg = {type : current_template.name, data : {}};
+  DB.widgets.push(widg);
+  current_widget = widg;
+  render_widget( widg, $("#edit") );
+  render_instance_list() 
+  }
+
+function new_subwidget()
+  {
+  var widg = {type : current_listtype.name , data : {}};
+  current_sublist.push(widg);
+  current_widget = widg;
+  render_widget( widg, $("#edit") );
+  render_subinstance_list();
+  }
+
+function edit_subwidget(i)
+  {
+  current_widget = current_sublist[i];
+  render_widget(current_widget, $("#edit") );
+  }
+
+function edit_widget(i)
+  {
+  current_widget = DB.widgets[i];
+  render_widget(current_widget, $("#edit") );
+  }
+
+function render_template_list()
+  {
+  var el = $("#template_list");
+  el.html("");
+  for(i in DB.types)
+    {
+    el.append("<tr><td onclick='edit_template(".concat(i, ")'>", DB.types[i].name , "</tr></td>" ) );
+    }
+  el.append("<tr><td><span class=plus onclick='new_template()'>+</span></td></tr>");
+  }
+
+function render_instance_list()
+  {
+  var el = $("#instance_list");
+  el.html(""); el.attr("style", ""); 
+  if(current_template == null) return;
+  for(i in DB.widgets) if(DB.widgets[i].type == current_template.name)
+    {
+    el.append("<tr><td onclick='edit_widget(".concat(i, ")'>", i , "</tr></td>" ) );
+    }
+  el.append("<tr><td><span class=plus onclick='new_widget()'>+</span></td></tr>");
+  
+  }
+
+function render_subinstance_list(path)
+  {
+  var el = $("#instance_list");
+  el.attr("style", "background-color:mintcream");
+  el.html("");
+  //if(current_template == null) return;
+  for(i in current_sublist) 
+    {
+    el.append("<tr><td onclick='edit_subwidget(".concat(i, ")'>", i , "</tr></td>" ) );
+    }
+  el.append("<tr><td><span class=plus onclick='new_subwidget()'>+</span></td></tr>");
+  
+  }
+
+$(test);
+</script>
+<div>
+<table id=template_list>
+</table>
+</div> 
+<div id="edit">
+
+</div>
+<table id=instance_list>
+</table>
+</body>
+</html>
