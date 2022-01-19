@@ -21,7 +21,7 @@ chaintools/Kafka.class : src/chaintools/Kafka.scala
 chaintools/AnnotatedInteractive.class : src/chaintools/AnnotatedInteractive.scala
 	scalac src/chaintools/AnnotatedInteractive.scala
 
-focus_game/FocusLogic.class : src/focus_game/FocusGame.scala reighley/christopher/EnumerationModule.class reighley/christopher/ZonedDateTimeModule.class
+focus_game/FocusLogic.class : src/focus_game/FocusGame.scala reighley/christopher/EnumerationModule.class reighley/christopher/ZonedDateTimeModule.class chaintools/HTTPService.class
 	scalac src/focus_game/FocusGame.scala
 
 reighley/christopher/Properties.class : src/reighley/christopher/Properties.scala
@@ -48,7 +48,7 @@ controlserver/Socket2.class : src/controlserver/Socket2.scala
 controlserver.jar : controlserver/Server.class controlserver/Socket2.class
 	jar cfm controlserver.jar src/META-INF/controlserver.MANIFEST.MF controlserver/*
 
-focus_game.jar : focus_game/FocusLogic.class reighley/christopher/Properties.class chaintools/Kafka.class chaintools/Riak.class 
+focus_game.jar : focus_game/FocusLogic.class reighley/christopher/Properties.class chaintools/Kafka.class chaintools/Riak.class chaintools/HTTPService.class 
 	jar cf focus_game.jar focus_game/* reighley/* chaintools/* 
 
 funnybench/worker/Worker.class : src/funnybench/worker/Worker.scala chaintools/HTTPService.class

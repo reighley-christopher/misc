@@ -6,6 +6,7 @@ import com.sun.net.httpserver.HttpExchange
 import java.net.InetSocketAddress
 import chaintools._
 import scala.collection.mutable.Queue
+import scala.collection.mutable.Map
 import scala.io.Source
 import java.time.Instant
 import scala.collection.mutable.HashMap
@@ -64,6 +65,21 @@ class ThreadedIterator[X]( iterator : Iterator[X] ) extends Iterator[X] {
 class TaskLink[X] extends ChainLink[X,X]({(x)=>x}) {
   override def iterator(iter:ChainHead[X]):Iterator[X] = new ThreadedIterator( iter.iterator ) 
   }
+
+object ActiveServices {
+  val dict:Map[String, Map[Integer, HttpServer]] = Map[String, Map[Integer,HttpServer]]() 
+  def register(host:String , port:Integer, path:String, handler:HttpHandler) =  {
+    val func = (p:String)=>{ Map[Integer, HttpServer]() }
+    val http_server:HttpServer = ( dict.get(host) match {
+      case None => {val m = Map[Integer, HttpServer](); dict.put(host, m); m } 
+      case Some(x) => x 
+      } ).get(port) match {
+      case None => {val h = HttpServer.create(); dict.get(host).get.put(port, h); h } 
+      case Some(x:HttpServer) => x 
+      } 
+    http_server.createContext( path, handler )
+    }
+  } 
 
 class CallbackHandler( post:Map[String,String] => String, get:Map[String,String] => String, uriPath:String, filePath : String ) extends HttpHandler {
 
@@ -130,7 +146,7 @@ class TokenizedHTTPInterface( host:String, port:Int, path:String, datastore:Data
 /*TODO copy pasted from StringHTTPInterface, merge these*/
 
   val requestQueue = new Queue[AnnotatedString]
-  val http_server = HttpServer.create()
+  //val http_server = HttpServer.create()
 
 /*
   def do_the_thing( s : String ) : Unit = {} 
@@ -153,9 +169,11 @@ class TokenizedHTTPInterface( host:String, port:Int, path:String, datastore:Data
 
   //this camps on the port when all I really want to do is handle a particular path
   //TODO is it possible to add a callback handler while the server is running or do I need to restart it etc?
-  http_server.createContext(path, new CallbackHandler( post_callback, get_callback, path,  "/home/reighley/Code/misc/focus_game" ) )
-  http_server.bind( new InetSocketAddress( host, port ), 0 )
-  http_server.start()
+val handler = new CallbackHandler( post_callback, get_callback, path,  "/home/reighley/Code/misc/focus_game" )
+//  http_server.createContext(path, new CallbackHandler( post_callback, get_callback, path,  "/home/reighley/Code/misc/focus_game" ) )
+//  http_server.bind( new InetSocketAddress( host, port ), 0 )
+//  http_server.start()
+ActiveServices.register(host, port, path, handler)
 
   def iterator = new Iterator[AnnotatedString] { 
     def hasNext = true
@@ -169,7 +187,7 @@ class TokenizedHTTPInterface( host:String, port:Int, path:String, datastore:Data
 class StringHTTPInterface( host:String, port:Int, path:String ) extends ChainSink[String]( { x => Unit  } ) with  ChainHead[String] {
 
   val requestQueue = new Queue[String]
-  val http_server = HttpServer.create()
+  //val http_server = HttpServer.create()
 
   def do_the_thing( s : String ) : Unit = {} /*TODO wut??*/ 
   override def absorb( iter:Iterable[String]):Unit = iter.foreach(do_the_thing )
@@ -181,13 +199,45 @@ class StringHTTPInterface( host:String, port:Int, path:String ) extends ChainSin
 
   def get_callback(dummy:Map[String,String]) = "hello world"
 
-  http_server.createContext(path, new CallbackHandler( post_callback, get_callback, path, "/home/reighley/Code/misc/focus_game" ) )
-  http_server.bind( new InetSocketAddress( host, port ), 0 )
-  http_server.start()
+  val handler = new CallbackHandler( post_callback, get_callback, path, "/home/reighley/Code/misc/focus_game" )
+  //http_server.createContext(path, new CallbackHandler( post_callback, get_callback, path, "/home/reighley/Code/misc/focus_game" ) )
+  //http_server.bind( new InetSocketAddress( host, port ), 0 )
+  //http_server.start()
+  ActiveServices.register(host, port, path, handler)
 
   def iterator = new Iterator[String] { 
     def hasNext = true
     def next:String = {
+      while( requestQueue.isEmpty ) { Thread.`yield` }
+      return requestQueue.synchronized { requestQueue.dequeue() }
+      }  
+    } 
+  }
+
+class AnnotatedStringHTTPInterface( host:String, port:Int, path:String ) extends ChainSink[AnnotatedString]( { x => Unit } ) with ChainHead[AnnotatedString] {
+  val requestQueue = new Queue[AnnotatedString]
+  //val http_server = HttpServer.create()
+
+  def do_the_thing( s : AnnotatedString ) : Unit = {} /*TODO wut??*/ 
+  override def absorb( iter:Iterable[AnnotatedString]):Unit = iter.foreach(do_the_thing )
+ 
+  def post_callback(data:Map[String,String]) = requestQueue.synchronized {
+    val out = new AnnotatedString( data("body"), (data-"body").toSeq:_* ) 
+    requestQueue.enqueue(out)
+    ""
+    }  
+
+  def get_callback(dummy:Map[String,String]) = "hello world"
+
+  val handler = new CallbackHandler( post_callback, get_callback, path, "/home/reighley/Code/misc/focus_game" )
+  //http_server.createContext(path, new CallbackHandler( post_callback, get_callback, path, "/home/reighley/Code/misc/focus_game" ) )
+  //http_server.bind( new InetSocketAddress( host, port ), 0 )
+  //http_server.start()
+  ActiveServices.register(host, port, path, handler)
+
+  def iterator = new Iterator[AnnotatedString] { 
+    def hasNext = true
+    def next:AnnotatedString = {
       while( requestQueue.isEmpty ) { Thread.`yield` }
       return requestQueue.synchronized { requestQueue.dequeue() }
       }  
@@ -269,7 +319,7 @@ class TaskHead[X]( base : ChainHead[X], loiter:Boolean = false ) extends ChainHe
   }
 
 object HTTPService {
-  def http(host:String, port:Int, path:String) = new StringHTTPInterface( host, port, path )
+  def http(host:String, port:Int, path:String) = new AnnotatedStringHTTPInterface( host, port, path )
   def http(host:String, port:Int, path:String, store:Datastore[String]) = new TokenizedHTTPInterface( host, port, path, store )
   def default_http(port:Int) = new TokenizedHTTPInterface( "localhost", port, "/", new MapDatastore[String] ) 
   def detach() = new TaskLink[String]
