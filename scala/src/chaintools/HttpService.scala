@@ -74,7 +74,13 @@ object ActiveServices {
       case None => {val m = Map[Integer, HttpServer](); dict.put(host, m); m } 
       case Some(x) => x 
       } ).get(port) match {
-      case None => {val h = HttpServer.create(); dict.get(host).get.put(port, h); h } 
+      case None => {
+        val h = HttpServer.create(); 
+        dict.get(host).get.put(port, h);
+        h.bind(new InetSocketAddress( host, port ), 0);
+        h.start();
+        h 
+        } 
       case Some(x:HttpServer) => x 
       } 
     http_server.createContext( path, handler )
