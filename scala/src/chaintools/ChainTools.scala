@@ -1,5 +1,8 @@
 package chaintools
 
+import reighley.christopher.Util._
+import scala.util.parsing.json.JSON
+
 class ChainSink[X](f : X => Unit) {
   def func = f
   def absorb(iter:Iterable[X]):Unit = iter.foreach( f )
@@ -46,4 +49,8 @@ def sinkprint = new ChainSink[String]( println )
 
 def strip_annotations = new ChainLink[AnnotatedString, String]({ x => x.body })
 def flatten_annotations = new ChainLink[AnnotatedString, String]({ x => x.annotations.map({x => x._1 + "=" + x._2}).reduceOption({(y, x) => y  + "\n" +  x }).getOrElse("") + "\n" + x.body + "\n" } )
+def json_annotations = new ChainLink[AnnotatedString, String]({ inp => 
+  val x = JSON.parseFull(inp.body).get.asInstanceOf[Map[String,String]]
+  mapToJson(x ++ inp.annotations) 
+  }) 
 }

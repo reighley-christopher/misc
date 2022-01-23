@@ -3,7 +3,7 @@ chaintools : chaintools/ChainTools.class chaintools/HTTPService.class chaintools
 chaintools/AnnotatedString.class : src/chaintools/AnnotatedString.scala
 	scalac src/chaintools/AnnotatedString.scala
 
-chaintools/ChainTools.class : src/chaintools/ChainTools.scala chaintools/AnnotatedString.class
+chaintools/ChainTools.class : src/chaintools/ChainTools.scala chaintools/AnnotatedString.class reighley/christopher/Util.class
 	scalac src/chaintools/ChainTools.scala
 
 chaintools/HTTPService.class : src/chaintools/HttpService.scala
@@ -38,6 +38,9 @@ reighley/christopher/Interactive.class : src/reighley/christopher/Interactive.sc
 
 reighley/christopher/Tableizer.class : src/reighley/christopher/Tableizer.scala
 	scalac src/reighley/christopher/Tableizer.scala
+
+reighley/christopher/Util.class : src/reighley/christopher/Util.scala
+	scalac src/reighley/christopher/Util.scala
 
 controlserver/Server.class : src/controlserver/Server.scala
 	scalac src/controlserver/Server.scala
