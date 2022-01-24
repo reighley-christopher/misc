@@ -53,6 +53,10 @@ def json_annotations = new ChainLink[AnnotatedString, String]({ inp =>
   val x = JSON.parseFull(inp.body).get.asInstanceOf[Map[String,String]]
   mapToJson(x ++ inp.annotations) 
   })
-def annotate(header : Tuple2[String, String]*) = new ChainLink[String, AnnotatedString]( x => new AnnotatedString( x, header:_* ) ) 
- 
+def annotate(header : Tuple2[String, String]*) = new ChainLink[String, AnnotatedString]( x => new AnnotatedString( x, header:_* ) )
+//TODO my method of defining nodes has prevented me from taking advantage of type inference for dispatch : I should have liked to call this
+//simply annotate 
+def reannotate(header : Tuple2[String, String]*) = new ChainLink[AnnotatedString, AnnotatedString]( x => 
+  new AnnotatedString( x.body, (x.annotations ++ header):_* ) ) 
+
 }

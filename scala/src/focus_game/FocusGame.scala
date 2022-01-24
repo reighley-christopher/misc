@@ -304,7 +304,7 @@ def createStream = {
   A.addTopic("table")
   println("set up outside consumers")
   //todo why are the semantics of detach so weird
-  detach( http("localhost", properties.get("focus_game.http-in").asInstanceOf[String].toInt, "/") > json_annotations > 
+  detach( http("localhost", properties.get("focus_game.http-in").asInstanceOf[String].toInt, "/") > reannotate("test" -> "1") > json_annotations > 
     annotate("key"->"") ) > kafka("http-in")
   detach( http("localhost", properties.get("focus_game.heartbeat").asInstanceOf[String].toInt, "/") ) > kafka("heartbeat")
   detach( http("localhost", properties.get("focus_game.edits").asInstanceOf[String].toInt, "/") ) > kafka("edits")
