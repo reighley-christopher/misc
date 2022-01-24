@@ -52,5 +52,7 @@ def flatten_annotations = new ChainLink[AnnotatedString, String]({ x => x.annota
 def json_annotations = new ChainLink[AnnotatedString, String]({ inp => 
   val x = JSON.parseFull(inp.body).get.asInstanceOf[Map[String,String]]
   mapToJson(x ++ inp.annotations) 
-  }) 
+  })
+def annotate(header : Tuple2[String, String]*) = new ChainLink[String, AnnotatedString]( x => new AnnotatedString( x, header:_* ) ) 
+ 
 }

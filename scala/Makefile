@@ -21,7 +21,7 @@ chaintools/Kafka.class : src/chaintools/Kafka.scala
 chaintools/AnnotatedInteractive.class : src/chaintools/AnnotatedInteractive.scala
 	scalac src/chaintools/AnnotatedInteractive.scala
 
-focus_game/FocusLogic.class : src/focus_game/FocusGame.scala reighley/christopher/EnumerationModule.class reighley/christopher/ZonedDateTimeModule.class chaintools/HTTPService.class
+focus_game/FocusLogic.class : src/focus_game/FocusGame.scala reighley/christopher/EnumerationModule.class reighley/christopher/ZonedDateTimeModule.class chaintools/HTTPService.class chaintools/ChainTools.class 
 	scalac src/focus_game/FocusGame.scala
 
 reighley/christopher/Properties.class : src/reighley/christopher/Properties.scala

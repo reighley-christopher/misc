@@ -303,7 +303,8 @@ def createStream = {
   A.subscribe("riak-out")
   A.addTopic("table")
   println("set up outside consumers")
-  detach( http("localhost", properties.get("focus_game.http-in").asInstanceOf[String].toInt, "/") ) > kafka("http-in")
+  detach( http("localhost", properties.get("focus_game.http-in").asInstanceOf[String].toInt, "/") ) > json_annotations > 
+    annotate("key"->"") > kafka("http-in")
   detach( http("localhost", properties.get("focus_game.heartbeat").asInstanceOf[String].toInt, "/") ) > kafka("heartbeat")
   detach( http("localhost", properties.get("focus_game.edits").asInstanceOf[String].toInt, "/") ) > kafka("edits")
   detach( kafka("riak-out") ) > riak("focus")
