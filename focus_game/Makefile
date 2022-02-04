@@ -1,4 +1,7 @@
-jars : controlserver.jar focus_game.jar
+jars : controlserver.jar focus_game.jar kafkainterface.jar
+
+kafkainterface.jar : ../scala/kafkainterface.jar
+	cp ../scala/kafkainterface.jar .
 
 controlserver.jar : ../scala/controlserver.jar
 	cp ../scala/controlserver.jar .
