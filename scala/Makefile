@@ -54,6 +54,9 @@ controlserver.jar : controlserver/Server.class controlserver/Socket2.class
 focus_game.jar : focus_game/FocusLogic.class reighley/christopher/Properties.class chaintools/Kafka.class chaintools/Riak.class chaintools/HTTPService.class 
 	jar cf focus_game.jar focus_game/* reighley/* chaintools/* 
 
+kafkainterface.jar : kafkainterface/KafkaInterface.class
+	jar cfm kafkainterface.jar src/META-INF/kafkainterface.MANIFEST.MF kafkainterface/* reighley/*
+
 funnybench/worker/Worker.class : src/funnybench/worker/Worker.scala chaintools/HTTPService.class
 	scalac src/funnybench/worker/Worker.scala
 
@@ -61,6 +64,15 @@ funnybench.jar : funnybench/worker/Worker.class
 	jar cf funnybench.jar funnybench/* reighley/* chaintools/*
 
 funnybench : funnybench/worker/Worker.jar
+
+kafkainterface/ConsumerProducerAdmin.class : src/kafkainterface/ConsumerProducerAdmin.scala
+	scalac src/kafkainterface/ConsumerProducerAdmin.scala
+
+kafkainterface/Parser.class : src/kafkainterface/Parser.scala
+	scalac src/kafkainterface/Parser.scala
+
+kafkainterface/KafkaInterface.class : src/kafkainterface/KafkaInterface.scala reighley/christopher/Interactive.class kafkainterface/ConsumerProducerAdmin.class kafkainterface/Parser.class
+	scalac src/kafkainterface/KafkaInterface.scala
 
 test : src/focus_game/tests.scala focus_game/FocusLogic.class  
 	scalac src/focus_game/tests.scala

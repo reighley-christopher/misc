@@ -12,6 +12,7 @@ end an interactive session with esc ?like VI? expecting VT100 terminal commnads
 BUGS 
 backspace doesn't work in command mode
 unprintable characters still move the cursor position right
+if I cursor moves under the last line of the buffer an out of bounds error will result
 */
 
 /*
@@ -20,6 +21,8 @@ if a line under the delete is blank remove it
 if the cursor is at the far end of the line on delete merge the line under it 
 vi commands 'y' 'd' 'p'
 command line mode - delegate command actions to the command handler object
+do not allow cursor to go outside of the box above, bellow or to the left (right is okay but pad with space)
+buffer insert cursor does not go to a reasonable place when switching modes
 */
 
 /*
@@ -161,7 +164,7 @@ class GraphicsManager {
     /*repaint will start with cursor above the first line and end with the cursor on the command line*/
     var i:Int = 0
     upper_corner
-    System.out.write('\n')
+    System.out.write("\n\r".getBytes)
     max_row = buffer.lines-1
     if(row > max_row) row = max_row
     for( i <- 0 to max_row ) {
@@ -178,9 +181,18 @@ class GraphicsManager {
 
   def command = command_buffer.toString
 
+  def go_to_bottom() = {
+    /*moves the actual cursor, but keeps the cursor ref where it is*/
+    System.out.write(0x1b); System.out.write("[%dB".format(max_row - row + 1).getBytes)   
+    }
+
+  def go_to_top() = {
+    System.out.write(0x1b); System.out.write("[%dA".format(row + 1).getBytes) 
+    }
+
   def command_mode() = {
     /*changes the prompt, moves the actual cursor, but keeps the cursor ref where it is*/
-    System.out.write(0x1b); System.out.write("[%dB".format(max_row - row + 1).getBytes)   
+    go_to_bottom()
     System.out.write("\r╚═╡:".getBytes)
     }
 
@@ -209,12 +221,32 @@ class GraphicsManager {
     repaint(buffer)
     return_from_bottom()
     change_prompt("  ") 
-   }
+    }
   }
 
 object Interactive {
+  var alive = false
+  /*async output for writing from other threads*/
+  var async_data = "" /*to be printed at the top when possible, critical blocks will protect async_data*/
 
-  def start(delegate:CommandDelegate):String = {
+  def async_print(text:String)
+    {
+    /*critical block, append to async_data*/ 
+    async_data += text
+    /*end crticial block*/
+    }
+
+  def sync_print()
+    {
+    //TODO remember to put a mutex here and in async_print
+    /*critical block, write async_data out, clear async_data*/
+    print(async_data)
+    async_data = ""
+    /*end critical_block*/
+    }
+
+  def start(delegate:CommandDelegate, escape_character:Int=21):String = {
+    alive = true
     val graphics = new GraphicsManager
     val buffer = new BufferManager()
     buffer.reinitialize("")
@@ -222,50 +254,75 @@ object Interactive {
     System.out.flush()
     var mode:Int = 0 
     while(true) {
-      val x  = System.in.read()
-      mode match {
-        case 0 => {
-          //System.out.write(x)
-          graphics.col = graphics.col+1
-          x match {
-          case '\r' => { graphics.add_line(buffer) }
-          case 127 => { graphics.col = graphics.col-1; if(graphics.col > 0) graphics.cursor_left(1) ; graphics.delete(buffer) } 
-          case 21 => { mode = 1; graphics.col = graphics.col-1; graphics.cursor_prompt  } /* ^U, char 21 is Negative Acknowledge, I guess nobody uses it much so why not TODO make sure it still works via SSH*/
-          case _ => { System.out.write(x) ; buffer.insert_char(x, graphics.row, graphics.col-1) ; graphics.write_stationary(buffer.get_line(graphics.row, graphics.col)) }
+      if( async_data != "" ) { 
+        //assuming input mode here
+        graphics.go_to_bottom()
+        graphics.clear(buffer)
+        print("\r")
+        sync_print()
+        print("\r") 
+        graphics.repaint(buffer)
+        //in mode 0 or 1 put the cursor back 
+        if( mode == 0 || mode == 1 )
+          {   
+          graphics.return_from_bottom()
+          if( mode == 0 ) { graphics.change_prompt("  ") }
+          } 
+        //in mode 2 repaint the command line 
+        if( mode == 2 )
+          { 
+          System.out.write("\r╚═╡:".getBytes)
+          print(graphics.command)
           }
-          System.out.flush()
-        }
-        case 1 => {
-          x match {
-            case 'h' => {graphics.cursor_left(1)}
-            case 'j' => {graphics.cursor_down(1)}
-            case 'k' => {graphics.cursor_up(1)}
-            case 'l' => {graphics.cursor_right(1)}
-            case 'd' => {print("%d".format(graphics.col))}
-            case 'x' => {graphics.delete(buffer)}
-            case 'i' => {graphics.change_prompt("  "); mode = 0}
-            case ':' => {graphics.command_mode() ; mode = 2}
-            case _ => {}
-            } 
-        }
-        case 2 => {
-          if(x == '\r') { 
-            if(graphics.command == "quit") 
-              {
-              return delegate.close()
-              } else {
-              graphics.clear(buffer); 
-              buffer.reinitialize( 
-                delegate.process(graphics.command, buffer.contents)
-                )
-              } ; 
-            graphics.repaint(buffer) ; 
-            graphics.return_from_bottom() ; mode = 1 
-            } else {
-            graphics.command_input(x.asInstanceOf[Char])
+        } 
+      if( System.in.available > 0 )
+        {
+        val x  = System.console.reader.read()
+        mode match {
+          case 0 => {
+            //System.out.write(x)
+            graphics.col = graphics.col+1
+            x match {
+            case '\r' => { graphics.add_line(buffer) }
+            case 127 => { graphics.col = graphics.col-1; if(graphics.col > 0) graphics.cursor_left(1) ; graphics.delete(buffer) } 
+            case `escape_character` => { mode = 1; graphics.col = graphics.col-1; graphics.cursor_prompt  } 
+            case _ => { System.out.write(x) ; buffer.insert_char(x, graphics.row, graphics.col-1) ; graphics.write_stationary(buffer.get_line(graphics.row, graphics.col)) }
             }
-        }
-        case _ => {}
+            System.out.flush()
+          }
+          case 1 => {
+            x match {
+              case 'h' => {graphics.cursor_left(1)}
+              case 'j' => {graphics.cursor_down(1)}
+              case 'k' => {graphics.cursor_up(1)}
+              case 'l' => {graphics.cursor_right(1)}
+              case 'd' => {print("%d".format(graphics.col))}
+              case 'x' => {graphics.delete(buffer)}
+              case 'i' => {graphics.change_prompt("  "); mode = 0}
+              case ':' => {graphics.command_mode() ; mode = 2}
+              case _ => {}
+              } 
+          }
+          case 2 => {
+            if(x == '\r') { 
+              if(graphics.command == "quit") 
+                {
+                alive = false
+                return delegate.close()
+                } else {
+                graphics.clear(buffer); 
+                buffer.reinitialize( 
+                  delegate.process(graphics.command, buffer.contents)
+                  )
+                } ; 
+              graphics.repaint(buffer) ; 
+              graphics.return_from_bottom() ; mode = 1 
+              } else {
+              graphics.command_input(x.asInstanceOf[Char])
+              }
+          }
+          case _ => {}
+          }
         }
       }
     return "THIS SHOULD BE UNREACHABLE"
