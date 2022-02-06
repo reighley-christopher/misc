@@ -36,3 +36,5 @@ Blender>submenu>hello
 -print("HELLO WORLD\n")
 -print("FROM THE DEPTHS OF MY HEART\n")
 
+funnybench
+-/usr/local/bin/electron /home/reighley/Code/misc/funny_bench

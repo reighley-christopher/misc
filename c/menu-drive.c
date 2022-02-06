@@ -20,7 +20,7 @@ the top pain will always show a menu and the bottom pane will always show a term
 
 the modes are therefore :
 menu mode : key inputs go to the menu
-terminal mode : key inputs go to the terminal
+terminal mode : key inputs go to the terminal TODO this has problems because it is a pipe and not a tty, figure out how to fix that
 
 several submodes can be distinguished later :
 - groups of menus for different applications, controlled by different threads [DONE]
@@ -168,7 +168,7 @@ int main(int argc, char *argv[])
   top = newwin(maxy/2, maxx, 0, 0);
   bottom = newwin(maxy/2, maxx, maxy/2+1, 0);
   border = newwin(1, maxx, maxy/2, 0);
-  init_pair(1, COLOR_BLACK, COLOR_WHITE);
+  init_pair(1, COLOR_BLACK, COLOR_WHITE); //TODO why does the terminal turn gray, is there a bright white setting?
   wbkgd(top, COLOR_PAIR(1) );
   wbkgd(bottom, COLOR_PAIR(1) );
   waddstr(border, "MENU");

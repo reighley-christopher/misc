@@ -13,7 +13,10 @@ X
 */
 
 /*TODO this would really benefit from some sort of accounting for all the file handles that need closing*/
+/*TODO to make that work I would need to be able to manipulate a process already forked, how to do that?*/
 /*TODO what about feedback loops?*/
+/*TODO string labels instead of numbers?*/
+/*TODO real time interactive input*/
 
 struct execNode
   {
@@ -22,6 +25,7 @@ struct execNode
   int out;
   int from;
   char tee_out;
+  pid_t *pid;
   } node_buffer[16];
 
 struct tees
@@ -57,6 +61,7 @@ void tee_add(struct tees *tee, int write_pipe)
 
 void E(int label, char *path)
   {
+  printf("create %s\n", path);
   node_count = node_count+1;
   node_buffer[label].path = path;
   node_buffer[label].in = 0;
@@ -124,6 +129,7 @@ void slurp_tee(struct tees *tee)
       {
       s[0] = '0' + i;
       /*TODO I think this code could deadlock if one of the buffers fills up because downstream refuses to read*/
+      /*TODO this seems to be the case when a fifo is involved  */
       write(outs[i], s, 2 );
       write(outs[i], buffer, length);
       }
@@ -169,6 +175,7 @@ void fork_exec(struct execNode *exec, int i)
   /*start a command with its own stdin an stdout*/
   int j, k;
   pid_t f = fork();
+  printf("forking %s %d\n", exec->path, f);
   if(!f)
     {
     /*close all the outbound file handles that don't belong to me*/
@@ -184,6 +191,7 @@ void fork_exec(struct execNode *exec, int i)
       close(0);
       dup(exec->in);
       }
+    printf("executing %s\n", exec->path);
     if(exec->out != 1)
       {
       close(1);
@@ -191,8 +199,9 @@ void fork_exec(struct execNode *exec, int i)
       close(exec->out);
       }
     system(exec->path);
+    printf("%s terminated\n", exec->path);
     exit(0);
-    }  
+    } else { exec->pid = f } 
   }
 
 void start_execs()
@@ -211,8 +220,9 @@ int main( int argc, char *argv[] )
   int accumulator = 0;
   int from, to;
   char c = fgetc(stdin);
-  char path_buffer[256];
-  char *name_ptr = path_buffer;
+  char path_buffer[256]; //TODO expand this buffer?
+  char *path_ptr = path_buffer;
+  char *label_ptr = label_buffer;
   while(command != 'X' && c != EOF)
     {
     switch(state)
@@ -242,12 +252,12 @@ int main( int argc, char *argv[] )
             /*the character is part of a path*/
             if(c != '\n')
               {
-              name_ptr[accumulator] = c;
+              path_ptr[accumulator] = c;
               accumulator = accumulator + 1;
               } else {
-              name_ptr[accumulator] = '\0';
+              path_ptr[accumulator] = '\0';
               E(from, name_ptr);
-              name_ptr = name_ptr + accumulator + 1;
+              path_ptr = path_ptr + accumulator + 1;
               accumulator = 0;
               state = 0;
               }            
@@ -275,6 +285,7 @@ int main( int argc, char *argv[] )
       }
     c = fgetc(stdin);
     }
+  printf("a whole bunch of printfs\n");
   start_execs();
   start_tees();
   close_filehandles();

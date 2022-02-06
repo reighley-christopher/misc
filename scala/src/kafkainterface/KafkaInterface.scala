@@ -59,6 +59,9 @@ object KafkaInterface {
     if(command == "test") { 
        threadm.send("stupid2", "key", "value")
        }
+    if(command == "yield") {
+      Thread.`yield`()
+      }
     print_below( parser.run(command) )
     }
 

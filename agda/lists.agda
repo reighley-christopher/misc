@@ -547,11 +547,11 @@ series-sum zero = refl
 series-sum ( suc n ) =
   sum ( downFrom ( suc n ) ) * 2 ≡⟨⟩
   sum ( n ∷ downFrom n ) * 2 ≡⟨⟩
-  ( n + sum ( downFrom n ) ) * 2 ≡⟨ ? ⟩
+  ( n + sum ( downFrom n ) ) * 2 ≡⟨ {!!} ⟩
   n * 2 + ( sum ( downFrom n ) ) * 2 ≡⟨ cong ( n * 2 +_ ) ( series-sum n ) ⟩
-  n * 2 + ( n * ( n ∸ 1 ) ) ≡⟨ ? ⟩
-  n * ( ( n ∸ 1 ) + 2 ) ≡⟨ ? ⟩
-  ( ( suc n ) ∸ 1 ) * ( suc n ) ≡⟨ ? ⟩
+  n * 2 + ( n * ( n ∸ 1 ) ) ≡⟨ {!!} ⟩
+  n * ( ( n ∸ 1 ) + 2 ) ≡⟨ {!!} ⟩
+  ( ( suc n ) ∸ 1 ) * ( suc n ) ≡⟨ {!!} ⟩
   ( suc n ) * ( ( suc n ) ∸ 1 ) 
   ∎
   

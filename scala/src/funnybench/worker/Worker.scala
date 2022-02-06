@@ -38,14 +38,14 @@ import org.apache.kafka.streams.state.ValueAndTimestamp
 
 class Worker {
   val datastore = new MapDatastore[String]
-  def teststub(key:String, value:String):(String,String) = (key, value.toUpperCase)
+  def teststub(key:String, value:String):(String,String) = { print("%s %s\n".format(key, value)) ; (key, value.toUpperCase) }
    
   def start() = {
     A.subscribe("funnybench_in")
     A.subscribe("funnybench_out")
     val service = detach(http("localhost", 1100, "/", datastore))
     /*service has two functions*/
-    /*data comes in from some source to be sent out in response to GET requests, and data that comes in from put requests goes out to somewhere else
+    /*data comes in from some source to be sent out in response to GET requests, and data that comes in from POST requests goes out to somewhere else
       in general these will be different sources so I can't write it as a single line. */
     kafka("funnybench_out") > service 
     service > kafka("funnybench_in")
