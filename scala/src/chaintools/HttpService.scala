@@ -11,6 +11,7 @@ import scala.io.Source
 import java.time.Instant
 import scala.collection.mutable.HashMap
 import scala.util.Random
+import scala.collection.JavaConverters._
 
 /* TODO or BURN this has prints and delays in it but I don't know if I even need this */
 
@@ -105,9 +106,20 @@ class CallbackHandler( post:Map[String,String] => String, get:Map[String,String]
     input.read(buffer)
     val verb = exchange.getRequestMethod()
     val ip = exchange.getRemoteAddress()
+    var request_headers:Map[String, String] = Map()
+    try
+      {
+      val java_request_headers = exchange.getRequestHeaders()
+      val keys = java_request_headers.keySet().asScala
+      keys.foreach( key => request_headers(key) = java_request_headers.get(key).asScala.fold("")(_+_) )
+      } catch {
+      case ex : Exception => print("okay there was an exception %s\n".format(ex)) //TODO I should not be eating exceptions (maybe send 500?)
+      }
+    //java_request_headers.keySet().asScala.foreach( key => request_headers(key) = java_request_headers.get(key).asScala.fold("")( _+_ ) ) 
     if(verb == "POST" ) {
       val str = buffer.map( _.toChar )
-      post_data = Some(post(Map("ip"->ip.toString, "body"->str.mkString) ))
+      val post_map = request_headers + ( "ip"->ip.toString ) + ( "body"->str.mkString )
+      post_data = Some(post(post_map))
       }
     if(verb == "POST") {
       if(post_data == Some("")) exchange.sendResponseHeaders( 200, -1 ) else

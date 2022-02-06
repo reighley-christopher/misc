@@ -27,6 +27,9 @@ class ConsumerProducerAdmin(val consumer:Consumer[String,String], val producer:P
   val shuntfiles:Set[String]  = Set()
   var okay_to_die:Boolean = false
   var be_quiet = true //TODO start as false if subscriptions already exist
+  var bytes_read = 0
+  var records_seen = 0
+  var poll_count = 0
 
   //putting this the top so it annoys me into changing it 
   //TODO fix bad part
@@ -51,7 +54,7 @@ class ConsumerProducerAdmin(val consumer:Consumer[String,String], val producer:P
         offs(name) = pair._2.offset 
         }
       }
-    topics.mkString //TODO format this better
+    topics.mkString + "\r\nbytes read : %d\r\nrecords seen %d %b\r\npoll count %d\r\n".format(bytes_read, records_seen, thr.isAlive(), poll_count) //TODO format this better
     } 
 
   def pretty_print( records:ConsumerRecords[String, String] ):String = {
@@ -163,24 +166,30 @@ class ConsumerProducerAdmin(val consumer:Consumer[String,String], val producer:P
         
         consumer.synchronized {
         val records = consumer.poll(1000)
+        poll_count += 1
+        records_seen += records.count()
         for(r <- records)
           {
           val topic = r.topic()
           if(kafka_to_kafka.contains(topic)) for( s <- kafka_to_kafka(topic) )
             {
+            bytes_read += r.value().length()
             producer.send(new ProducerRecord(s, r.key(), r.value()))
             } 
           if(kafka_to_file.contains(topic)) for( s <- kafka_to_file(topic) )
             {
+            bytes_read += r.value().length()
             write_to_file( s, r.value() ) 
             }
           if(tables.contains(topic))
             {
+            bytes_read += r.value().length()
             val dict = JSON.parseFull( r.value() ).get.asInstanceOf[ scala.collection.immutable.Map[String, String] ] 
             tables(topic).update_row(Map("key" -> r.key) ++ dict )
             }
           if(listens.contains(topic))
             {
+            bytes_read += r.value().length()
             local_print(r.value() + "\n")
             } 
           }
