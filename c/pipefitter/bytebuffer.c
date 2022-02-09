@@ -50,9 +50,11 @@ void bytebuffer_set_completer(bytebuffer *buffer, completer_module *complete)
   complete->init(buffer->completer_data);
   }
 
+/*record available always returns true if there is no completer, unless there is no data at all*/ 
 int bytebuffer_record_available(bytebuffer *buffer)
   {
-  return !(buffer->completer && buffer->complete_mark == -1);
+  return !(buffer->completer && buffer->complete_mark == -1) && 
+         !(buffer->write_offset == buffer->read_offset && buffer->first_block == buffer->offset_block);
   } 
 
 void acceptable_intervals(bytebuffer *buffer, struct bytebuffer_block *block, int *front, int *length)
@@ -64,6 +66,23 @@ void acceptable_intervals(bytebuffer *buffer, struct bytebuffer_block *block, in
   back = complete_mark>=0?complete_mark : end_mark;
   *length = back-*front; 
   printf("bytebuffer.c:55 %d %d\n", *front, *length);
+  }
+
+void bytebuffer_print(bytebuffer *buffer)
+  {
+  struct bytebuffer_block *sploop = buffer->first_block;
+  int front, end;
+  int i, done;
+  front = buffer->read_offset;
+  done = 0;
+  while( !done )
+    {
+    if(sploop == buffer->offset_block) {end = buffer->write_offset;} else {end = sploop->size;}
+    for(i = front ; i < end; i++) printf("%c:", sploop->data[i]);
+    if(sploop == buffer->offset_block) done = 1;
+    front = 0;
+    sploop = sploop->next;
+    }
   }
 
 void bytebuffer_rotate_record(bytebuffer *buffer)
@@ -82,13 +101,14 @@ void bytebuffer_rotate_record(bytebuffer *buffer)
   while(buffer->complete_mark == -1)
     {
     acceptable_intervals(buffer, sploop, &front, &length);
-    buffer->complete_mark = buffer->completer->func(buffer->completer_data, sploop->data+front, length);
+    if(buffer->completer) buffer->complete_mark = buffer->completer->func(buffer->completer_data, sploop->data+front, length);
     if(buffer->complete_mark != -1) buffer->complete_block = sploop; 
     sploop = sploop->next;
     if(sploop == buffer->first_block) break;
     }
   if(buffer->complete_mark != -1) buffer->complete_mark = front + buffer->complete_mark; 
-  printf("bytebuffer.c:77 complete mark = %d\n", buffer->complete_mark); 
+  printf("bytebuffer.c:77 complete mark = %d \n", buffer->complete_mark); 
+  bytebuffer_print(buffer);
   }
 
 void bytebuffer_advance_block(bytebuffer *buffer)

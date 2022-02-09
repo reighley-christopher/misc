@@ -34,6 +34,8 @@ typedef struct _bytebuffer_iter
 
 #define BYTEBUFFER_BLOCK_SIZE 1024
 
+void bytebuffer_print(bytebuffer *buffer);
+
 void bytebuffer_init(bytebuffer *buffer);
 
 void bytebuffer_append_start(bytebuffer *buffer, unsigned char **data, unsigned int *length);

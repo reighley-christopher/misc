@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <strings.h>
 #include <unistd.h>
 #include <signal.h>
 #include <sys/types.h>
@@ -15,7 +16,7 @@ l /usr/lib/module.so
 o fifo1
 i fifo2
 d fifo1
-s +a
+s attribute_name attribute_value
 e /usr/bin/executable 
 ?
 x
@@ -30,6 +31,7 @@ insert 0x1E record spearator on output (if synchronous is set use 0x1D group sep
 */
 
 completer_module *get_yajl_completer_module();
+completer_module *get_simple_completer_module(); 
 
 char name_table[1024];
 int name_max = 0;
@@ -101,7 +103,6 @@ void E(int label, char *path)
   node_buffer[label].from = -1;
   node_buffer[label].tee_out = -1;
   }
-
 
 void P(int from, int to)
   {
@@ -286,6 +287,7 @@ pid_t fork_exec2(char *path, int inp, int outp)
       {
       close(1);
       dup(outp);
+      setvbuf(stdout, NULL, _IONBF, 0); //TODO catch EBADF, could I improve bytebuffer by allocating the buffer myself?: 
       }
     return f;
     } else {
@@ -337,6 +339,7 @@ int write_pipe, read_pipe = 0;
 pthread_mutex_t write_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /*the most general case of complete will need to see the whole buffer but for our purposes I just need the last block*/
+//BURN should be replaced by the completer.func
 int complete(void *d, char *data, int length)
   {
   /*stub complete flushes on a newline, but wait there might be some left over??*/
@@ -353,6 +356,27 @@ int complete(void *d, char *data, int length)
   return -1;
   } 
 
+//TODO this is a stub : unstub it
+char input_separator = 0;
+void set_attribute(char *attrs)
+  {
+  /*example : a set_input_seperator \n*/
+  /*stub, set_input_separator is the only implemented attribute*/ 
+  const char *CMP = "add_input_separator";
+  int i;
+  int space = index(attrs, ' ') - attrs;
+  for(i = 0; i < space; i++)
+    {
+    if(CMP[i] != attrs[i]) 
+      {
+      printf("EUnrecognized Attribute\n");
+      return;
+      }
+    } 
+    sscanf( attrs+space+1, "%d",  &input_separator); 
+    printf("%s set to %c\n", attrs+space+1, input_separator);
+  }
+
 void *input_pthread_loop(void *d)
   {
   /*d contains a pointer to the inputfifo record I will want to copy it into the local stack because it may move*/
@@ -362,11 +386,11 @@ void *input_pthread_loop(void *d)
   unsigned char *data;
   unsigned int length;
   int fifo;
-  int mark = -1;
+  //int mark = -1;
   
   /*TODO how to ensure that the bytebuffer is cleaned up when the thread stops*/
   bytebuffer_init(&buffer);
-  bytebuffer_set_completer(&buffer, get_yajl_completer_module()); 
+  bytebuffer_set_completer(&buffer, get_simple_completer_module()); 
   /*I will open the fifo, I will loop waiting for data, as data comes I will read it into a buffer
     it is in blocking mode because I will only care to read it if there is data to be read*/
   fifo = open( inp.name, O_RDONLY ); 
@@ -394,7 +418,7 @@ void *input_pthread_loop(void *d)
  
     /*when the record is complete I will then claim the mutex and write to the output using write_record, bytebuffer_iter_init and
     bytebuffer_iter_next */
-    if( bytebuffer_record_available(&buffer) ) /*TODO stubbing out complete, what does the general signature look like*/
+    if( bytebuffer_record_available(&buffer) )
       {
       printf("faninout:366 record available\n");
       bytebuffer_iter_init(&iter, &buffer);
@@ -406,10 +430,12 @@ void *input_pthread_loop(void *d)
         printf("faninout.c:369 sending %d characters to process:", length);  
         write(0, data, length); write(0, "[]\n", 3 );
         }
+      if( input_separator ) {printf("writing %c\n", input_separator) ; write(write_pipe, &input_separator, 1); }
       /*release mutex here*/
       pthread_mutex_unlock(&write_mutex);
+      printf("input rotate\n");
       bytebuffer_rotate_record(&buffer);
-      mark = -1; 
+      //mark = -1; 
       }
     } 
   }
@@ -429,8 +455,6 @@ void check_open(struct outputfifo *out)
     } 
   }
 
-
-
 /*there only needs to be one output loop thread, because the records are read one at a time*/
 void *output_inner_loop(void *d)
   {
@@ -441,10 +465,16 @@ void *output_inner_loop(void *d)
   int err;
   int i, out_index;
   bytebuffer_init(&buffer);
-  bytebuffer_set_completer(&buffer, get_yajl_completer_module());
+  //bytebuffer_set_completer(&buffer, get_yajl_completer_module());
   while(1)
-    { /*TODO I should sleep the thread if there is no read pipe, and starting the executable should wake the thread*/ if(read_pipe) { bytebuffer_append_start(&buffer, &data, &length); length = read(read_pipe, data, length); for(i = 0; i < length; i++) printf("%c.", data[i]); bytebuffer_append_trim(&buffer, length);
-      if( bytebuffer_record_available(&buffer) )
+    { 
+    /*TODO I should sleep the thread if there is no read pipe, and starting the executable should wake the thread*/ 
+    if(read_pipe) 
+      { 
+      bytebuffer_append_start(&buffer, &data, &length); 
+      length = read(read_pipe, data, length); 
+      for(i = 0; i < length; i++) printf("%c.", data[i]); bytebuffer_append_trim(&buffer, length);
+      while( bytebuffer_record_available(&buffer) )
         {
         for(out_index = 0; out_index < fanout_count; out_index ++)
           {
@@ -462,12 +492,20 @@ void *output_inner_loop(void *d)
               print_write_errno();
               fanout_buffer[out_index].fd = 0;
               }
+            
             }
-          } 
-        bytebuffer_rotate_record(&buffer); 
+          }
+        printf("data read from process:\n"); 
+        bytebuffer_print(&buffer);
+        printf("output rotate\n");
+        bytebuffer_rotate_record(&buffer);
         }  
       }
+
   /*TODO :*/
+  /*report an error if anything comes out on stderr*/
+  /*report an error if the process returns anything other than 0*/
+  /*if it returns 0 restart it*/
   /*tell this thread to stop when the main process terminates*/
   /*transform the output according to a rule*/
   /*I decide which outputs deserve to see this record*/
@@ -560,7 +598,8 @@ void execute(char *name)
   if( current_process ) { kill( current_process, SIGTERM ); } //TODO if current_process doesn't die we will never see it again but it will be there
   f = fork_exec2(name, upstream[0], downstream[1]);
   write_pipe = upstream[1];
-  read_pipe = downstream[0]; 
+  read_pipe = downstream[0];
+   
   if( !f )
     {
     system(name); //TODO I am going to reuse name, does system need it?
@@ -573,6 +612,7 @@ void execute(char *name)
 
 void questionmark()
   {
+  /*TODO report if the other end is open or not*/
   int i = 0;
   printf("in:\n", fanin_count, name_max);
   for(i=0; i < fanin_count; i++) {
@@ -583,6 +623,7 @@ void questionmark()
     printf("\t%s\n", fanout_buffer[i].name);
     }
   }
+
 
 void evaluate(int command, char *value) 
   {
@@ -604,13 +645,17 @@ void evaluate(int command, char *value)
       name_max = value - name_table; /*discard string*/
       execute(value);
       break;
+    case('a'):
+      name_max = value - name_table; /*discard string*/
+      set_attribute(value); 
+      break;
     case('?'):
       questionmark();
       name_max = value - name_table; /*discard string*/
       break;
     default:
       name_max = value - name_table; /*discard string*/
-      printf("error condition\n"); 
+      printf("error condition %d\n", command); 
     }
   }
 
@@ -651,7 +696,7 @@ int main( int argc, char *argv[] )
   pthread_create(&output_thread, NULL, output_inner_loop, NULL);
   signal(SIGPIPE, sighandler);
   signal(SIGTERM, sighandler);
- while(command != 'x')
+  while(command != 'x')
     {
     switch(state)
       {
