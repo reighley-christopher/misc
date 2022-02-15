@@ -9,9 +9,15 @@ import scala.collection.mutable.Queue
 import scala.collection.mutable.Map
 import scala.io.Source
 import java.time.Instant
+import java.time.Duration
 import scala.collection.mutable.HashMap
 import scala.util.Random
 import scala.collection.JavaConverters._
+import java.util.concurrent.ThreadPoolExecutor
+import java.util.concurrent.ArrayBlockingQueue
+import java.util.concurrent.TimeUnit
+
+import reighley.christopher.Util._
 
 /* TODO or BURN this has prints and delays in it but I don't know if I even need this */
 
@@ -76,7 +82,10 @@ object ActiveServices {
       case Some(x) => x 
       } ).get(port) match {
       case None => {
-        val h = HttpServer.create(); 
+        val h = HttpServer.create();
+        //TODO I would expect the size of the thread pool to grow to 10 but it doesn't seem to work
+        //the construction of LoiteringHttp may prevent the pool from growing 
+        h.setExecutor(new ThreadPoolExecutor( 2, 10, 2, TimeUnit.SECONDS, new ArrayBlockingQueue(16)   ) ) 
         dict.get(host).get.put(port, h);
         h.bind(new InetSocketAddress( host, port ), 0);
         h.start();
@@ -107,6 +116,9 @@ class CallbackHandler( post:Map[String,String] => String, get:Map[String,String]
     val verb = exchange.getRequestMethod()
     val ip = exchange.getRemoteAddress()
     var request_headers:Map[String, String] = Map()
+    //TODO remember to search for all these print statements and delete them
+    print("trying to handle some kind of request\n");
+    //TODO this try should return a 500 with stack trace on exception rather than just swallowing everything
     try
       {
       val java_request_headers = exchange.getRequestHeaders()
@@ -127,9 +139,15 @@ class CallbackHandler( post:Map[String,String] => String, get:Map[String,String]
       }
     val path = exchange.getRequestURI().getPath()
     val subpath = path.substring( path.indexOf(uriPath) + uriPath.length ) /*I am depending on the fact that HTTP server will 404 if path does not start with uriPath TODO revisit this assumption */
+    print("we expect here to be handling a request with verb %s\n".format(verb) )
     val data : Array[Byte] = verb match {
       case "POST" => post_data.getOrElse("").getBytes() 
-      case "GET" =>  get(Map("ip"->ip.toString, "path"->subpath)).getBytes() 
+      case "GET" =>  { 
+        print("here we are even calling it and everything %s".format(get))
+        val xx = get(Map("ip"->ip.toString, "path"->subpath)).getBytes()
+        print("got %d bytes back\n", xx.length) 
+        xx
+        }
       }
     if( verb == "GET" ) exchange.sendResponseHeaders( 200, data.length )
     val output = exchange.getResponseBody()
@@ -159,6 +177,59 @@ class MapDatastore[A] extends Datastore[A] {
   def purge(timestamp:Instant) = {} /*TODO implement purging of datastore when it reaches a certain size and time since last purge is long*/ 
   }
 
+
+//TODO this is alot like MapDataStore need to handle the timeout failure modes
+class Waiter[A] {
+  val index = Map[String, A]()
+  val timeouts = Map[String, Instant]()
+  //start should block until finish is called from another thread
+  def start(token:String):A = 
+    {
+    timeouts(token) = Instant.now()
+    while( ! ( index contains token ) && Instant.now().isBefore( timeouts(token).plus(Duration.ofSeconds(1) ) ) ) { Thread.`yield` }
+    val ret = index.remove(token)
+    timeouts.remove(token)
+    return ret.get //TODO if I timed out 404, if I excepted 500
+    } 
+  
+  def finish( token:String, ret:A ) = 
+    {
+    index(token) = ret 
+    } 
+  }
+
+class LoiteringHTTPInterface( host:String, port:Int, path:String, wait:Waiter[AnnotatedString] ) extends ChainSink[AnnotatedString]( { x => wait.finish( x.get("key"), x ) } ) with ChainHead[AnnotatedString] {
+
+  //def do_the_thing( s : AnnotatedString ) : Unit = {print("absorb\n")} /*TODO wut??*/ 
+  //override def absorb( iter:Iterable[AnnotatedString]):Unit = iter.foreach(do_the_thing )
+
+  val rand = new Random
+  val requestQueue = new Queue[AnnotatedString]
+  //the get_callback needs to block until the data it is waiting for comes back
+  def callback(data:Map[String,String]) = {
+    print("attempting to handle request :\n");
+    print(data); 
+    //make a random key 
+    val hashkey="%s-%s-%d".format( data("ip"), Instant.now().toString, rand.nextInt(1000)).hashCode.toHexString
+    requestQueue.enqueue(new AnnotatedString(data.getOrElse("body", ""), "ip"->data("ip"), "key"->hashkey) )
+    val bo = wait.start(hashkey).body
+    print("handled request %s\n".format(mapToJson(data)) )
+    bo
+    }
+
+  //this is what makes it a chainhead, producing requests one at a time foreve
+  def iterator = new Iterator[AnnotatedString] { 
+    def hasNext = true
+    def next:AnnotatedString = {
+      while( requestQueue.isEmpty ) { Thread.`yield` }
+      return requestQueue.synchronized { requestQueue.dequeue() }
+      }  
+    }
+
+  val handler = new CallbackHandler( callback, callback, path,  "/home/reighley/Code/misc/focus_game" )
+  ActiveServices.register(host, port, path, handler)
+  } 
+
 class TokenizedHTTPInterface( host:String, port:Int, path:String, datastore:Datastore[String] ) extends ChainSink[AnnotatedString]( { x => datastore.set(x.get("key"),x.body) } ) with ChainHead[AnnotatedString] {
 
 /*TODO copy pasted from StringHTTPInterface, merge these*/
@@ -185,13 +256,8 @@ class TokenizedHTTPInterface( host:String, port:Int, path:String, datastore:Data
     datastore.get(query("path"))
     } 
 
-  //this camps on the port when all I really want to do is handle a particular path
-  //TODO is it possible to add a callback handler while the server is running or do I need to restart it etc?
-val handler = new CallbackHandler( post_callback, get_callback, path,  "/home/reighley/Code/misc/focus_game" )
-//  http_server.createContext(path, new CallbackHandler( post_callback, get_callback, path,  "/home/reighley/Code/misc/focus_game" ) )
-//  http_server.bind( new InetSocketAddress( host, port ), 0 )
-//  http_server.start()
-ActiveServices.register(host, port, path, handler)
+  val handler = new CallbackHandler( post_callback, get_callback, path,  "/home/reighley/Code/misc/focus_game" )
+  ActiveServices.register(host, port, path, handler)
 
   def iterator = new Iterator[AnnotatedString] { 
     def hasNext = true
@@ -339,6 +405,7 @@ class TaskHead[X]( base : ChainHead[X], loiter:Boolean = false ) extends ChainHe
 object HTTPService {
   def http(host:String, port:Int, path:String) = new AnnotatedStringHTTPInterface( host, port, path )
   def http(host:String, port:Int, path:String, store:Datastore[String]) = new TokenizedHTTPInterface( host, port, path, store )
+  def loiteringHttp(host:String, port:Int, path:String) = new LoiteringHTTPInterface( host, port, path, new Waiter())
   def default_http(port:Int) = new TokenizedHTTPInterface( "localhost", port, "/", new MapDatastore[String] ) 
   def detach() = new TaskLink[String]
   def detach[X]( head:ChainHead[X] ) : TaskHead[X] = new TaskHead[X]( head )

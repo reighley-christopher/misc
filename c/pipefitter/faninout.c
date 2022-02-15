@@ -195,72 +195,75 @@ void fork_tee(struct tees *tee)
     close(tee->outs[i]);
   }
 
-void print_read_errno()
+void print_read_errno(char *message)
   {
   switch(errno)
     {
-    case EAGAIN : printf("EAGAIN\n"); break;
-    case EBADF : printf("EBADF\n"); break;
-    case EFAULT : printf("EFAULT\n"); break;
-    case EINTR : printf("EINTR\n"); break;
-    case EINVAL : printf("EINVAL\n"); break;
-    case EIO : printf("EIO\n"); break;
-    case EISDIR : printf("EISDIR\n"); break;
-    default : printf("unidentified errno\n");
+    case EAGAIN : printf("EAGAIN"); break;
+    case EBADF : printf("EBADF"); break;
+    case EFAULT : printf("EFAULT"); break;
+    case EINTR : printf("EINTR"); break;
+    case EINVAL : printf("EINVAL"); break;
+    case EIO : printf("EIO"); break;
+    case EISDIR : printf("EISDIR"); break;
+    default : printf("unidentified errno");
     }; 
+    printf("%s\n", message);
   }
 
-void print_write_errno()
+void print_write_errno(char *message)
   {
   switch(errno)
     {
-    case EAGAIN : printf("EAGAIN\n"); break;
-    case EBADF : printf("EBADF\n"); break;
-    case EDESTADDRREQ : printf("EDESTADDRREQ\n"); break;
-    case EDQUOT : printf("EDQUOT\n"); break;
-    case EFAULT : printf("EFAULT\n"); break;
-    case EFBIG : printf("EFBIG\n"); break;
-    case EINTR : printf("EINTR\n"); break;
-    case EINVAL : printf("EINVAL\n"); break;
-    case EIO : printf("EIO\n"); break;
-    case ENOSPC : printf("ENOSPC\n"); break;
-    case EPERM : printf("EPERM\n"); break;
-    case EPIPE : printf("EPIPE\n"); break;
-    default : printf("unidentified errno\n");
+    case EAGAIN : printf("EAGAIN"); break;
+    case EBADF : printf("EBADF"); break;
+    case EDESTADDRREQ : printf("EDESTADDRREQ"); break;
+    case EDQUOT : printf("EDQUOT"); break;
+    case EFAULT : printf("EFAULT"); break;
+    case EFBIG : printf("EFBIG"); break;
+    case EINTR : printf("EINTR"); break;
+    case EINVAL : printf("EINVAL"); break;
+    case EIO : printf("EIO"); break;
+    case ENOSPC : printf("ENOSPC"); break;
+    case EPERM : printf("EPERM"); break;
+    case EPIPE : printf("EPIPE"); break;
+    default : printf("unidentified errno");
     }
+    printf("%s\n", message);
   }
 
-void print_open_errno()
+void print_open_errno(char *message)
   {
   switch(errno)
     {
-    case EACCES : printf("EACCES\n"); break;
-    case EBUSY : printf("EBUSY\n"); break;
-    case EDQUOT : printf("EDQUOT\n"); break;
-    case EEXIST : printf("EEXIST\n"); break;
-    case EFAULT : printf("EFAULT\n"); break;
-    case EFBIG : printf("EFBIG\n"); break;
-    case EINTR : printf("EINTR\n"); break;
-    case EINVAL : printf("EINVAL\n"); break;
-    case EISDIR : printf("EISDIR\n"); break;
-    case ELOOP : printf("ELOOP\n"); break;
-    case EMFILE : printf("EMFILE\n"); break;
-    case ENAMETOOLONG : printf("ENAMETOOLONG\n"); break;
-    case ENFILE : printf("ENFILE\n"); break;
-    case ENODEV : printf("ENODEV\n"); break;
-    case ENOENT : printf("ENOENT\n"); break;
-    case ENOMEM : printf("ENOMEM\n"); break;
-    case ENOSPC : printf("ENOSPC\n"); break;
-    case ENOTDIR : printf("ENOTDIR\n"); break;
-    case ENXIO : printf("ENXIO\n"); break;
-    case EOPNOTSUPP : printf("EOPNOTSUPP\n"); break;
-    case EOVERFLOW : printf("EOVERFLOW\n"); break;
-    case EPERM : printf("EPERM\n"); break;
-    case EROFS : printf("EROFS\n"); break;
-    case ETXTBSY : printf("ETXTBSYM\n"); break;
-    case EWOULDBLOCK : printf("EWOULDBLOCK\n"); break;
-    default : printf("unrecognized errno value\n"); 
+    case EACCES : printf("EACCES"); break;
+    case EBUSY : printf("EBUSY"); break;
+    case EDQUOT : printf("EDQUOT"); break;
+    case EEXIST : printf("EEXIST"); break;
+    case EFAULT : printf("EFAULT"); break;
+    case EFBIG : printf("EFBIG"); break;
+    case EINTR : printf("EINTR"); break;
+    case EINVAL : printf("EINVAL"); break;
+    case EISDIR : printf("EISDIR"); break;
+    case ELOOP : printf("ELOOP"); break;
+    case EMFILE : printf("EMFILE"); break;
+    case ENAMETOOLONG : printf("ENAMETOOLONG"); break;
+    case ENFILE : printf("ENFILE"); break;
+    case ENODEV : printf("ENODEV"); break;
+    case ENOENT : printf("ENOENT"); break;
+    case ENOMEM : printf("ENOMEM"); break;
+    case ENOSPC : printf("ENOSPC"); break;
+    case ENOTDIR : printf("ENOTDIR"); break;
+    case ENXIO : printf("ENXIO"); break;
+    case EOPNOTSUPP : printf("EOPNOTSUPP"); break;
+    case EOVERFLOW : printf("EOVERFLOW"); break;
+    case EPERM : printf("EPERM"); break;
+    case EROFS : printf("EROFS"); break;
+    case ETXTBSY : printf("ETXTBSYM"); break;
+    case EWOULDBLOCK : printf("EWOULDBLOCK"); break;
+    default : printf("unrecognized errno value"); 
     }
+    printf("%s\n", message);
   }
 
 void start_tees()
@@ -282,6 +285,7 @@ pid_t fork_exec2(char *path, int inp, int outp)
       {
       close(0);
       dup(inp);
+      setvbuf(stdin, NULL, _IONBF, 0); //TODO catch EBADF, could I improve bytebuffer by allocating the buffer myself?: 
       }    
     if( outp != 1 )
       {
@@ -396,7 +400,8 @@ void *input_pthread_loop(void *d)
   fifo = open( inp.name, O_RDONLY ); 
   if(fifo < 0)
     {
-    print_open_errno();
+    printf("$$$ %s $$$\n", inp.name);
+    print_open_errno(inp.name);
     return 0;
     } 
   
@@ -407,7 +412,7 @@ void *input_pthread_loop(void *d)
     length = read(fifo, data, length);
     if(length < 0)
       {
-      print_read_errno(); /*TODO this will print undefined errno at eof because length will be 0, what I should do is reopen the fifo*/
+      print_read_errno(inp.name); /*TODO this will print undefined errno at eof because length will be 0, what I should do is reopen the fifo*/
       return 0;
       }
   
@@ -450,7 +455,7 @@ void check_open(struct outputfifo *out)
     if(out->fd < 0)
       {
       out->fd = 0;
-      if(errno != ENXIO) print_open_errno();
+      if(errno != ENXIO) { printf("*** %s ***" , out->name) ; print_open_errno(out->name); } 
       }
     } 
   }
@@ -489,7 +494,7 @@ void *output_inner_loop(void *d)
             err = write(fanout_buffer[out_index].fd, data, length );
             if(err == -1) 
               {
-              print_write_errno();
+              print_write_errno(fanout_buffer[out_index].name);
               fanout_buffer[out_index].fd = 0;
               }
             
@@ -523,6 +528,7 @@ void start_execs()
 
 void add_fanin(char *name)
   {
+  printf("trying to fanin %s ???\n", name);
   fanin_buffer[fanin_count].name = name; 
   fanin_count = fanin_count + 1;
   pthread_create(&(fanin_buffer[fanin_count].thread), NULL, input_pthread_loop, &fanin_buffer[fanin_count-1] ); 
@@ -587,6 +593,26 @@ void delete(char *name)
 
   }
 
+void fake_system(char *name)
+  {
+  char *argv[256]; //256 parameters should be enough
+  int argc = 1;
+  int index = 1;
+  argv[0] = name;
+  while(name[index] != 0)
+    {
+    if(name[index] == ' ') 
+      {
+      name[index] = '\0';
+      argv[argc] = name + index + 1;
+      argc = argc + 1;
+      }
+    index = index + 1;
+    }
+  argv[argc] = 0;
+  execv(name, argv); 
+  }
+
 void execute(char *name)
   {
   pid_t f;
@@ -602,7 +628,8 @@ void execute(char *name)
    
   if( !f )
     {
-    system(name); //TODO I am going to reuse name, does system need it?
+    fake_system(name); //TODO I am going to reuse name, does system need it?
+    printf("fake system returned, against all odds\n");
     exit(0);
     } else {
     current_process = f;
@@ -622,6 +649,7 @@ void questionmark()
   for(i=0; i < fanout_count; i++) {
     printf("\t%s\n", fanout_buffer[i].name);
     }
+  printf("first word: %s", name_table );
   }
 
 
@@ -663,12 +691,13 @@ pthread_t output_thread;
 void cleanup()
   {
   int i;
-  pthread_kill(output_thread, SIGKILL);
-  for(i = 0; i < fanin_count; i++)
-    {
-    pthread_kill(fanin_buffer[i].thread, SIGKILL);
-    } 
-  if( current_process ) { kill( current_process, SIGKILL ); }
+//  pthread_kill(output_thread, SIGKILL);
+//  for(i = 0; i < fanin_count; i++)
+//    {
+//    pthread_kill(fanin_buffer[i].thread, SIGKILL);
+//    } 
+  if( current_process ) { kill( current_process, SIGTERM ); }
+  printf("sent TERM to %d\n", current_process);
   }
 
 void sighandler(int sig)
@@ -682,6 +711,11 @@ void sighandler(int sig)
     cleanup();
     exit(0);
     }
+  if(sig == SIGINT)
+    {
+    cleanup();
+    exit(0);
+    }
   }
 
 int main( int argc, char *argv[] )
@@ -690,12 +724,17 @@ int main( int argc, char *argv[] )
   int state = 0;
   int accumulator = 0;
   int from, to;
-  char c = fgetc(stdin);
+  char c;
   char path_buffer[256]; //TODO expand this buffer?
   char *path_ptr = name_table + name_max;
   pthread_create(&output_thread, NULL, output_inner_loop, NULL);
+  setvbuf(stdout, NULL, _IONBF, 0); 
+  setvbuf(stdin, NULL, _IONBF, 0); 
   signal(SIGPIPE, sighandler);
   signal(SIGTERM, sighandler);
+  signal(SIGINT, sighandler);
+  c = fgetc(stdin);
+  //TODO this command parser is extrememly brittle. it was a stub for development but causes problems in life
   while(command != 'x')
     {
     switch(state)

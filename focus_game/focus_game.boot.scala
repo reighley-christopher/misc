@@ -1,4 +1,5 @@
 import chaintools.Kafka.A
 import focus_game.EntryPoint
-EntryPoint.createStream
 
+EntryPoint.createStream
+EntryPoint.createDB

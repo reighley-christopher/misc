@@ -1,7 +1,10 @@
-chaintools : chaintools/ChainTools.class chaintools/HTTPService.class chaintools/Riak.class chaintools/Kafka.class chaintools/Sql.class chaintools/AnnotatedInteractive.class
+chaintools : chaintools/ChainTools.class chaintools/HTTPService.class chaintools/Riak.class chaintools/Kafka.class chaintools/Sql.class chaintools/AnnotatedInteractive.class chaintools/File.class 
 
 chaintools/AnnotatedString.class : src/chaintools/AnnotatedString.scala
 	scalac src/chaintools/AnnotatedString.scala
+
+chaintools/File.class : src/chaintools/File.scala reighley/christopher/Util.class 
+	scalac src/chaintools/File.scala
 
 chaintools/ChainTools.class : src/chaintools/ChainTools.scala chaintools/AnnotatedString.class reighley/christopher/Util.class
 	scalac src/chaintools/ChainTools.scala
@@ -21,8 +24,11 @@ chaintools/Kafka.class : src/chaintools/Kafka.scala
 chaintools/AnnotatedInteractive.class : src/chaintools/AnnotatedInteractive.scala
 	scalac src/chaintools/AnnotatedInteractive.scala
 
-focus_game/FocusLogic.class : src/focus_game/FocusGame.scala reighley/christopher/EnumerationModule.class reighley/christopher/ZonedDateTimeModule.class chaintools/HTTPService.class chaintools/ChainTools.class 
+focus_game/FocusLogic.class : src/focus_game/FocusGame.scala reighley/christopher/EnumerationModule.class reighley/christopher/ZonedDateTimeModule.class chaintools/HTTPService.class chaintools/ChainTools.class focus_game/IPDB.class
 	scalac src/focus_game/FocusGame.scala
+
+focus_game/IPDB.class : src/focus_game/IPDB.scala
+	scalac src/focus_game/IPDB.scala
 
 reighley/christopher/Properties.class : src/reighley/christopher/Properties.scala
 	scalac src/reighley/christopher/Properties.scala
@@ -42,16 +48,22 @@ reighley/christopher/Tableizer.class : src/reighley/christopher/Tableizer.scala
 reighley/christopher/Util.class : src/reighley/christopher/Util.scala
 	scalac src/reighley/christopher/Util.scala
 
+controlserver/FanInOut.class : src/controlserver/FanInOut.scala controlserver/bin/faninout
+	scalac src/controlserver/FanInOut.scala
+
+controlserver/bin/faninout : ../c/pipefitter/faninout
+	cp ../c/pipefitter/faninout controlserver/bin/faninout
+
 controlserver/Server.class : src/controlserver/Server.scala
 	scalac src/controlserver/Server.scala
 
 controlserver/Socket2.class : src/controlserver/Socket2.scala
 	scalac src/controlserver/Socket2.scala
 
-controlserver.jar : controlserver/Server.class controlserver/Socket2.class
+controlserver.jar : controlserver/Server.class controlserver/Socket2.class controlserver/FanInOut.class
 	jar cfm controlserver.jar src/META-INF/controlserver.MANIFEST.MF controlserver/*
 
-focus_game.jar : focus_game/FocusLogic.class reighley/christopher/Properties.class chaintools/Kafka.class chaintools/Riak.class chaintools/HTTPService.class 
+focus_game.jar : focus_game/FocusLogic.class reighley/christopher/Properties.class chaintools/Kafka.class chaintools/Riak.class chaintools/HTTPService.class focus_game/IPDB.class 
 	jar cf focus_game.jar focus_game/* reighley/* chaintools/* 
 
 kafkainterface.jar : kafkainterface/KafkaInterface.class
