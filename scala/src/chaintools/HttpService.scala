@@ -144,7 +144,7 @@ class CallbackHandler( post:Map[String,String] => String, get:Map[String,String]
       case "POST" => post_data.getOrElse("").getBytes() 
       case "GET" =>  { 
         print("here we are even calling it and everything %s".format(get))
-        val xx = get(Map(request_headers + "ip"->ip.toString, "path"->subpath)).getBytes()
+        val xx = get(request_headers + ( "ip"->ip.toString ) + ( "path"->subpath ) ).getBytes()
         print("got %d bytes back\n", xx.length) 
         xx
         }
