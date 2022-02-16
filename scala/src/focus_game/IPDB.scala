@@ -14,7 +14,7 @@ class IPDB(host:String, port:Int, root:String) {
     faninout.input("fifo_in")
     faninout.output("fifo_out")
     faninout.attribute("add_input_separator", "10")
-    faninout.execute("/usr/bin/sqlite3 " + root + " ipdb.sqlite")
+    faninout.execute("/usr/bin/sqlite3 " + root + "/ipdb.sqlite")
     faninout.noisy
 
     detach( service_read > json_annotations > json_to_map > tweek("X-real-ip", x => x.split(':')(0) )  > map_to_json > 
