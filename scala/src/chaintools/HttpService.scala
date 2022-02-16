@@ -211,7 +211,7 @@ class LoiteringHTTPInterface( host:String, port:Int, path:String, wait:Waiter[An
     print(data); 
     //make a random key 
     val hashkey="%s-%s-%d".format( data("ip"), Instant.now().toString, rand.nextInt(1000)).hashCode.toHexString
-    requestQueue.enqueue(new AnnotatedString(data.getOrElse("body", ""), "ip"->data("ip"), "key"->hashkey) )
+    requestQueue.enqueue(new AnnotatedString(data.getOrElse("body", ""), (data + ("key" -> hashkey ) - "body" ).toSeq:_* ) )
     val bo = wait.start(hashkey).body
     print("handled request %s\n".format(mapToJson(data)) )
     bo
@@ -248,7 +248,7 @@ class TokenizedHTTPInterface( host:String, port:Int, path:String, datastore:Data
   def post_callback(data:Map[String,String]) = requestQueue.synchronized {
     /*I need IP address in the annotation, and I need to assign a token, and I need to set that token to key so I can find it later*/
     val hashkey="%s-%s-%d".format( data("ip"), Instant.now().toString, rand.nextInt(1000)).hashCode.toHexString
-    requestQueue.enqueue(new AnnotatedString(data("body"), "ip"->data("ip"), "key"->hashkey) )
+    requestQueue.enqueue(new AnnotatedString(data("body"), "ip"->data("ip"), "key"->hashkey) ) //TODO add the rest of the headers
     hashkey 
     }  
 
