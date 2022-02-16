@@ -23,9 +23,9 @@ class IPDB(host:String, port:Int, root:String) {
     
     detach( service_write > json_annotations > json_to_map > tweek("X-real-ip", x => x.split(':')(0)) > map_to_json > 
             templated("insert into ips values ('<%= name %>', '<%= X-real-ip %>');") > 
-            throughprint[String] ) > write_fifo(root + "/fifo_input") 
+            throughprint[String] ) > write_fifo(root + "/fifo_in") 
 
-      detach(read_fifo(root + "/fifo_output") > throughprint[String] > split('|') > label(Array("key", "value")) > 
+    detach(read_fifo(root + "/fifo_out") > throughprint[String] > split('|') > label(Array("key", "value")) > 
              map_to_json > extract_annotation("key"))  > service_read
 
     }
