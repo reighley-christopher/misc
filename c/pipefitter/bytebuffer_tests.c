@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h>
 #include "bytebuffer.h"
 
 int mark;
@@ -6,16 +7,18 @@ int mark;
 completer_module c1;
 completer_module c2;
 
+completer_module *get_simple_completer_module();
+
 void *null_alloc() { return 0; }
 void null_init_free(void *m) { }
 
-int test_completer(void *d, char *data, int length)
+int test_completer(void *d, unsigned char *data, int length)
   {
   printf("updating mark %d\n", *(int *)d);
   return *(int *)d; 
   }
 
-int test_completer2(void *d, char *data, int length)
+int test_completer2(void *d, unsigned char *data, int length)
   {
   int i;
   for(i = 0; i < length; i ++)
@@ -28,7 +31,7 @@ int test_completer2(void *d, char *data, int length)
 
 int test1(int argc, char **argv)
   {
-  char *data;
+  unsigned char *data;
   unsigned int length;
   int i;
   bytebuffer buffer;
@@ -101,7 +104,7 @@ int test1(int argc, char **argv)
   printf("should be 50 : %d\n", length); 
   }
 
-char *fill(char *data, int length)
+unsigned char *fill(unsigned char *data, int length)
   {
   int i;
   for(i = 0; i < length; i++)
@@ -112,7 +115,7 @@ char *fill(char *data, int length)
   return data+length;
   } 
 
-char *fill2(char *data, int length)
+unsigned char *fill2(unsigned char *data, int length)
   {
   int i;
   for(i = 0; i < length; i++)
@@ -124,7 +127,7 @@ char *fill2(char *data, int length)
 
 int test2(int argc, char **argv)
   {
-  char *data;
+  unsigned char *data;
   unsigned int length;
   int retval;
   bytebuffer buffer;
@@ -178,6 +181,54 @@ int test2(int argc, char **argv)
   printf("should be 0 = %d\n", retval); 
   }
 
+//utility function to feed a string into a bytebuffer
+void append_string(bytebuffer *buffer, char *str)
+  {
+  unsigned char *data;
+  unsigned int length; 
+  char *c = str;
+  int i = 0;
+  bytebuffer_append_start(buffer, &data, &length);
+  while(*c != '\0')
+    {
+    data[i] = *c;
+    i = i + 1;
+    c = c+1;
+    printf("%c", *c);
+    if(i >= length) 
+      {
+      bytebuffer_append_trim(buffer, length);
+      bytebuffer_append_start(buffer, &data, &length);
+      i = 0;
+      }
+    }
+  bytebuffer_append_trim(buffer, i);
+  }
+
+void test3(int argc, char **argv)
+  {
+  char *inflow_data = "select * from ( select '3f74ce2e' ) left outer join (select name from ips where ip = '69.181.22.242') ;\n";
+  bytebuffer buffer; 
+  bytebuffer_iter iter;
+  unsigned int length;
+  unsigned char *data;
+  bytebuffer_init(&buffer); /*record starts at 0:0*/
+  bytebuffer_set_completer(&buffer, get_simple_completer_module());
+  bytebuffer_iter_init(&iter, &buffer);
+
+  int i;
+  for(i = 0; i < 11; i ++)
+    {
+    append_string(&buffer, inflow_data);
+    bytebuffer_iter_init(&iter, &buffer);
+    while( bytebuffer_iter_next(&iter, &data, &length) ) {
+      printf("----iter\n");
+      if((int)length < 0) printf("ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR\n");
+      }
+    bytebuffer_rotate_record(&buffer);
+    }
+  }
+
 int main(int argc, char **argv)
   {
   c1.func = test_completer;
@@ -188,7 +239,7 @@ int main(int argc, char **argv)
   c2.alloc = null_alloc;
   c2.init = null_init_free;
   c2.free = null_init_free;
-  test2(argc, argv);
+  test3(argc, argv);
   }
 
 /*test cases
@@ -201,4 +252,10 @@ int main(int argc, char **argv)
 
 - edge cases in which there is only one block so first_block == last_block and it is hard to tell when I am done
 - edge case in which the complete sequence is 0 bytes long or 1 byte long
+
++ duplicate the bug in production where I send write and read 103 bytes 9 times and crash on the tenth time because
+  the 1024 byte buffer doesn't overflow correctly
+
+- go over these tests because that last one should have been caught earlier
+  
 */

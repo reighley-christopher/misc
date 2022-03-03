@@ -30,7 +30,7 @@ void bytebuffer_add_block(bytebuffer *buffer)
   {
   struct bytebuffer_block *new_block = (struct bytebuffer_block *)malloc(sizeof(struct bytebuffer_block));
   new_block->data = (unsigned char *)malloc( BYTEBUFFER_BLOCK_SIZE );
-  printf("bytebuffer.c:28 new block %x\n", new_block);
+  printf("bytebuffer.c:33 new block %x\n", new_block);
   new_block->size = BYTEBUFFER_BLOCK_SIZE; 
   new_block->next = buffer->first_block;
   buffer->last_block->next = new_block;
@@ -140,13 +140,18 @@ void bytebuffer_append_trim(bytebuffer *buffer, unsigned int length)
   if(length == 0) return; /*this is a noop, otherwise I will rerun completer_func and it should do nothing*/
   if(buffer->completer && buffer->complete_mark == -1) 
     {
-    printf("bytebuffer.c:107 invoke completer_func write offset = %d\n", buffer->write_offset);
+    printf("bytebuffer.c:143 invoke completer_func write offset = %d\n", buffer->write_offset);
     mark = buffer->completer->func(buffer->completer_data, buffer->offset_block->data + buffer->write_offset, length);
-    if(mark >= 0) buffer->complete_mark = mark + buffer->write_offset;
+    if(mark >= 0) 
+      {
+      buffer->complete_mark = mark + buffer->write_offset;
+      buffer->complete_block = buffer->offset_block;
+      }
     } else {
-    printf("bytebuffer.c:111 do not invoke completer_func complete_mark = %d\n", buffer->complete_mark);
+    printf("bytebuffer.c:147 do not invoke completer_func complete_mark = %d\n", buffer->complete_mark);
     }
   buffer->write_offset = buffer->write_offset + length; /*this would be an error if we try to trim past the end of the block*/ 
+  if(buffer->write_offset > buffer->offset_block->size) printf("ERROR : bytebuffer has gone out of bounds\n");  
   } 
 
 void bytebuffer_reset(bytebuffer *buffer)
@@ -172,6 +177,7 @@ unsigned int bytebuffer_iter_next(bytebuffer_iter *iter, unsigned char **buffer,
   bytebuffer *bbuf = iter->header;
   last_block_end_offset = iter->header->complete_mark == -1 ? iter->header->write_offset : iter->header->complete_mark; 
   if(iter->current_block == 0) return 0;
+  printf("iter->current_block = %x\niter->complete_block = %x\niter->offset_block = %x\n", iter->current_block, iter->header->complete_block, iter->header->offset_block);
   start_offset = iter->current_block == bbuf->first_block ? bbuf->read_offset : 0;
   end_offset = is_last_block ? 
      last_block_end_offset 
@@ -180,12 +186,14 @@ unsigned int bytebuffer_iter_next(bytebuffer_iter *iter, unsigned char **buffer,
   if( is_last_block  )
     {
     *length = end_offset - start_offset; 
+    printf("lb %d = %d - %d\n", *length, end_offset, start_offset);
     } else {
     *length = iter->current_block->size - start_offset;
+    printf("nlb %d = %d - %d\n", *length, iter->current_block->size, start_offset);
     }
   if(is_last_block) iter->current_block = 0; else
   iter->current_block = iter->current_block->next;
-  printf("bytebuffer.c:159 %d\n", *length);
+  printf("bytebuffer.c:188 %d\n", *length);
   return *length;
   }
 

@@ -10,6 +10,9 @@
 #include "bytebuffer.h"
 #include <errno.h>
 
+#define _GNU_SOURCE      //someone on the internet said I needed this, didn't really help
+int phtread_yield(void); //why isn't this defined in pthread.h ???
+
 /*
 faninout command examples :
 l /usr/lib/module.so
@@ -381,6 +384,8 @@ void set_attribute(char *attrs)
     printf("%s set to %c\n", attrs+space+1, input_separator);
   }
 
+sig_atomic_t please_report = 0;
+
 void *input_pthread_loop(void *d)
   {
   /*d contains a pointer to the inputfifo record I will want to copy it into the local stack because it may move*/
@@ -390,6 +395,7 @@ void *input_pthread_loop(void *d)
   unsigned char *data;
   unsigned int length;
   int fifo;
+  int i_have_reported = 1;
   //int mark = -1;
   
   /*TODO how to ensure that the bytebuffer is cleaned up when the thread stops*/
@@ -410,6 +416,15 @@ void *input_pthread_loop(void *d)
     /*if the buffer is full I will need to allocate more buffer using bytebuffer_append_start and bytebuffer_append_trim*/
     bytebuffer_append_start( &buffer, &data, &length);
     length = read(fifo, data, length);
+ 
+    if( !please_report  ) i_have_reported = 0;
+    if( please_report && !i_have_reported )
+      {
+      printf("input thread reporting\n");
+      i_have_reported = 1;
+      please_report--; //this should be atomic
+      } 
+   
     if(length < 0)
       {
       print_read_errno(inp.name); /*TODO this will print undefined errno at eof because length will be 0, what I should do is reopen the fifo*/
@@ -469,15 +484,26 @@ void *output_inner_loop(void *d)
   unsigned int length;
   int err;
   int i, out_index;
+  int i_have_reported = 1;
   bytebuffer_init(&buffer);
   //bytebuffer_set_completer(&buffer, get_yajl_completer_module());
   while(1)
     { 
-    /*TODO I should sleep the thread if there is no read pipe, and starting the executable should wake the thread*/ 
+    /*TODO I should sleep the thread if there is no read pipe, and starting the executable should wake the thread*/
+ 
     if(read_pipe) 
       { 
       bytebuffer_append_start(&buffer, &data, &length); 
-      length = read(read_pipe, data, length); 
+      length = read(read_pipe, data, length);
+     
+      if( !please_report  ) i_have_reported = 0;
+      if( please_report && !i_have_reported )
+        {
+        printf("output thread reporting\n");
+        i_have_reported = 1;
+        please_report--; //this should be atomic
+        } 
+ 
       for(i = 0; i < length; i++) printf("%c.", data[i]); bytebuffer_append_trim(&buffer, length);
       while( bytebuffer_record_available(&buffer) )
         {
@@ -490,7 +516,7 @@ void *output_inner_loop(void *d)
             /*write until the buffer is empty or I get a write error, write error will close the output and drop the rest of the 
               record, if the write is incomplete oh well*/
             //TODO handle incomplete writes
-            printf("emmitting %d bytes\n", length);
+            printf("%d %d emmitting %d bytes\n",i_have_reported, please_report, length);
             err = write(fanout_buffer[out_index].fd, data, length );
             if(err == -1) 
               {
@@ -649,7 +675,11 @@ void questionmark()
   for(i=0; i < fanout_count; i++) {
     printf("\t%s\n", fanout_buffer[i].name);
     }
-  printf("first word: %s", name_table );
+  printf("first word: %s\n", name_table );
+  please_report = 0;
+  pthread_yield();
+  please_report = fanin_count+1;
+  pthread_yield();
   }
 
 
