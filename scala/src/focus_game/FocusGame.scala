@@ -296,8 +296,10 @@ def sanitize( key : String, value : String):Iterable[(String,String)] = Try[Focu
 
 //TODO sometimes the update doesn't push through the RiakDumper even when it needs to update 
 
+
+val ipdb = new IPDB( "localhost", properties.get("focus_game.http-in").asInstanceOf[String].toInt, "/home/reighley/ipdb")
+
 def createDB = {
-  val ipdb = new IPDB( "localhost", properties.get("focus_game.http-in").asInstanceOf[String].toInt, "/home/reighley/ipdb")
   ipdb.start()
   }
 

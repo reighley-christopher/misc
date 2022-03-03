@@ -21,12 +21,12 @@ class IPDB(host:String, port:Int, root:String) {
             templated("select * from ( select '<%= key %>' ) left outer join (select name from ips where ip = '<%= X-real-ip %>') ;") > 
             throughprint[String]) > write_fifo(root + "/fifo_in")
     
-    detach( service_write > json_annotations > json_to_map > tweek("X-real-ip", x => x.split(':')(0)) > map_to_json > 
+    detach( service_write > json_annotations > json_to_map > tweek("X-real-ip", x => x.split(':')(0)) > map_to_json > throughprint[String] >  
             templated("insert into ips values ('<%= name %>', '<%= X-real-ip %>');") > 
             throughprint[String] ) > write_fifo(root + "/fifo_in") 
 
-    detach(read_fifo(root + "/fifo_out") > throughprint[String] > split('|') > label(Array("key", "value")) > 
-             map_to_json > extract_annotation("key"))  > service_read
+    detach(read_fifo(root + "/fifo_out") > throughprint[String] > split('|') > label(Array("key", "name")) > 
+             map_to_json > throughprint[String] > extract_annotation("key"))  > service_read
 
     }
   }
