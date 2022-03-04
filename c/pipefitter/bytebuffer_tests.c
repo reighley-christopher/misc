@@ -193,8 +193,8 @@ void append_string(bytebuffer *buffer, char *str)
     {
     data[i] = *c;
     i = i + 1;
-    c = c+1;
     printf("%c", *c);
+    c = c+1;
     if(i >= length) 
       {
       bytebuffer_append_trim(buffer, length);
@@ -207,7 +207,7 @@ void append_string(bytebuffer *buffer, char *str)
 
 void test3(int argc, char **argv)
   {
-  char *inflow_data = "select * from ( select '3f74ce2e' ) left outer join (select name from ips where ip = '69.181.22.242') ;\n";
+  char *inflow_data = "select * from ( select '3f74ce2e' ) left outer join (select name from ips where ip = '69.181.22.242') ;";
   bytebuffer buffer; 
   bytebuffer_iter iter;
   unsigned int length;
@@ -217,14 +217,17 @@ void test3(int argc, char **argv)
   bytebuffer_iter_init(&iter, &buffer);
 
   int i;
-  for(i = 0; i < 11; i ++)
+  for(i = 0; i < 24; i ++)
     {
+    int l = 0;
     append_string(&buffer, inflow_data);
     bytebuffer_iter_init(&iter, &buffer);
     while( bytebuffer_iter_next(&iter, &data, &length) ) {
       printf("----iter\n");
       if((int)length < 0) printf("ERROR ERROR ERROR ERROR ERROR ERROR ERROR ERROR\n");
+      l = l + length; 
       }
+    if(l != strlen(inflow_data)) printf("ERROR ERROR ERROR ERROR %d\n", l);
     bytebuffer_rotate_record(&buffer);
     }
   }
@@ -257,5 +260,7 @@ int main(int argc, char **argv)
   the 1024 byte buffer doesn't overflow correctly
 
 - go over these tests because that last one should have been caught earlier
+- write a record that takes up a whole block so that when we rotate it we need to swap two blocks in the front not just one.
+- write a record that ends exactly on a block boundary (but write more data than the record, so the write_offset ends up in the next block
   
 */

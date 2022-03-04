@@ -148,7 +148,8 @@ int yajl_module_complete(void *handle, unsigned char *data, int length)
   for(c = 0; c < length; c++) printf("%c", data[c]);
   printf("<\n");
   printf(" %s %d of %d\n", yajl_status_to_string(status), consumed, length); 
-  if(status == yajl_status_client_canceled ) return consumed; else return -1;
+  if(status == yajl_status_client_canceled ) return consumed; else return -1; //TODO does consumed include the bytes that caused the cancelation? 
+                                                                              //if so this is a bug
   }
 
 completer_module yajl_completer_module;
