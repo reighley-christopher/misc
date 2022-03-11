@@ -6,10 +6,21 @@ FOCUS CHALLENGE
 <script src="jquery.js"></script>
 <script src="underscore.js"></script>
 <style>
+.phone_frame2 {
+  width:100%
+}
+.phone_frame {
+  width : 375px ;
+  height : 667px ;
+  border : 1px ;
+  border-color : black ;
+  border-style : solid ;
+}
+
 .button { 
   font-family : sans-serif ; 
   width : 50% ;
-  font-size : 5em;
+  font-size : 2em;
   border-radius : 0.4em ;
   border : 0px }
 .button.active { 
@@ -25,44 +36,99 @@ FOCUS CHALLENGE
   font-family : sans-serif ;
   }
 .leaderboard td {
-  font-size : 3em
+  font-size : 1.25em
   }
 .leaderboard th {
-  font-size : 4em 
+  font-size : 1.5em 
   }
 </style>
 </head>
-<body >
-  <div align="center" style="width:100%">
+ <body >
+  <div align="center" class="phone_frame">
   <div style="width : 53% ; padding-top:8%">   
   <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
   <style>
      .clock { font-family : sans-serif ;
               font-size: 22.15px}
+
+     .breaktime { font-family : sans-serif ;
+              font-size: 10px
+            }
   </style>
   <circle cx="50" cy="50" r="49" fill="lightgrey" fill-opacity="1"/>
   <circle cx="50" cy="50" r="42" fill="white" fill-opacity="1"/>
   <text class="clock" x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" fill="#FF6E4E"></text>
+  <text class="breaktime" x = "50%" y="70%" text-anchor="middle" dominant-baseline="middle" fill="skyblue">BREAK TIME</text>
   <path id="TickerPath" d="" fill="#FF6E4E"/> 
   <path id="BreakTime" fill-opacity="0.2"/> 
 </svg>
   </div>
 <div align="center" style="width:100%; padding-top:10%; padding-bottom:10%" >
 <button class="button" align="center" ></button>
-</div>
-</div>
-<div style="padding-left:10%">
+<div style="padding-top:10%">
 <table class="leaderboard" >
 </table>
 </div>
+</div>
+</div>
 <div id="loginstub"  style="background:skyblue;position:fixed;top:100px;width:375px">
 login stub : this bit hasn't been specified<br>
-<input type="checkbox" name="id" onclick="login('chris')" autocomplete="off" > chris<br> 
-<input type="checkbox" name="id" onclick="login('jed')" autocomplete="off" > jed<br>
+<input type="checkbox" name="id" onclick="manual_login('chris')" autocomplete="off" > chris<br> 
+<input type="checkbox" name="id" onclick="manual_login('jed')" autocomplete="off" > jed<br>
 </div>
-  <audio id="airwolf" src="airwolf.mp3"></audio>
-  <audio id="vader" src="vader.mp3"></audio>
+  <audio id="bell" src="bell.mp3"></audio>
   <script language="javascript">
+
+
+  /*event state machine : 
+    legitimate outputs are : start cancel complete
+    legitimate states are : working resting slacking
+    legitimate events are a button click and timer expiration
+
+	from		on	to		emit
+	working		click	slacking	cancel
+	working		timer	resting		complete
+	resting		timer	slacking	--
+	resting		click	???		???
+	slacking	click	working		start
+	slacking	timer	--		--
+
+  */
+
+  function StateMachine()
+    {
+    /*rules table is organized as {state : { input : [to, emit] }  } */
+    var rules = {};
+    var events = {};
+
+    this.state = "";
+
+    this.add_transition = function(from, on, to, emit)
+      {
+      if( ! rules.hasOwnProperty( from ) ) { rules[from] = {} }
+      rules[from][on] = [to, emit]
+      }
+
+    this.on = function( event, callback )
+      {
+      if( ! events.hasOwnProperty(event) ) { events[event] = [] }
+      events[event].push(callback);
+      return this;
+      }
+
+    this.put = function( input )
+      {
+      if( rules.hasOwnProperty( this.state ) && rules[this.state].hasOwnProperty( input ) )
+        {
+        var emit = rules[this.state][input][1];
+        var callbacks = events[emit];
+        this.state = rules[this.state][input][0];
+        for( i in callbacks ) callbacks[i]() 
+        }
+      }
+    }
+
+  /*global parameters*/
   var graphics_parameters = { 
      outer_radius : 49,
      inner_radius : 42 
@@ -73,11 +139,35 @@ login stub : this bit hasn't been specified<br>
     }
 
   var myId = ""
+  /*end global parameters*/
 
+  /*login functions, both ip and manually if ip not available*/
   function login( name ) { 
     myId = name
     $("#loginstub").hide()
+    update_clock_state() 
     }
+
+  function auto_login() {
+    $.ajax(network_parameters.event_service + "ipread/", { dataType:"json" }, cache=false).done( function(d)
+      {
+      if(d.hasOwnProperty("name")) 
+        {
+        login(d.name);
+        } 
+      }); 
+    }
+
+  function manual_login(name) 
+    {
+    $.ajax(network_parameters.event_service + "ipwrite/", { type : "POST", data : JSON.stringify( {"name" : name} ) } )
+    login(name)
+    }
+  /*end login functions */
+
+
+  /*   Rendering functions, covers the circle and the clock display but not the button and leaderboard
+   */
  
   function ticker_path(degrees, id, graphics_parameters) {
     var xo = graphics_parameters.outer_radius * Math.sin( degrees * Math.PI / 180 ) + 50; 
@@ -97,15 +187,60 @@ login stub : this bit hasn't been specified<br>
     var path =  start_here + vertical_line + outer_arc + diagonal_line + inner_arc;
     $("svg #"+id).attr("d", path);
     }
-  var tick = 60*25;
-  var break_started = false;
-  var timerRef;
+
+  function update_clock(state, seconds) {
+    var minutes = Math.floor(seconds/60 )
+    var remainder = Math.floor(seconds - minutes*60)
+    var minutes_zero = (minutes < 10) ? "0" : ""
+    var seconds_zero = (remainder < 10) ? "0" : ""
+    var orange = "#FF6E4E"
+    var not_orange = "skyblue"
+    if( state == "working")
+      { 
+      $(".clock").text(minutes_zero + minutes + ":" + seconds_zero + remainder)
+      $(".clock").fill = orange
+      $(".breaktime").hide()
+      button_cancel()
+      }
+    if( state == "slacking")
+      {
+      $(".clock").text( "25:00" )
+      $(".clock").attr("fill", orange)
+      $(".breaktime").hide()
+      button_ready() 
+      }
+    if( state == "resting")
+      {
+      $(".clock").text( minutes_zero + minutes + ":" + seconds_zero + remainder )
+      $(".clock").attr("fill", not_orange)
+      $(".breaktime").show()
+      } 
+    }
+
+  function render(state, seconds) {
+    var total = state == "resting" ? 5*60 : 25*60
+    var degrees = seconds * 360 / total 
+    ticker_path(degrees >= 360 ? 359.99 : degrees, "TickerPath", graphics_parameters);
+    update_clock(state, seconds);
+    }
+
+  function button_ready() {
+    $(".button").removeClass("active").addClass("ready").text("GO!") 
+    }
+
+  function button_cancel() {
+    $(".button").removeClass("ready").addClass("active").text("CANCEL")
+    } 
+
+
+  /*end render function*/
 
   function start() {
     console.log("start")
     button_cancel()
-    ticker_path(359.99, "TickerPath", graphics_parameters)
-    update_clock(60*25)
+    //ticker_path(359.99, "TickerPath", graphics_parameters)
+    //state = "working"
+    update_clock(state, 60*25)
     tick = 60*25-1
     timerRef = window.setInterval( timer_event, 1000 )
     post_event("start")
@@ -113,9 +248,11 @@ login stub : this bit hasn't been specified<br>
 
   function cancel() {
     console.log("cancel")
-    ticker_path(359.99, "TickerPath", graphics_parameters)
-    update_clock(60*25)
-    button_ready()
+    //ticker_path(359.99, "TickerPath", graphics_parameters)
+    //update_clock(state, 60*25)
+    window.clearInterval(timerRef);
+    button_ready() 
+    //state = "slacking"
     tick = 60*25
     window.clearInterval(timerRef)
     post_event("cancel") 
@@ -126,24 +263,43 @@ login stub : this bit hasn't been specified<br>
        1 minute is  14.4 degrees 
        1 second is 0.24 degrees 
        1 degree every 5 seconds */
-    ticker_path(tick*0.24, "TickerPath", graphics_parameters);
-    update_clock(tick)
+    //ticker_path(tick*0.24, "TickerPath", graphics_parameters);
+    update_clock(state, tick)
     tick--;
-    if(tick < 60*5 && !break_started ) { play_airwolf(); post_event("complete"); break_started = true }
-    if(tick < 0) { tick = 359.99*5; play_vader(); break_started=false; 
-    window.clearInterval(timerRef);
-    button_ready() };
-    update_clock(tick);
+    if( tick < 0 )
+      {
+      switch( state )
+        {
+        case "working":
+          state = "resting"
+          tick = 5*60
+          post_event("complete");
+          break_started = true;
+          play_airwolf(); 
+          break; 
+        case "resting":
+          state = "slacking";
+          tick = 25*60;
+          play_vadet();
+          window.clearInterval(timerRef);
+          break_started=false; button_ready(); 
+          break;
+        case "": break;
+        default : 
+        }
+ 
+      }
+    //if(tick < 60*5 && !break_started ) { play_airwolf(); post_event("complete"); break_started = true }
+    //if(tick < 0) { tick = 359.99*5; play_vader(); break_started=false; 
+    //window.clearInterval(timerRef);
+    //button_ready() 
+    //state = "slacking"
+    //};
+    update_clock(state, tick);
     }
  
-  function button_ready() {
-    $(".button").removeClass("active").addClass("ready").text("GO!").off("click").on("click", start) 
-    }
 
-  function button_cancel() {
-    $(".button").removeClass("ready").addClass("active").text("CANCEL").off("click").on("click", cancel)
-    } 
-
+  /*leaderboard functions*/
   var leaderboard
 
   function current_board() {
@@ -174,34 +330,188 @@ login stub : this bit hasn't been specified<br>
           $(".leaderboard").append( line(d) ) 
           } )
         leaderboard = d
+        update_clock_state()
       } ).
       fail( function(e) { console.log("ERROR"); console.log(e) } ) 
     }
     update_leaderboard()
     window.setInterval( update_leaderboard, 2000 )
+   /*end leaderboard functions*/ 
+
+
+  function update_clock_state() {
+    var record = _.find(leaderboard, function(x){return x.id == myId} )
+    stopwatch.refresh(record); 
+    }
+
   function post_event(event) {
     var event = { id : myId, timestamp : new Date(), event : event }
     $.ajax(network_parameters.event_service, { type : "POST", data : JSON.stringify( event ) }  ).fail( function(e) { console.log("ERROR"); console.log(e) } )
     }
 
-  function update_clock(seconds) {
-    var minutes = Math.floor(seconds/60 )
-    var remainder = seconds - minutes*60
-    var minutes_zero = (minutes < 10) ? "0" : ""
-    var seconds_zero = (remainder < 10) ? "0" : ""
-    $(".clock").text(minutes_zero + minutes + ":" + seconds_zero + remainder) 
-
-    }
   function play_airwolf() {
     //$("#airwolf")[0].play()
+    state = "resting"
     }
   function play_vader(){
     //$("#vader")[0].play()
     }
+
+  function bell(){
+    $("#bell")[0].play()
+    }
+
+  function StopWatch() 
+    {
+    var tick = 25 * 60
+    var freshness = 0 
+    var render_callback = function(state, time) {console.log(sm.state + " " + time) }
+    var transmit_callback = function(event, time) {console.log("TRANSMIT: " + sm.state + " " + time) }  
+    var bell_callback = function() {console.log("BELL");}
+    var timerRef = 0
+
+    //these functions should be constructor parameters, not setters
+    this.set_render_callback = function( f ) { render_callback = f; }
+    this.set_transmit_callback = function( f ) { transmit_callback = f;}
+    this.set_bell_callback = function( f ) { bell_callback = f; }
+
+    var sm = new StateMachine();
+    sm.state = "slacking";
+    sm.add_transition("working", "click", "slacking", "cancel");
+    sm.add_transition("working", "timer", "resting", "complete");
+    sm.add_transition("resting", "timer", "slacking", "slack");
+    sm.add_transition("slacking", "click", "working", "start");
+    sm.on("slack", function(){ bell_callback() } );
+    sm.on("cancel", function(){transmit_callback("cancel")});
+    sm.on("complete", function(){transmit_callback("complete"); bell_callback()});
+    sm.on("start", function(){transmit_callback("start")});
+
+
+    this.machine = function() { return sm } 
+
+    function timer_on()
+      {
+      if( !timerRef ) timerRef = window.setInterval( timer_event, 1000 )
+      } 
+
+    function timer_off()
+      {
+      if( timerRef )
+        {
+        window.clearInterval(timerRef)
+        timerRef = 0
+        }
+      }
+
+    this.set = function(seconds)
+      {
+      console.log(tick);
+      tick = seconds;
+      freshness = Date.now()
+      }
+
+    //timer event is triggered every second while the StopWatch is running
+    var timer_event = function()
+      {
+      tick--;
+      if( tick < 0 )
+        {
+        console.log(tick);
+        switch( sm.state )
+          {
+          case "working":
+            console.log(tick);
+            tick = 5*60
+            post_event("complete");
+            break_started = true;
+            break; 
+          case "resting":
+            tick = 25*60;
+            window.clearInterval(timerRef);
+            timerRef = 0;
+            break_started=false; button_ready(); 
+            break;
+          case "slacking":
+            tick = 25*60;
+            window.clearInterval(timerRef);
+            timerRef = 0;
+            break_started=false; button_ready(); 
+            break;
+          case "": break;
+          default : 
+          }
+        sm.put("timer");
+        } 
+      render_callback(sm.state, tick);
+      }
+
+    //refresh updates the clock data from the network,
+    //it should only update the data if it is in error, since the network will lag the clock slightly 
+    this.refresh = function(record)
+      {
+      //if the leaderboard has not been loaded or I don't know my id yet all bets are off 
+      if(! record) return; 
+      if( record.lastUpdate <= freshness ) return ;
+      freshness = record.lastUpdate
+      console.log("record.lastUpdate : " + record.lastUpdate)
+      var timeSince = (Date.now() - record.lastUpdate) / 1000
+      var now = Date.now()
+      var _state = record.state
+      var end
+      switch(_state) {
+        case "working":
+          tick = 25*60 - timeSince
+          timer_on();
+          break;
+        case "resting": 
+          tick = 5*60 - timeSince
+          timer_on();
+          break;
+        case "slacking":
+          timer_off(); 
+          break;
+        default:
+          tick = 0
+        }
+      /* clock state is resting, working, slacking ; clock position is seconds to end */
+      sm.state = _state;
+      console.log("updating " + sm.state + " " + tick ) 
+      }
+
+    //I click the button from start mode
+    this.click = function()
+      {
+      if(sm.state != "working")
+        {
+        tick = 25 * 60;
+        timer_on();
+        freshness = Date.now();
+        }
+      if(sm.state == "working")
+        {
+        tick = 25 * 60;
+        timer_off();
+        freshness = Date.now();
+        }
+      sm.put("click"); 
+      render_callback(sm.state, tick);
+      }
+    }
+
+  var stopwatch = new StopWatch();
+  function initialize() {
     //ticker_path(60, "BreakTime", graphics_parameters)
-    ticker_path(359.99, "TickerPath", graphics_parameters)
-    update_clock(60*25)
+    auto_login()
+    //ticker_path(359.99, "TickerPath", graphics_parameters)
+    stopwatch.set_render_callback(render)
+    stopwatch.set_transmit_callback(post_event);
+    stopwatch.set_bell_callback(bell);
+    $(".button").addClass("ready").text("GO!").on("click", stopwatch.click ) 
     button_ready() 
+    }
+
+
+  $(initialize)
   </script>
 </body>
 </html>
