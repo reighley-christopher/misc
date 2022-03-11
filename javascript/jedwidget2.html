@@ -1,0 +1,481 @@
+<html><head>
+<title>JED WIDGET V2</title>
+<script src="jquery.js"></script>
+<script src="underscore.js"></script>
+<script src="backbone.js"></script>
+
+<style>
+
+.jedwidget2 div textarea {
+  width:100%;
+  resize:none;
+  border:0px;
+  border-top:0px solid black;
+  outline:none;
+  }
+
+#parent {
+  font-size:x-large;
+  border-bottom:1px solid black;
+  background-color:lightgray;
+  }
+
+.tags span {
+  background-color:black;
+  color:white;
+  font-family: monospace;
+  font-style:normal;
+  font-weight:bolder;
+  margin-right:10px;
+  padding:5px;
+  border-radius:5px;
+  display:inline-block;
+  }
+
+.attributes table {
+  background-color:white;
+  border-collapse:collapse;
+  }
+
+.attributes table tr td {
+  border:1px solid gray;
+  width:100px;
+  collapse:
+  }
+
+.attributes table tr td span {
+  width:100%;
+  display:inline-block;
+  }
+
+.attributes table tr td input {
+  width:100%;
+  border:0px;
+  outline:none;
+  }
+
+.children table {
+  border-bottom:3px double black;
+  width:100%;
+  }
+
+.children table tr td {
+  border-top:1px dashed gray; 
+  }
+
+</style>
+
+</head><body>
+<script>
+var DB = [];  
+var render_root = DB;
+var ancestry = [];
+
+var test;
+var regexp = /\n|^.*==.*\n|$/;
+var test_text;
+
+/*functions for evaluating formulas, kind of a hacked up scope*/
+//TODO how did I do this in that spreadsheet app
+current_scope = null;
+
+function get(attribute)
+  {
+  return current_scope.get(attribute);
+  }
+
+function getA(attribute)
+  {
+  return current_scope.getA(attribute); 
+  }
+
+function getC(attribute)
+  {
+  return current_scope.getC(attribute);
+  }
+
+
+/*end hacky scope*/
+
+function post_data()
+  {
+  $.ajax({ url: "http://new.reighley-christopher.net/riak/buckets/jeddb/keys/jeddb/", type : "POST", data : JSON.stringify( DB ) }  ).fail( function(e) { console.log("ERROR"); console.log(e) } )
+  }
+
+function get_data()
+  {
+  $.ajax({ url: "http://new.reighley-christopher.net/riak/buckets/jeddb/keys/jeddb/",  cache : false } ).
+    done(function(d){ 
+    DB = data;
+    } ).
+    fail( function(e) { console.log("ERROR"); console.log(e) } ) 
+  }
+
+function insertAt(arra, index, value)
+  {
+  var in_here = value;
+  var i;
+  for(i = index; i < arra.length; i++)
+    {
+    move_right = arra[i];
+    arra[i] = in_here;
+    in_here = move_right;
+    }
+  arra[i] = in_here; 
+  }
+
+function getTitle(data)
+  {
+  var body = data["body"];
+  if(!body) body = "";
+  var title_break = body.indexOf("\n");
+  if(title_break < 0) title_break = body.length;
+  return body.substr(0, title_break);
+  }
+
+function popParent()
+  {
+  ancestry.pop();
+  repaint();
+  }
+
+/*oops more hacky scope*/
+function Scope(data_element, _ancestry, parent_scope = null )
+  {
+  var ancestry = [..._ancestry]
+
+  if(! parent_scope )
+    {
+    var pdata = ancestry[ancestry.length-1];
+    if(pdata) { parent_scope = new Scope(pdata, ancestry.slice(0,-1), null ); }
+    } 
+
+  this.get = function(attribute)
+    {
+    var raw_data = this.evaluate(data_element.attributes[attribute], this);
+    var num_data = Number(raw_data);
+    if(! isNaN(num_data) ) return num_data;
+    return raw_data;
+    }
+
+  this.getA = function(attribute)
+    {
+    if( data_element.attributes.hasOwnProperty(attribute) ) return this.get(attribute);
+    if( parent_scope ) return parent_scope.getA(attribute);
+    return "NULL"; 
+    }
+
+  this.getC = function(attribute)
+    {
+    var child_scopes = data_element.children.map( function(d){ return new Scope( d, [...ancestry, data_element], this ) } );
+    return child_scopes.map(function(x){return x.get(attribute)}); 
+    }
+
+  this.evaluate = function( value )
+    {
+    if(value[0] != "=") return value;
+    current_scope = this; 
+    return eval(value.substr(1));
+    }
+
+  }
+
+function Control(ui_element, data_element)
+  {
+  var block_template = ` 
+   <div class='tags'>
+   </div>
+   <div class='attributes'>
+     <table></table>
+   </div>
+   <div class='body'>
+     <textarea></textarea>
+   </div>
+   <div class='children'>
+     <table>
+     </table>
+   </div>
+  `;
+
+  if(!data_element.hasOwnProperty("body")) data_element["body"] = "";
+  if(!data_element.hasOwnProperty("tags")) data_element["tags"] = [];
+  if(!data_element.hasOwnProperty("attributes")) data_element["attributes"] = {};
+  if(!data_element.hasOwnProperty("children")) data_element["children"] = []; 
+
+  var scope = new Scope(data_element, ancestry);
+
+  this.render = function()
+    {
+    ui_element[0].innerHTML = "";
+    ui_element.attr("class", "block");
+    ui_element.append($(block_template));
+    for(i in data_element["tags"])
+      { ui_element.find(".tags").append("<span>"+ data_element["tags"][i]  +"</span>"); }
+
+    var attr_table = ui_element.find(".attributes table");
+    for(i in data_element["attributes"])
+      {
+      attr_table.append("<tr><td>"+i+"</td><td name='"+i+"'><span></span><input type=text /></td></tr>")
+      this.fix_attribute(i);
+      }
+    for(i in data_element["children"])
+      {
+      var title = getTitle(data_element["children"][i]);
+      var new_el = $("<tr><td>"+title+"</td></tr>");
+      ui_element.find(".children table").append(new_el);
+      new_el.on("click", function(){
+        ancestry.push(data_element);
+        repaint();
+        });
+      }
+    ui_element.find(".body textarea")[0].value = data_element["body"];
+    }
+
+  this.touch = function()
+    {
+    data_element.body = this.ta().value;
+    }
+
+  this.set_body = function(text)
+    {
+    this.ta().value = text;
+    this.touch();
+    }
+
+  this.another_brother = function(text)
+    {
+    var new_div = $("<div></div>");
+    ui_element.after(new_div);
+    var datael = {};
+    var index = render_root.indexOf(data_element) + 1 ;
+    insertAt( render_root ,index,  datael );
+    var c = new Control(new_div, datael);
+    c.ta().focus(); 
+    c.set_body(text);
+    c.touch();
+    this.touch();
+    }
+
+  this.ta = function()
+    {
+    return ui_element.find("textarea")[0];
+    } 
+
+  this.title = function()
+    {
+    return getTitle(data_element);
+    } 
+
+  this.add_tag = function(tag)
+    {
+    ui_element.find(".tags").append("<span>"+ tag  +"</span>");
+    data_element.tags.push(tag);
+    }
+
+  this.fix_attribute = function(key)
+    {
+    var value = data_element.attributes[key];
+    var td = ui_element.find('.attributes table tr td[name="'+key+'"]');
+    td.find("span")[0].innerHTML = scope.evaluate(value);
+    td.find("input").hide();
+    td.find("input")[0].value = value;
+    td.find("span").on("click", null, td, function(e) {
+      var td = e.data;
+      td.find("input").show();
+      td.find("span").hide();  
+      } );
+    td.find("input").on("change", null, td, function(e) {
+      var td = e.data;
+      var contents = td.find("input")[0].value;
+      var key = td.attr("name");
+      td.find("span").show();
+      td.find("span")[0].innerHTML = scope.evaluate(contents);
+      data_element["attributes"][key] = contents;
+      console.log(contents);
+      td.find("input").hide()
+      } );
+    }
+
+  this.add_attribute = function(key, value)
+    {
+    if(! data_element.attributes.hasOwnProperty(key))
+      {ui_element.find(".attributes table").append("<tr><td>"+key+"</td><td name='"+key+"'><span></span><input type=text /></td></tr>");}
+    data_element.attributes[key] = value;
+    this.fix_attribute(key);
+    }
+
+  this.add_child = function(child)
+    {
+    data_element.children.push({"body":child});
+    var title = child;
+    var new_el = $("<tr><td>"+title+"</td></tr>");
+    ui_element.find(".children table").append(new_el);
+    new_el.on("click", function(){
+      ancestry.push(data_element);
+      repaint();
+      });
+    }
+
+  this.render();
+  ui_element.find("textarea").on("keypress", null, this, keyevent).on("keypress", function(e){resize(e.target)})
+                             .on("change", null, this, function(e) {e.data.touch()} );
+  }
+
+function delete_and_split(target, match, center_div_callback = null)
+  {
+  var upper_substring = target.value.substr( 0, match.index ); 
+  var lower_substring = target.value.substr( match.index + match[0].length );
+  var contents = target.value.substr( match.index, match[0].length ); 
+  console.log(upper_substring);
+  console.log(lower_substring);
+  var textarea = $(target);
+  var div = textarea.parent();
+  var new_element = $("<div><textarea></textarea></div>");
+  textarea[0].value=upper_substring;
+  var new_textarea = new_element.find("textarea")[0]
+  new_textarea.value=lower_substring;
+  attach_handlers(new_textarea);
+  new_element.insertAfter(div);
+  //putting in a new div might always be bad graphic design: reconsider
+  if(center_div_callback)
+    { 
+    var center_div = $("<div></div>");
+    center_div_callback(center_div, contents); 
+    center_div.insertAfter(div);
+    } else {
+    new_element[0].style.borderTopWidth="2px"
+    new_element[0].style.borderTopStyle="dashed"
+    new_element[0].style.borderTopColor="black" 
+    }
+  new_textarea.focus(); 
+  }
+
+function new_block(target_block, match)
+  {
+  var ta = target_block.ta(); 
+  var upper_substring = ta.value.substr( 0, match.index ); 
+  var lower_substring = ta.value.substr( match.index + match[0].length ); 
+  target_block.another_brother(lower_substring);
+  target_block.set_body(upper_substring);
+  }
+
+function delet(target, match)
+  { 
+  target.value = target.value.substr(0, match.index) + target.value.substr(match.index + match[0].length) 
+  }
+
+var attribute_regexp = /(\n|^).+==.*[\S].*(\n|$)/;
+var tag_regexp = /(\n|^).+==(\n|$)/;
+var list_item_regexp = /(\n|^)==.+(\n|$)/; 
+var section_break_regexp = /(\n|^)==(\n|$)/;
+
+function attribute_function(target_block, match)
+  { 
+  var ta = target_block.ta(); 
+  var splits = match[0].split("==");
+  target_block.add_attribute(splits[0].trim(), splits[1].trim());
+  delet(ta, match);
+  } 
+
+function tag_function(target_block, match)
+  {
+  var ta = target_block.ta(); 
+  var splits = match[0].split("==");
+  target_block.add_tag(splits[0]);
+  delet(ta, match);
+  }
+
+function list_item_function(target_block, match)
+  {
+  var ta = target_block.ta(); 
+  var splits = match[0].split("==");
+  target_block.add_child(splits[1]);
+  delet(ta, match);
+  }
+
+function section_break_function(target, match)
+  {
+  new_block(target, match); 
+  }
+ 
+var do_list = [ 
+[attribute_regexp, attribute_function],
+[tag_regexp, tag_function ],
+[list_item_regexp, list_item_function ],
+[section_break_regexp, section_break_function ]
+] 
+
+
+function test_lines(target, target_block)
+  {
+  var text = target.value
+  for(i in do_list)
+    {
+    var match = do_list[i][0].exec(text);
+    if( match ) { do_list[i][1](target_block, match); 
+    return true; }
+    } 
+  return false;
+  }
+
+function keyevent(e, target_block)
+  {
+  if( e.key == "Enter" )
+    {
+    if( test_lines(e.target, e.data) )
+      {
+      e.preventDefault()
+      } 
+    }
+  e.currentTarget
+  }
+
+function resize(target)
+  {
+  target.style.height = "";
+  target.style.height = target.scrollHeight + m_height + "px"; 
+  }
+
+var m_height;
+
+function repaint()
+  {
+  $("#container")[0].innerHTML = "<div id='parent'></div>"
+  $("#parent").on("click", popParent);
+  parent = ancestry[ancestry.length-1];
+  if(parent) 
+    {
+    $("#parent").append(getTitle(parent) );
+    render_root = parent["children"];
+    }
+    else render_root = DB;
+  for(i in render_root)
+    {
+    var new_div = $("<div></div>");
+    $("#container").append(new_div);
+    var c = new Control(new_div, render_root[i]);
+    resize(new_div.find("textarea")[0]);
+    }
+  }
+
+function initialize()
+  {
+  m_height = $("#calibrate_text")[0].scrollHeight;
+  datael = {};
+  DB.push(datael);
+  repaint();
+  }
+
+$(initialize);
+</script>
+
+<div id="container" class="jedwidget2" style="width:90%;height:100%;margin-left:5%">
+<div id="calibrate_text">m</div>
+</div>
+
+
+
+
+
+
+</body></html>
