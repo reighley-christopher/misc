@@ -99,14 +99,17 @@ function getC(attribute)
 
 function post_data()
   {
-  $.ajax({ url: "http://new.reighley-christopher.net/riak/buckets/jeddb/keys/jeddb/", type : "POST", data : JSON.stringify( DB ) }  ).fail( function(e) { console.log("ERROR"); console.log(e) } )
+  var key = window.location.search.substr(1);
+  $.ajax({ url: "http://new.reighley-christopher.net/riak/buckets/jeddb/keys/"+key+"/", type : "POST", data : JSON.stringify( DB ) }  ).fail( function(e) { console.log("ERROR"); console.log(e); } )
   }
 
 function get_data()
   {
-  $.ajax({ url: "http://new.reighley-christopher.net/riak/buckets/jeddb/keys/jeddb/",  cache : false } ).
-    done(function(d){ 
-    DB = data;
+  var key = window.location.search.substr(1);
+  $.ajax({ url: "http://new.reighley-christopher.net/riak/buckets/jeddb/keys/"+key+"/",  cache : false } ).
+    done(function(data){ 
+    DB = JSON.parse(data);
+    repaint();
     } ).
     fail( function(e) { console.log("ERROR"); console.log(e) } ) 
   }
@@ -464,6 +467,8 @@ function initialize()
   datael = {};
   DB.push(datael);
   repaint();
+  get_data();
+  setInterval(post_data, 30*1000);
   }
 
 $(initialize);
