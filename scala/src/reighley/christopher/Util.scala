@@ -6,6 +6,9 @@ import java.io.InputStream
 import java.lang.Thread
 import scala.sys.process._
 import scala.collection.Map
+import java.net.HttpURLConnection
+import java.net.URL
+import scala.io.Source
 
 object Util {
   def mapToJson( map : Map[String,String] ) : String = "{" + map.map( x => "\"" + x._1 + "\":\"" + x._2 + "\"").mkString(",") + "}" 
@@ -50,5 +53,23 @@ object Util {
       }) 
     ret
     } 
+
+  def simple_http(_url:String, body:String, header:Map[String,String]):String = {
+    val url:URL = new URL(_url)
+    val connection:HttpURLConnection = url.openConnection().asInstanceOf[HttpURLConnection]
+    header.foreach( (entry)=>connection.setRequestProperty(entry._1, entry._2)) 
+    if(body.length > 0)
+      {
+      connection.setDoOutput(true) 
+      val writestream = connection.getOutputStream()
+      writestream.write(body.getBytes())
+      writestream.flush()
+      writestream.close()
+      }
+    val response = connection.getInputStream()
+    val ret = Source.fromInputStream(response).mkString 
+    response.close()
+    ret
+    }
 
   }

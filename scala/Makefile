@@ -48,6 +48,9 @@ reighley/christopher/Tableizer.class : src/reighley/christopher/Tableizer.scala
 reighley/christopher/Util.class : src/reighley/christopher/Util.scala
 	scalac src/reighley/christopher/Util.scala
 
+reighley/christopher/GoogleSheet.class : src/reighley/christopher/GoogleSheet.scala
+	scalac src/reighley/christopher/GoogleSheet.scala
+
 controlserver/FanInOut.class : src/controlserver/FanInOut.scala controlserver/bin/faninout
 	scalac src/controlserver/FanInOut.scala
 
