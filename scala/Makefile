@@ -21,10 +21,13 @@ chaintools/Sql.class : src/chaintools/Sql.scala
 chaintools/Kafka.class : src/chaintools/Kafka.scala 
 	scalac src/chaintools/Kafka.scala
 
+chaintools/GoogleSheets.class : src/chaintools/GoogleSheets.scala reighley/christopher/GoogleSheet.class
+	scalac src/chaintools/GoogleSheets.scala
+
 chaintools/AnnotatedInteractive.class : src/chaintools/AnnotatedInteractive.scala
 	scalac src/chaintools/AnnotatedInteractive.scala
 
-focus_game/FocusLogic.class : src/focus_game/FocusGame.scala reighley/christopher/EnumerationModule.class reighley/christopher/ZonedDateTimeModule.class chaintools/HTTPService.class chaintools/ChainTools.class focus_game/IPDB.class
+focus_game/FocusLogic.class : src/focus_game/FocusGame.scala reighley/christopher/EnumerationModule.class reighley/christopher/ZonedDateTimeModule.class chaintools/HTTPService.class chaintools/ChainTools.class focus_game/IPDB.class chaintools/GoogleSheets.class 
 	scalac src/focus_game/FocusGame.scala
 
 focus_game/IPDB.class : src/focus_game/IPDB.scala

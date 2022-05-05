@@ -1,0 +1,422 @@
+<html>
+<head><title>Jed Widget 3</title>
+<script src="jquery.js"></script>
+<script src="underscore.js"></script>
+<script src="reighley-data.js"></script>
+<style>
+.leftlist {
+  border:1px solid black;
+  height:100%; 
+  font-family:monospace;
+  }
+
+.leftlist th {
+  font-size:large;
+  }
+
+.attributes tr td {
+  border:0px solid white; 
+  }
+
+.attributes tr .name {
+  width:16%
+  }
+
+.attributes tr .value {
+  width:4%
+  }
+
+.attributes tr td input {
+  width:100%;
+  }
+
+.leftlist .listproper {
+  width:100%;
+  cursor:default;
+  }
+
+.listproper th {
+  background-color:black;
+  color:white;
+  font-weight:bolder;
+  margin:0px;
+  }
+
+.listopener {
+  cursor:default;
+  display:inline-block;
+  width:10px;
+  }
+
+.databody {
+  border:1px solid black;
+  height:100%
+  }
+
+.addbutton {
+  font-size: xx-large;
+  font-weight: bolder;
+  float:right;
+  background-color:black;
+  color:white;
+  }
+
+</style>
+
+
+</head>
+<body>
+<script>
+var DB = { "schema" : [],  "data" : [] }
+var DB_ = new Database(new default_riak_loader(default_path()));
+var leftlist_data = {"data": null, "open": true, "sort_key" : "", children: [], "displaylevel":-1}; //the root display element, weird because there is no data root
+var displaylevel = -1; //how deep in the tree are we (sets schema parameters)
+var current_root = leftlist_data;
+var leftlist_config = {"columns":[{"name":null, "aggregation":"sum"}, 
+                                  {"name":null, "aggregation":"sum"}, 
+                                  {"name":null, "aggregation":"sum"}, 
+                                  {"name":null, "aggregation":"sum"}], 
+                       "sort": {"name":null, "order":"ascending"}, "color":{"name":null} }
+var backward_history = []
+var forward_history = []
+
+function list_open_handler(e)
+  {
+  e.data.open  = !e.data.open
+  populate_leftlist() 
+  }
+
+function list_select_handler(e)
+  {
+  if(current_root) backward_history.push(current_root);
+  forward_history = [];
+  current_root = e.data;
+  displaylevel = e.data.displaylevel;  
+  populate_attributes();
+  toggle_view_attributes();
+  }
+
+function list_backward()
+  {
+  if(backward_history.length > 0) 
+    {
+    forward_history.push(current_root);
+    current_root = backward_history.pop();
+    }
+  displaylevel = current_root.displaylevel;  
+  populate_attributes();
+  toggle_view_attributes();
+  }
+
+function list_forward()
+  {
+  if(forward_history.length > 0)
+    {
+    backward_history.push(current_root)
+    current_root = forward_history.pop() 
+    }
+  displaylevel = current_root.displaylevel;  
+  populate_attributes();
+  toggle_view_attributes();
+  }
+
+function new_node() 
+  {
+  var nn = {"title":"(new node)", "text":"", "attributes":{}, "children":[] }
+  var ann = {"data": nn, "open": true, "sort_key" : "", children: [], "displaylevel":displaylevel+1}; 
+  if(current_root == leftlist_data) { DB.data.push( nn) } else {
+  current_root.data.children.push(nn) }
+  if( DB.schema.length <= displaylevel+1 ) DB.schema.push([null, null, null, null,null, null, null, null,null, null, null, null,null, null, null, null] )
+  current_root.children.push(ann)
+  populate_leftlist() 
+  } 
+
+function compute( data, key, agg )
+  {
+  var ret;
+  if(!(data.attributes.hasOwnProperty(key)) ) 
+    {
+    var arr = _.map( data.children, function(e){ return compute(e, key, agg) } )
+    var count = _.reduce(_.map( data.children, function(e){ return compute(e, key, "count") } ), function(x,y){return x+y}, 0 )
+    var sum = _.reduce(arr, function(x, y){return x==null?y:( y==null?x:x+y )}, null);
+    switch(agg) {
+      case("sum"): ret = sum; break;
+      case("min"): ret = _.reduce(arr, function(x, y){return x==null?y:( y==null?x:Math.min(x, y))}, null); break;
+      case("max"): ret = _.reduce(arr, function(x, y){return x==null?y:( y==null?x:Math.max(x, y))}, null); break;
+      case("mean"): ret = ((count==0||sum==null)?null:sum / count); break;
+      case("count"): ret = sum==null?0:sum; break;
+      } 
+    return ret; 
+    } 
+  ret = data.attributes[key]
+  return agg=="count"?(ret==null?0:1):ret
+  }
+
+function compute_column(data, index) {
+  var key = leftlist_config.columns[index].name
+  if(key == null) { return ""; }
+  var value = compute( data, key, leftlist_config.columns[index].aggregation ) 
+  if(value == null) { return "";}
+  return value
+  }
+
+function range(children, key)
+  {
+  var max = null;
+  var min = null;
+  _.forEach( children, function(c) {
+    if( c.attributes.hasOwnProperty(key) )
+      {
+      var attr = c.attributes[key]
+      max = max==null?attr:Math.max(max, attr==null?max:attr)
+      min = min==null?attr:Math.min(min, attr==null?min:attr)
+      }
+    var r = range( c.children, key )
+    max = max==null?r[1]:Math.max(max, r[1]==null?max:r[1])
+    min = min==null?r[0]:Math.min(min, r[0]==null?min:r[0])
+    } )
+  return [min, max] 
+  }
+
+function compute_color(data, max, min) {
+  var saturation = max==min?1:(data - min)/( max - min ) //0 for the min, 1 for the max, unless max == min then 0 for both
+  var blue = 0xff 
+  var red = ( 0xff - 0x88) * ( saturation ) +  0x88
+  var green = 0xff * ( saturation )
+  var css = "rgb(" + red + ","+ green +"," + blue + ")" 
+  return css
+  }
+
+function create_node(e, indent)
+  {
+  var opener = e.children.length > 0 ?( e.open?"-":"+" )  : "&nbsp;"
+  var color_range = range( DB.data, leftlist_config.color.name);
+  var node = $("<tr style='background-color:"+ compute_color(compute( e.data, leftlist_config.color.name, "mean" ) , color_range[0], color_range[1]) + "'><td>" + "&nbsp;".repeat(indent) + "<span class='listopener'>" + opener+"</span><span class='listtitle'>" + e.data.title + "</span></td></tr>")
+  node.append("<td>" + compute_column(e.data,0)  + "</td>")
+  node.append("<td>" + compute_column(e.data,1)  + "</td>")
+  node.append("<td>" + compute_column(e.data,2)  + "</td>")
+  node.append("<td>" + compute_column(e.data,3)  + "</td>")
+  node.find(".listopener").on("click", e, list_open_handler )
+  node.find(".listtitle").on("click", e, list_select_handler) 
+  return node; 
+  }
+
+function sort_leftlist(annotate_node)
+  {
+  var key = leftlist_config.sort.name
+  annotate_node.children.sort(function(c1, c2){
+    var v1 = compute(c1.data, key, "mean")
+    var v2 = compute(c2.data, key, "mean")
+    if( v1 == v2 ) return 0;
+    if( v1 > v2 ) return 1;
+    if( v1 < v2 ) return -1; 
+    })
+  _.forEach( annotate_node.children, sort_leftlist ) 
+  }
+
+function annotate_db(db_node, annotate_node, level)
+  {
+  _.forEach( db_node, function(n) {
+    var newnode = {"data": n, "open": true, "sort_key" : "", children: [], "displaylevel":level};
+    if(n.hasOwnProperty("children") ) {
+      annotate_db( n.children, newnode.children, level+1 );
+      }
+    annotate_node.push(newnode);
+    } )  
+  }
+
+function render_list_item( llist, node, indent )
+  {
+  llist.append(create_node(node, indent))
+  if(node.open)
+    {
+    _.forEach( node.children, function(c) { render_list_item( llist, c, indent+1 )  }) 
+    }
+  }
+
+function populate_leftlist()
+  {
+  var llist = $(".listproper")
+  sort_leftlist(leftlist_data);
+  $(".listproper td").parent().remove(); // delete everything but the header
+  _.forEach( leftlist_data.children, function(e) {
+    render_list_item(llist, e, 0)
+    } )
+  }
+
+function toggle_view_attributes()
+  {
+  if(current_root != leftlist_data) $(".attributes").show();
+    else $(".attributes").hide();
+  $(".configure").hide();
+  }
+
+function populate_attributes()
+  {
+  if( current_root == leftlist_data ) return;
+  $(".title").val( current_root.data.title );
+  $(".text").val(current_root.data.text ); 
+  var i;
+  for(i = 0; i < 16; i++)
+    {
+    var k = DB.schema[displaylevel][i]
+    $("#k"+(i+1)).val(k)
+    $("#v"+(i+1)).val(current_root.data.attributes[k])
+    } 
+  }
+
+function toggle_view_configure()
+  {
+  var attr_list = list_attributes() 
+  $(".attributes").hide();
+  $(".configure").show();
+  config_dropdown("#colname0", attr_list, leftlist_config.columns[0].name )    
+  config_dropdown("#colname1", attr_list, leftlist_config.columns[1].name )    
+  config_dropdown("#colname2", attr_list, leftlist_config.columns[2].name )    
+  config_dropdown("#colname3", attr_list, leftlist_config.columns[3].name )
+  config_dropdown("#colag0", ["sum", "max", "mean", "min", "count"], leftlist_config.columns[0].aggregation ) 
+  config_dropdown("#colag1", ["sum", "max", "mean", "min", "count"], leftlist_config.columns[1].aggregation ) 
+  config_dropdown("#colag2", ["sum", "max", "mean", "min", "count"], leftlist_config.columns[2].aggregation ) 
+  config_dropdown("#colag3", ["sum", "max", "mean", "min", "count"], leftlist_config.columns[3].aggregation )
+  config_dropdown("#sortname", attr_list, leftlist_config.sort.name ) 
+  config_dropdown("#sortorder", ["ascending", "descending"], leftlist_config.sort.order )
+  config_dropdown("#color", attr_list, leftlist_config.color.name ) 
+  }
+
+function save_configuration()
+  {
+  leftlist_config.columns[0] = { name: $("#colname0").val(), aggregation:$("#colag0").val()} 
+  leftlist_config.columns[1] = { name: $("#colname1").val(), aggregation:$("#colag1").val()} 
+  leftlist_config.columns[2] = { name: $("#colname2").val(), aggregation:$("#colag2").val()} 
+  leftlist_config.columns[3] = { name: $("#colname3").val(), aggregation:$("#colag3").val()}
+  leftlist_config.sort = { name: $("#sortname").val(), order:$("#sortorder").val() } 
+  leftlist_config.color.name = $("#color").val() 
+  }
+
+function save_attribute_name(e)
+  {
+  var index = Number(e.target.id.substr(1)) - 1;
+  DB.schema[displaylevel][index] = e.target.value 
+  populate_leftlist();
+  }
+
+function save_attribute_value(e)
+  {
+  var index = Number(e.target.id.substr(1)) - 1;
+  current_root.data.attributes[DB.schema[displaylevel][index]] = Number(e.target.value)
+  populate_leftlist();
+  }
+
+function list_attributes()
+  {
+  var i;
+  var j;
+  var ret = [];
+  for(i = 0; i < DB.schema.length; i++)
+    {
+    for( j = 0; j < 16; j++ )
+      {
+      if( DB.schema[i][j] != null && !ret.includes( DB.schema[i][j] ) ) ret.push( DB.schema[i][j] );
+      } 
+    }
+  return ret;
+  }
+
+function config_dropdown( id, list, selected_value )
+  {
+  $(id).empty()
+  $(id).append("<option " + ( selected_value == null ? "selected" : "" )  + ">...</option>")
+  for(l in list)
+    {
+    var selected = (list[l] == selected_value) ? "selected" : "" 
+    $(id).append("<option " + selected + ">"+list[l]+"</option>")
+    }
+
+  }
+
+function save(e, key)
+  {
+  current_root.data[key] = e.value;
+  populate_leftlist();
+  }
+
+$(function() {
+  annotate_db( DB.data, leftlist_data, 0);
+  populate_leftlist();
+  toggle_view_attributes();
+  $("input[value=DONE]").on("click", function(){ save_configuration(); toggle_view_attributes(); populate_leftlist() })
+  $(".name").on("change", save_attribute_name);
+  $(".value").on("change", save_attribute_value);
+  } );
+
+</script>
+<table style="height:100%;width:100%">
+<tr style="height:100%"><td style="width:25%">
+<div class="leftlist">
+<table class="listproper">
+</div>
+<tr>
+<th style="width:50%">&nbsp;</th>
+<th onclick="toggle_view_configure()">&#x2699;</th>
+<th onclick="list_backward()">&lt;</th>
+<th onclick="list_forward()">&gt;</th>
+<th onclick="new_node()">+</th>
+</tr>
+<tr>
+</tr>
+</table>
+</td>
+
+
+<td>
+<div class="databody">
+<table style="width:100%;height:100%" class="attributes">
+<tr style="height:0px"><td>TITLE:</td><td colspan=4><input class="title" type=text onchange="save(this, 'title')"/></td></tr>
+<tr style="height:0px">
+<td class="name"><input type=text id="k1"/></td><td class="value"><input type=text id="v1"/></td>
+<td class="name"><input type=text id="k2"/></td><td class="value"><input type=text id="v2"/></td>
+<td class="name"><input type=text id="k3"/></td><td class="value"><input type=text id="v3"/></td>
+<td class="name"><input type=text id="k4"/></td><td class="value"><input type=text id="v4"/></td>
+</tr><tr style="height:0px">
+<td class="name"><input type=text id="k5"/></td><td class="value"><input type=text id="v5"/></td>
+<td class="name"><input type=text id="k6"/></td><td class="value"><input type=text id="v6"/></td>
+<td class="name"><input type=text id="k7"/></td><td class="value"><input type=text id="v7"/></td>
+<td class="name"><input type=text id="k8"/></td><td class="value"><input type=text id="v8"/></td>
+</tr><tr style="height:0px">
+<td class="name"><input type=text id="k9"/></td><td class="value"><input type=text id="v9"/></td>
+<td class="name"><input type=text id="k10"/></td><td class="value"><input type=text id="v10"/></td>
+<td class="name"><input type=text id="k11"/></td><td class="value"><input type=text id="v11"/></td>
+<td class="name"><input type=text id="k12"/></td><td class="value"><input type=text id="v12"/></td>
+</tr><tr style="height:0px">
+<td class="name"><input type=text id="k13"/></td><td class="value"><input type=text id="v13"/></td>
+<td class="name"><input type=text id="k14"/></td><td class="value"><input type=text id="v14"/></td>
+<td class="name"><input type=text id="k15"/></td><td class="value"><input type=text id="v15"/></td>
+<td class="name"><input type=text id="k16"/></td><td class="value"><input type=text id="v16"/></td>
+</tr>
+<tr><td colspan=8><textarea class="text" onchange="save(this, 'text')" style="width:100%;height:100%"></textarea></td></tr>
+</table>
+<table class="configure" style="width:100%;height:100%">
+<tr><td>column 1</td><td><select id="colname0"><option>...</option></select></td><td><select id="colag0"><option>max</option>
+<option>mean</option>
+<option>min</option>
+</select></td></tr>
+<tr><td>column 2</td><td><select id="colname1"><option>...</option></select></td><td><select id="colag1"><option>max</option>
+<option>mean</option>
+<option>min</option>
+</select></td></tr>
+<tr><td>column 3</td><td><select id="colname2"><option>...</option></select></td><td><select id="colag2"><option>max</option>
+<option>mean</option>
+<option>min</option>
+</select></td></tr>
+<tr><td>column 4</td><td><select id="colname3"><option>...</option></select></td><td><select id="colag3"><option>max</option>
+<option>mean</option>
+<option>min</option>
+</select></td></tr>
+<tr><td>sort key</td><td><select id="sortname"><option>...</option></select></td><td><select id="sortorder"><option>ascending</option><option>descending</option></select></td></tr>
+<tr><td>color</td><td><select id="color"><option>...</option></select></td><td><input type=button value="DONE"/></td></tr>
+
+</table>
+</div></td></tr>
+</table>
+</body>
+</html>

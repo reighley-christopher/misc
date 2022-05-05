@@ -14,6 +14,7 @@ import chaintools._
 import chaintools.ChainTools._
 import chaintools.HTTPService._
 import chaintools.Riak._
+import chaintools.GoogleSheets._
 
 import scala.collection.mutable.Set
 import scala.collection.mutable.Queue
@@ -281,6 +282,30 @@ object BLSupplier extends TransformerSupplier[String, String, KeyValue[String, S
 object DumpSupplier extends TransformerSupplier[String, String, KeyValue[String, String]] { def get = new RiakDumper("focus") }
 object EditSupplier extends TransformerSupplier[String, String, KeyValue[String, String]] { def get = DataEdit }
 
+object format_for_sheet {
+  def capitalize( lower:String ) = 
+    {
+    lower(0).toUpper + lower.substring(1)
+    }
+  
+  def reformat( date:String ) = 
+    {
+    date.split("-").map( _.toInt.toString ) match {
+      case Array(year, month, day) => s"$month/$day/$year"
+      case _ => date 
+      } 
+    } 
+  
+  def sheet_process(inp:Map[String,String]):Map[String,String] = 
+    {
+    Map( capitalize( inp("id") ) -> inp("score"), "Date" -> reformat(inp("period") ) ) 
+    }
+
+  def apply( front:ChainHead[AnnotatedString], back:ChainSink[String] ) = 
+   { detach( front > strip_annotations > json_to_map > tweek( "score", x => x.toDouble.toInt.toString ) > transform(sheet_process) > map_to_json) > back } 
+
+  }
+
 object EntryPoint { 
 
 //val properties = new Properties()
@@ -293,8 +318,9 @@ def sanitize( key : String, value : String):Iterable[(String,String)] = Try[Focu
   case Success(r) => List( ( r.id, value ) )
   case Failure(e) => println(e) ; List[(String,String)]() 
   }
-
+ 
 //TODO sometimes the update doesn't push through the RiakDumper even when it needs to update 
+
 
 
 val ipdb = new IPDB( "localhost", properties.get("focus_game.http-in").asInstanceOf[String].toInt, "/home/reighley/ipdb")
@@ -316,6 +342,7 @@ def createStream = {
   detach( http("localhost", properties.get("focus_game.heartbeat").asInstanceOf[String].toInt, "/") ) > kafka("heartbeat")
   detach( http("localhost", properties.get("focus_game.edits").asInstanceOf[String].toInt, "/") ) > kafka("edits")
   detach( kafka("riak-out") ) > riak("focus")
+  format_for_sheet.apply( kafka("google_sheet") ,  google_sheet(properties.get("focus_game.googlesheet").asInstanceOf[String] , 2, "Date") )
   println("started http server threads")
   val builder = new StreamsBuilder()
   val tablevar : KTable[String,String] = builder.
@@ -325,6 +352,7 @@ def createStream = {
   builder.stream[String,String]("http-in").flatMap(sanitize).transform(BLSupplier, "table-store").to("table")
   builder.stream[String,String]("heartbeat").transform(DumpSupplier, "table-store").to("riak-out")
   builder.stream[String,String]("edits").transform( EditSupplier, "table-store").to("table")
+  tablevar.toStream.to("google_sheet") 
   val topology = builder.build()
   print(topology.describe())
   val stream = new KafkaStreams(topology, properties)

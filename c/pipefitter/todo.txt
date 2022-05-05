@@ -1,0 +1,89 @@
+pipefitter.c
+the original version probably cannot be changed to work interactively without a complete rewrite, because it uses processes which fork off the parent 
+and go on to live lives by themselves. It has a very conspicuous bug which assumes that the process labels are all the integers from 0 to n. a missing
+label causes the whole thing to fail. pipefitter is obviously intended for use by a machine and should perhaps stay that way
+
+that being the case one could imagine an executable program, also intended for use with pipefitter which allowed for such functions as 
+colating records at reasonable points (probably already a Unix function for this) gathering metrics, rerouting pipes
+
+swticher.c (unwritten)
+pipefitter sends every signal to every output without being able to distinguish between output channels, because every junction is of the form
+E 0 something
+P 0 1
+P 0 2
+so no name on pipe
+one could imagine however a labeled pipe in a form
+E 0 something
+E 3 something else
+P 0 1
+P 3 2
+so that "something" and "something else" actually ended up with the same process, taking in the same inputs but distinguished in their outputs
+is this possible? to call exec twice and end up with the same process? probably not without restarting the process
+
+snipper.c (unwritten)
+another problem with pipefitter is that it doesn't know how to merge inputs cleanly. so something that has two inputs that are well formated
+records will output badly formatted records. Part of the problem here is that I may have to buffer the record until data is available make this buffering
+live in its own process so the whole record becomes avalailable as soon as any part of it is.
+
+a design is coming together
+the controller process launches and stops many other processes , and fifos for communicating between them, and keeps track of the graph
+
+a worker process is a unix exec, accepts standard in dumps to standard out simple as
+
+a fan in/out process connects to the input and output of the worker, accepts input and sends it out to fifos, accepts input from a variety of
+fifos and feeds them to the worker. It needs to know the size and source of incoming records so it doesn't screw them up so the fifo will have
+a specific format sending an unsigned int record size before the record itself. output fifos should respect this protocol as well
+how does the output edge know what to do with the data? where do records in the output end, what happens to them after they go?
+in short term they will be delimted by \n
+in medium term there will be a hard coded table of strategies (start with JSON)
+in long term perhaps a module system loading .so files
+
+commands shouldn't be E and P and X they should be :
+n create a node, usually a forked process
+e create a directed edge
+E create an undirected edge
+[ to change context
+l to describe current graph
+d to delete a node or edge
+f create a fifo
+s open a socket
+
+the open fifo will block until the other end opens, 
+
+TODO
+- fan in/out process
+  - forks worker process
+    - does so on command
+    - possibly restarts the process if it stops 
+  - accepts commands (for example add fan in, add fan out, stop process)
+    - add fan in
+      - open a fifo in nonblocking mode, so that we don't wait
+    - remove fan in
+    - add fan out
+      - don't try to open until there is data (if there is too much data and we fill up the buffer? what then?)   
+    - remove fan out
+      - remove the fan out if the file is closed on the other side
+    - output status
+    - load .so file
+    - set or change filter parameters 
+  - provides status information? 
+
+- stub process to test faninout
+  - one faninout will execute sed -n 'w ./out' and have fifo1 as input 
+  - one faninout will execute cat testfile and have fifo1 as output
+  - this should copy one to the other 
+  - faninout segfaults if stdin reaches EOF? so better fix that so I can feed it a script
+
+  - replacing execv with system means I need to parse the command line myself and just splitting on space is not good enout (an awk one liner for instance)
+
+- use cases
+
+- known bugs
+  - when processing a json file scalars do not necessarily get processed immediately
+    the reason is :
+      there is a buffer snipping the output from the process
+      the process will send a sequence it knows is valid json but not the whitespace (or whatever) that convinced it that it was the end of an integer
+      so if the input buffer saw 12345_ it knows the integer is complete because of the trailing space but it will only send 12345 so nothing down stream
+      has a way of knowing that this was the end of the json token. the output thread will not write until it knows it has a complete record
+  - the program does not seem to clean up the child process (did I comment it out?) (replaced linux system with execv works better)
+  - add test cases : make sure I work with SIGINT, SIGTERM, SIGHUP, SIGPIPE

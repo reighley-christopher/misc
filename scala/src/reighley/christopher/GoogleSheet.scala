@@ -159,7 +159,7 @@ class GoogleSheet( id:String, header_row:Int, key_name:String, google_account_id
                        case Tuple2(k, v) => (k -> v) 
                        }).toMap
     val row_id = index.indexOf( record( key_name ) ) match { 
-      case -1 => index.length+1 
+      case -1 => index.append(record( key_name )) ;  index.length 
       case i => i+1 
       } 
     updates ++= record.toSeq.map( (v)  => ( (this_index(v._1) + row_id) -> v._2 )  )

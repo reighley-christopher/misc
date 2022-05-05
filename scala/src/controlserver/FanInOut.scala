@@ -89,7 +89,7 @@ object FanInOut
       } catch {
       case _: Throwable =>
       }
-    if( ! ( new File(directory + "/bin/faninout") ).exists  )
+    if( ! ( new File(directory + "/bin/faninout") ).exists  )  //TODO should compare faninout copies to make sure I don't keep a stale one
       {
       val binaryStream = getClass.getClassLoader.getResourceAsStream("controlserver/bin/faninout")
       val executable = new FileOutputStream( directory + "/bin/faninout"  )

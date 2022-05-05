@@ -39,6 +39,8 @@ def literal[X]( iterable : Iterable[X] ) : ChainHead[X] = new ChainHead[X] {
   def iterator = iterable.iterator
   } 
 
+def transform[X]( f:X => X ) = new ChainLink[X, X](f) 
+
 def delimit(delimiter:String) = new ChainLink[Map[String,String], String]({(map:Map[String,String]) => map.values.reduce( {(a,b) => a ++ delimiter ++ b} )  })
 
 def split(delimiter:Char) = new ChainLink[String, Array[String]]( _.split(delimiter) )
@@ -46,7 +48,7 @@ def split(delimiter:Char) = new ChainLink[String, Array[String]]( _.split(delimi
 def label(headers:Array[String]) = new ChainLink[Array[String], Map[String, String]]( (x:Array[String]) => Map(headers.zip(x):_*) )
 
 def map_to_json() = new ChainLink[Map[String,String], String]( mapToJson(_) )
-def json_to_map() = new ChainLink[String, Map[String,String]](JSON.parseFull(_).get.asInstanceOf[Map[String,String]])
+def json_to_map() = new ChainLink[String, Map[String,String]](JSON.parseFull(_).get.asInstanceOf[Map[String,Any]].mapValues(_.toString) )
 
 def tweek(key:String, value_transform:String => String ) = new ChainLink[Map[String,String], Map[String,String]](map => 
   map + ( key -> value_transform( map(key) ) ) 
