@@ -7,6 +7,7 @@ import org.apache.commons.io.IOUtils
 import java.nio.charset.StandardCharsets 
 import java.lang.Thread
 import reighley.christopher.Util
+import scala.language.postfixOps
 
 class FanInOut(directory:String)
   {
@@ -49,7 +50,7 @@ class FanInOut(directory:String)
     val bytes = new Array[Byte](inp.available())
     print("available %d\n", inp.available())
     inp.read(bytes)
-    IOUtils.toString(bytes) 
+    new String(bytes) 
     }
   def query() = 
     {
@@ -71,7 +72,7 @@ class FanInOut(directory:String)
             {
             val bytes = new Array[Byte](inp.available())
             inp.read(bytes)
-            print( IOUtils.toString(bytes) ) 
+            print( new String(bytes) ) 
             }
           }
         }

@@ -204,7 +204,7 @@ class GraphicsManager {
     }
 
   def return_from_bottom() = {
-    clear_command_line 
+    clear_command_line() 
     System.out.write(0x1b) 
     System.out.write("[%dA".format(max_row-row + 1).getBytes) 
     System.out.write(0x1b)
@@ -229,14 +229,14 @@ object Interactive {
   /*async output for writing from other threads*/
   var async_data = "" /*to be printed at the top when possible, critical blocks will protect async_data*/
 
-  def async_print(text:String)
+  def async_print(text:String):Unit =
     {
     /*critical block, append to async_data*/ 
     async_data += text
     /*end crticial block*/
     }
 
-  def sync_print()
+  def sync_print():Unit =
     {
     //TODO remember to put a mutex here and in async_print
     /*critical block, write async_data out, clear async_data*/

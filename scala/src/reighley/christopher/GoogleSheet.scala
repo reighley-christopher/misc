@@ -14,10 +14,11 @@ import java.io.File
 //import javax.net.ssl.HttpsURLConnection
 import java.net.URLEncoder
 //import sys.process._
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.collection.mutable.Buffer
 import scala.collection.mutable.ListBuffer
 import reighley.christopher.Util.simple_http
+import scala.collection.Map
 
 class JWTConnection(account_id:String, private_key_path:String) {
   //TODO keep track of token expiration time
@@ -63,14 +64,14 @@ class JWTConnection(account_id:String, private_key_path:String) {
 
   def sign(data:Array[Byte]):String = {
     var sig = Signature.getInstance("SHA256withRSA")
-    var private_key = get_private_key(private_key_path) //TODO don't hard code this
+    var private_key = get_private_key(private_key_path)
     var enc = getUrlEncoder()
     sig.initSign( private_key )
     sig.update(data)
     data.map(_.toChar).mkString +  "." + enc.encodeToString(sig.sign())
     }
 
-  def post_body = "grant_type=" + URLEncoder.encode(grant_type) + "&assertion=" + sign(unsigned_token) 
+  def post_body = "grant_type=" + URLEncoder.encode(grant_type,"UTF-8") + "&assertion=" + sign(unsigned_token) 
 
   def get_token = {
     val json =  simple_http( "https://oauth2.googleapis.com/token", post_body, Map("Accept"->"*/*") )
@@ -79,7 +80,7 @@ class JWTConnection(account_id:String, private_key_path:String) {
     tree.path("access_token").asText() 
     }
 
-  def send(url:String, body:String, header:Map[String,String]):String = simple_http(url, body, header + ( "Authorization" -> ( "Bearer " + get_token ) ) )   
+  def send(url:String, body:String, header:Map[String,String]):String = simple_http(url, body, header.concat(Map( "Authorization" -> ( "Bearer " + get_token ) ) ) )   
   } 
 
 class GoogleSheet( id:String, header_row:Int, key_name:String, google_account_id:String, private_key_path:String ) {
@@ -109,7 +110,7 @@ class GoogleSheet( id:String, header_row:Int, key_name:String, google_account_id
   
   def set_values(values:Map[String,String]) = 
     {
-    val data = google_sheets_batch_update_json_sparse( values.mapValues( (s) => Buffer(Buffer(s)) ) )
+    val data = google_sheets_batch_update_json_sparse( values.view.mapValues( (s) => Buffer(Buffer(s)) ).toMap )
     val url = s"https://sheets.googleapis.com/v4/spreadsheets/$id/values:batchUpdate/"
     ssl.send( url, data, Map("Content-Type" -> "x-application/json") )
     }

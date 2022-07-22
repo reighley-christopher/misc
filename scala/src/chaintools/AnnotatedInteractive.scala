@@ -26,7 +26,7 @@ echo - print "hello world" to test
 quit - exits interactive block
 */
 
-object AnnotatedInteractiveDelegate extends ChainSink[String]( { x => Unit } ) with CommandDelegate with ChainHead[AnnotatedString] {
+object AnnotatedInteractiveDelegate extends ChainSink[String]( { x => () } ) with CommandDelegate with ChainHead[AnnotatedString] {
   /*acts as delegate for UI commands, manages the UI thread, acts as chainhead and chainsink for */
   var body:String = ""
   var attr:Map[String,String] = Map() 
@@ -73,7 +73,7 @@ object AnnotatedInteractiveDelegate extends ChainSink[String]( { x => Unit } ) w
     */
     val lines:Array[String] = text.split("\n")
     val arrays:Array[Array[String]] = lines.map { x => x.split("=").padTo(2, "") }
-    val pairs:Array[Pair[String,String]] = arrays.map { x => (x(0), x(1)) }
+    val pairs:Array[(String,String)] = arrays.map { x => (x(0), x(1)) }
     pairs.toMap   
     }  
 
@@ -108,7 +108,7 @@ object AnnotatedInteractiveDelegate extends ChainSink[String]( { x => Unit } ) w
        */
       case "flush" => { 
         modeSave(contents)
-        out_buffer = Some(new AnnotatedString(body, attr.toArray:_*)); 
+        out_buffer = Some(new AnnotatedString(body, attr.toSeq:_*)); 
         Thread.`yield`(); 
         while(print_buffer == None) { Thread.`yield`()  }
         this.synchronized {

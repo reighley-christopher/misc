@@ -91,7 +91,7 @@ class Tableizer(var filename:String, var primaryKey:String) {
     val header = fd.readLine()
     row_length = header.length + 1 //readline strips off the ending newline but it counts toward row_length
     columns ++= header.split("\t")
-    columns.trimEnd(1) 
+    columns.dropRightInPlace(1) 
     }
 
   def build_index(fd:RandomAccessFile) =
@@ -176,7 +176,7 @@ class Tableizer(var filename:String, var primaryKey:String) {
     tmp_in.close() 
     }
   
-  def close() {
+  def close():Unit =  {
     lockfile.delete()
     fd.close()
     }

@@ -1,6 +1,6 @@
 package chaintools
 
-import javax.json._
+import com.fasterxml.jackson.databind.ObjectMapper
 import chaintools.ChainTools._
 import org.apache.http.client.methods.HttpPut
 import org.apache.http.entity.StringEntity
@@ -11,7 +11,8 @@ import org.apache.http.entity.StringEntity
 //import java.net.http.HttpResponse
 import org.apache.http.HttpRequest
 import org.apache.http.client.HttpClient
-import org.apache.http.impl.client.DefaultHttpClient
+//import org.apache.http.impl.client.CloseableHttpClient
+import org.apache.http.impl.client.HttpClientBuilder
 import org.apache.http.HttpResponse
 import org.apache.http.client.methods.RequestBuilder
 import org.apache.http.entity.StringEntity
@@ -46,12 +47,12 @@ def from_riak() : String = {
 //  output.close
 //  }
 
-def to_riak(payload : JsonValue) : Unit = {
-  }
+//def to_riak(payload : JsonValue) : Unit = {
+//  }
 
 def to_riak(payload : String, bucket : String, key : String ) : Unit = {
   //val client = HttpClient.newHttpClient
-  val client : HttpClient = new DefaultHttpClient()
+  val client : HttpClient = HttpClientBuilder.create().build() 
   print("RIAK: " + payload) 
   val request = RequestBuilder 
     .put("http://new.reighley-christopher.net/riak/buckets/%s/keys/%s".format(bucket, key) )

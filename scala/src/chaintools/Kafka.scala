@@ -7,9 +7,11 @@ import org.apache.kafka.streams.scala._
 import org.apache.kafka.streams.processor._ 
 import org.apache.kafka.streams.scala.kstream._
 import org.apache.kafka.streams.KafkaStreams
-import scala.collection.JavaConverters._
+//import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.collection.mutable.Set
 import reighley.christopher.Properties.properties
+import java.time.Duration
 
 object Kafka {
 
@@ -39,7 +41,7 @@ object A {
   def addTopic( name:String ) = {
     import java.util.Vector
     val topic = new Vector[NewTopic](1)
-    topic.add(0, new NewTopic( name, 1, 1 ) ) 
+    topic.add(0, new NewTopic( name, 1, 1:Short ) ) 
     admin.createTopics(topic)
     }
 
@@ -94,7 +96,7 @@ class KafkaIterator( name : String ) extends Iterator[AnnotatedString] {
    return true
    }
  
-  def next = {
+  def next() = {
     val item = iter.next 
     val ret = new AnnotatedString( item.value, "key" -> item.key ) 
     ret
@@ -104,11 +106,11 @@ class KafkaIterator( name : String ) extends Iterator[AnnotatedString] {
 
 object KafkaPollData {
   /*this will keep track of the most current fetch and supply iterators*/
-  var latest : KafkaIteratorRecord = A.consumer.synchronized { new KafkaIteratorRecord( A.consumer.poll(100) ) } 
+  var latest : KafkaIteratorRecord = A.consumer.synchronized { new KafkaIteratorRecord( A.consumer.poll(Duration.ofMillis(100)) ) } 
   def getIterator( name : String ) : KafkaIterator = new KafkaIterator( name )
   def getMore = A.consumer.synchronized {
     if( latest.next == null ) {
-      latest.next = new KafkaIteratorRecord( A.consumer.poll(100) )
+      latest.next = new KafkaIteratorRecord( A.consumer.poll(Duration.ofMillis(100)) )
       if( latest.next != null ) { latest = latest.next }
       }
     }
@@ -116,7 +118,7 @@ object KafkaPollData {
 
 /*TODO to make focus_game work I will need a chaintools node index which takes a string and gives it attributes*/
 class KafkaInterface(name: String) extends ChainSink[AnnotatedString](  { (data) => A.producer.send( new ProducerRecord( name, data.get("key"), data.body ) ) } ) with ChainHead[AnnotatedString] {
-  if( !A.topics.contains(name) ) { A.addTopic(name) }
+  if( !A.topics().contains(name) ) { A.addTopic(name) }
   A.subscribe(name)
   def iterator = KafkaPollData.getIterator(name) 
   

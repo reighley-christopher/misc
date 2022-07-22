@@ -8,7 +8,7 @@ import org.apache.kafka.clients.producer._
 import org.apache.kafka.clients.consumer._
 
 import reighley.christopher.Interactive
-
+import scala.language.postfixOps
 //temp for testing
 //import java.io.FileInputStream 
 //import org.apache.kafka.clients.admin._
@@ -35,7 +35,7 @@ object KafkaInterface {
 
   var linebuffer:String = ""
 
-  def print_above(line:String)
+  def print_above(line:String):Unit =
     {
     if(Interactive.alive)
       {
@@ -45,12 +45,12 @@ object KafkaInterface {
       }
     }
   
-  def print_below(line:String)
+  def print_below(line:String):Unit = 
     {
     print( line.replace("\n", "\r\n") )
     }
 
-  def process_command( parser:Parser, command:String , threadm:ConsumerProducerAdmin)
+  def process_command( parser:Parser, command:String , threadm:ConsumerProducerAdmin):Unit =
     {
     if(command == "exit") { 
        //TODO clean up threadmaster

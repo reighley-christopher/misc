@@ -15,18 +15,18 @@ class IPDB(host:String, port:Int, root:String) {
     faninout.output("fifo_out")
     faninout.attribute("add_input_separator", "10")
     faninout.execute("/usr/bin/sqlite3 " + root + "/ipdb.sqlite")
-    faninout.noisy
+    faninout.noisy()
 
-    detach( service_read > json_annotations > json_to_map > tweek("X-real-ip", x => x.split(':')(0) )  > map_to_json > 
+    detach( service_read > json_annotations > json_to_map() > tweek("X-real-ip", x => x.split(':')(0) )  > map_to_json() > 
             templated("select * from ( select '<%= key %>' ) left outer join (select name from ips where ip = '<%= X-real-ip %>') ;") > 
             throughprint[String]) > write_fifo(root + "/fifo_in")
     
-    detach( service_write > json_annotations > json_to_map > tweek("X-real-ip", x => x.split(':')(0)) > map_to_json > throughprint[String] >  
+    detach( service_write > json_annotations > json_to_map() > tweek("X-real-ip", x => x.split(':')(0)) > map_to_json() > throughprint[String] >  
             templated("insert into ips values ('<%= name %>', '<%= X-real-ip %>');") > 
             throughprint[String] ) > write_fifo(root + "/fifo_in") 
 
     detach(read_fifo(root + "/fifo_out") > throughprint[String] > split('|') > label(Array("key", "name")) > 
-             map_to_json > throughprint[String] > extract_annotation("key"))  > service_read
+             map_to_json() > throughprint[String] > extract_annotation("key"))  > service_read
 
     }
   }

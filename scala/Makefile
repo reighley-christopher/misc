@@ -1,4 +1,4 @@
-chaintools : chaintools/ChainTools.class chaintools/HTTPService.class chaintools/Riak.class chaintools/Kafka.class chaintools/Sql.class chaintools/AnnotatedInteractive.class chaintools/File.class 
+chaintools : chaintools/ChainTools.class chaintools/HTTPService.class chaintools/Riak.class chaintools/Kafka.class chaintools/Sql.class chaintools/AnnotatedInteractive.class chaintools/File.class
 
 chaintools/AnnotatedString.class : src/chaintools/AnnotatedString.scala
 	scalac src/chaintools/AnnotatedString.scala
@@ -9,28 +9,31 @@ chaintools/File.class : src/chaintools/File.scala reighley/christopher/Util.clas
 chaintools/ChainTools.class : src/chaintools/ChainTools.scala chaintools/AnnotatedString.class reighley/christopher/Util.class
 	scalac src/chaintools/ChainTools.scala
 
-chaintools/HTTPService.class : src/chaintools/HttpService.scala
+chaintools/HTTPService.class : src/chaintools/HttpService.scala reighley/christopher/Util.class chaintools/ChainTools.class
 	scalac src/chaintools/HttpService.scala
 
 chaintools/Riak.class : src/chaintools/Riak.scala chaintools/AnnotatedString.class 
 	scalac src/chaintools/Riak.scala
 
+chaintools/CouchDB.class : src/chaintools/CouchDB.scala chaintools/AnnotatedString.class reighley/christopher/Util.class
+	scalac src/chaintools/CouchDB.scala
+
 chaintools/Sql.class : src/chaintools/Sql.scala
 	scalac src/chaintools/Sql.scala
 
-chaintools/Kafka.class : src/chaintools/Kafka.scala 
+chaintools/Kafka.class : src/chaintools/Kafka.scala reighley/christopher/Properties.class
 	scalac src/chaintools/Kafka.scala
 
 chaintools/GoogleSheets.class : src/chaintools/GoogleSheets.scala reighley/christopher/GoogleSheet.class
 	scalac src/chaintools/GoogleSheets.scala
 
-chaintools/AnnotatedInteractive.class : src/chaintools/AnnotatedInteractive.scala
+chaintools/AnnotatedInteractive.class : src/chaintools/AnnotatedInteractive.scala reighley/christopher/Interactive.class
 	scalac src/chaintools/AnnotatedInteractive.scala
 
 focus_game/FocusLogic.class : src/focus_game/FocusGame.scala reighley/christopher/EnumerationModule.class reighley/christopher/ZonedDateTimeModule.class chaintools/HTTPService.class chaintools/ChainTools.class focus_game/IPDB.class chaintools/GoogleSheets.class 
 	scalac src/focus_game/FocusGame.scala
 
-focus_game/IPDB.class : src/focus_game/IPDB.scala
+focus_game/IPDB.class : src/focus_game/IPDB.scala controlserver/FanInOut.class chaintools
 	scalac src/focus_game/IPDB.scala
 
 reighley/christopher/Properties.class : src/reighley/christopher/Properties.scala
@@ -83,7 +86,7 @@ funnybench.jar : funnybench/worker/Worker.class
 
 funnybench : funnybench/worker/Worker.jar
 
-kafkainterface/ConsumerProducerAdmin.class : src/kafkainterface/ConsumerProducerAdmin.scala
+kafkainterface/ConsumerProducerAdmin.class : src/kafkainterface/ConsumerProducerAdmin.scala reighley/christopher/Tableizer.class
 	scalac src/kafkainterface/ConsumerProducerAdmin.scala
 
 kafkainterface/Parser.class : src/kafkainterface/Parser.scala

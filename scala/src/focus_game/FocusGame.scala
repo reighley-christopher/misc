@@ -1,5 +1,7 @@
 package focus_game
 
+import scala.collection.Map
+
 import org.apache.kafka.clients.admin._
 import org.apache.kafka.clients.producer._
 import org.apache.kafka.clients.consumer._
@@ -18,12 +20,11 @@ import chaintools.GoogleSheets._
 
 import scala.collection.mutable.Set
 import scala.collection.mutable.Queue
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.util.control.NonFatal
 
-import scala.util.parsing.json.JSON
 
-import Serdes._
+import org.apache.kafka.streams.scala.serialization.Serdes._
 import org.apache.kafka.streams.kstream.Materialized
 import org.apache.kafka.streams.scala.ImplicitConversions._
 import org.apache.kafka.streams.scala._
@@ -34,6 +35,8 @@ import org.apache.kafka.streams.state.KeyValueBytesStoreSupplier
 import org.apache.kafka.streams.state.KeyValueStore
 import org.apache.kafka.streams.scala.ByteArrayKeyValueStore
 import org.apache.kafka.streams.state.ValueAndTimestamp
+import org.apache.kafka.streams.errors.StreamsUncaughtExceptionHandler
+import org.apache.kafka.streams.errors.StreamsUncaughtExceptionHandler.StreamThreadExceptionResponse
 import java.time.ZonedDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -52,12 +55,17 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import reighley.christopher.Properties.properties
 import reighley.christopher.ZonedDateTimeModule
 import reighley.christopher.EnumerationModule
+import reighley.christopher.Util
 
 import scala.reflect._
 
-object ExceptionHandler extends java.lang.Thread.UncaughtExceptionHandler {
-  def uncaughtException( t:Thread, e:Throwable ) {
+import scala.language.implicitConversions
+import scala.jdk.CollectionConverters._
+
+object ExceptionHandler extends StreamsUncaughtExceptionHandler {
+  def handle( e:Throwable ):StreamThreadExceptionResponse = {
     println(e)
+    return StreamThreadExceptionResponse.REPLACE_THREAD
     } 
   }
 
@@ -173,7 +181,7 @@ def JsonFromRecord( rec : Record ) : String = {
   }
 
 def RecordFromJson2( j : String ) : Record = {
-  val x = JSON.parseFull(j).get.asInstanceOf[Map[String,String]]
+  val x = Util.jsonToMap(j)
   return Record( x("id"), x("state"), x("score").toInt, x("period"), x("lastUpdate"), x("expectedUpdate") ) 
   }
 
@@ -186,7 +194,7 @@ def JsonFromRecord2( record : Record ) : String = {
   }
 
 def InputFromJson( j : String ) : Input = {
-  val x = JSON.parseFull(j).get.asInstanceOf[Map[String,String]]
+  val x = Util.jsonToMap(j)
   return Input( x("id"), x("event"), x("timestamp") ) 
   }
 
@@ -283,9 +291,9 @@ object DumpSupplier extends TransformerSupplier[String, String, KeyValue[String,
 object EditSupplier extends TransformerSupplier[String, String, KeyValue[String, String]] { def get = DataEdit }
 
 object format_for_sheet {
-  def capitalize( lower:String ) = 
+  def capitalize( lower:String ):String =
     {
-    lower(0).toUpper + lower.substring(1)
+    s"${lower(0).toUpper}${lower.substring(1)}"
     }
   
   def reformat( date:String ) = 
@@ -302,7 +310,7 @@ object format_for_sheet {
     }
 
   def apply( front:ChainHead[AnnotatedString], back:ChainSink[String] ) = 
-   { detach( front > strip_annotations > json_to_map > tweek( "score", x => x.toDouble.toInt.toString ) > transform(sheet_process) > map_to_json) > back } 
+   { detach( front > strip_annotations > json_to_map() > tweek( "score", x => x.toDouble.toInt.toString ) > transform(sheet_process) > map_to_json()) > back } 
 
   }
 
@@ -342,13 +350,17 @@ def createStream = {
   detach( http("localhost", properties.get("focus_game.heartbeat").asInstanceOf[String].toInt, "/") ) > kafka("heartbeat")
   detach( http("localhost", properties.get("focus_game.edits").asInstanceOf[String].toInt, "/") ) > kafka("edits")
   detach( kafka("riak-out") ) > riak("focus")
+  try {
   format_for_sheet.apply( kafka("google_sheet") ,  google_sheet(properties.get("focus_game.googlesheet").asInstanceOf[String] , 2, "Date") )
+  } catch {
+  case e: NullPointerException => println("could not connect to Google Sheets, key_path not set?")
+  } 
   println("started http server threads")
   val builder = new StreamsBuilder()
   val tablevar : KTable[String,String] = builder.
     table[String, String]("table", Materialized.as[String, String, ByteArrayKeyValueStore]("table-store") )
   val heartstream : KStream[String,String] = tablevar.toStream
-  heartstream.to("heartbeat") 
+  heartstream.to("heartbeat")
   builder.stream[String,String]("http-in").flatMap(sanitize).transform(BLSupplier, "table-store").to("table")
   builder.stream[String,String]("heartbeat").transform(DumpSupplier, "table-store").to("riak-out")
   builder.stream[String,String]("edits").transform( EditSupplier, "table-store").to("table")

@@ -7,13 +7,18 @@ import org.apache.kafka.streams.scala.ImplicitConversions._
 
 import scala.collection.mutable.Set
 import scala.collection.mutable.Map
-import scala.collection.JavaConverters._
-import scala.collection.JavaConversions._
+import scala.jdk.CollectionConverters._
+//import scala.collection.JavaConverters._
+//import scala.collection.JavaConversions._
+import java.time.Duration
 
 import java.io.FileInputStream
 import java.io.FileOutputStream
 
-import scala.util.parsing.json.JSON
+import scala.language.postfixOps
+
+//import scala.util.parsing.json.JSON
+import com.fasterxml.jackson.databind.ObjectMapper
 
 import reighley.christopher.Tableizer
 
@@ -43,13 +48,14 @@ class ConsumerProducerAdmin(val consumer:Consumer[String,String], val producer:P
     TODO I hate everything about this
     I am assuming one partition per consumer but conceivably a single consumer could be working on multiple partitions and have multiple offsets
     */
-    val consumerGroups:Iterable[String] = collectionAsScalaIterable(admin.listConsumerGroups.all.get).map( (x) => x.groupId )
+    //val consumerGroups:Iterable[String] = collectionAsScalaIterable(admin.listConsumerGroups.all.get).map( (x) => x.groupId )
+    val consumerGroups:Iterable[String] = admin.listConsumerGroups.all.get.asScala.map( (x) => x.groupId)
     val topics = Map[String, Map[String, Long] ]()
     for(name <- consumerGroups) {
       val offs = admin.listConsumerGroupOffsets(name).partitionsToOffsetAndMetadata.get.asScala.toArray
       for( pair <- offs ) {
         val topi = pair._1.topic
-        if( !topics.keys.contains( topi ) ) { topics(topi) = Map[String, Long]() }
+        if( !topics.keys.exists( (t) => t == topi ) ) { topics(topi) = Map[String, Long]() }
         val offs = topics(topi)
         offs(name) = pair._2.offset 
         }
@@ -74,11 +80,11 @@ class ConsumerProducerAdmin(val consumer:Consumer[String,String], val producer:P
       //but if new records come in while dumping shunt will probably miss them 
       subscribe(topic)
       consumer.seekToBeginning(consumer.assignment())  //TODO oh wow we seek everybody to the beginning hmmm
-      var records = consumer.poll(10000) //if the offset is large seek may take a long time and paradoxically the first poll will return no records at all
+      var records = consumer.poll(Duration.ofMillis(10000)) //if the offset is large seek may take a long time and paradoxically the first poll will return no records at all
       while(records.count() > 0) {
         print(records.count)
         list = list :+ pretty_print(records)
-        records = consumer.poll(1000) 
+        records = consumer.poll(Duration.ofMillis(1000)) 
         }
       }
     list.mkString("\n") 
@@ -86,7 +92,7 @@ class ConsumerProducerAdmin(val consumer:Consumer[String,String], val producer:P
 
   /******************************************** end bad part ***********************************/
  
-  val thr = new Thread { override def run() = inner_loop }
+  val thr = new Thread { override def run() = inner_loop() }
   //val stdout_fifo = new FileInputStream("shunts/display") //this line will cause the process to block as soon as the object is created
   def subscribe( name:String ) = consumer.synchronized {
     val subs:Set[String] = consumer.subscription.asScala.clone
@@ -112,7 +118,7 @@ class ConsumerProducerAdmin(val consumer:Consumer[String,String], val producer:P
     }
 
   def create_kafka_to_kafka_shunt(inp:String, outp:String) = {
-    if(!kafka_to_kafka.contains(inp)) 
+    if(!kafka_to_kafka.exists((i) => i._1==inp)) 
       {
       kafka_to_kafka(inp) = Set()
       subscribe(inp)
@@ -137,7 +143,7 @@ class ConsumerProducerAdmin(val consumer:Consumer[String,String], val producer:P
       }
     }
 
-  def write_to_file(filename:String, data:String)
+  def write_to_file(filename:String, data:String):Unit =
     {
     //TODO save old file handles, find a way not to hang on fifos
     val str = new FileOutputStream(filename, true)
@@ -148,7 +154,7 @@ class ConsumerProducerAdmin(val consumer:Consumer[String,String], val producer:P
   def addTopic( name:String ) = {
     import java.util.Vector
     val topic = new Vector[NewTopic](1)
-    topic.add(0, new NewTopic( name, 1, 1 ) ) 
+    topic.add(0, new NewTopic( name, 1, 1:Short ) ) 
     admin.createTopics(topic)
     }
 
@@ -159,16 +165,22 @@ class ConsumerProducerAdmin(val consumer:Consumer[String,String], val producer:P
     admin.deleteTopics(topic)
     }
 
+  //replacement for JSON module parsefull which is dead now
+  def parseFull( json:String ) = {
+    val mapper = new ObjectMapper()
+    mapper.readValue(json, classOf[scala.collection.immutable.Map[String,String]]) 
+    }
+
   def inner_loop() = {
     while(! okay_to_die ) {
       if( be_quiet ) Thread.`yield` 
       else
         
         consumer.synchronized {
-        val records = consumer.poll(1000)
+        val records = consumer.poll(Duration.ofMillis(1000))
         poll_count += 1
         records_seen += records.count()
-        for(r <- records)
+        for(r <- records.asScala)
           {
           val topic = r.topic()
           if(kafka_to_kafka.contains(topic)) for( s <- kafka_to_kafka(topic) )
@@ -184,7 +196,8 @@ class ConsumerProducerAdmin(val consumer:Consumer[String,String], val producer:P
           if(tables.contains(topic))
             {
             bytes_read += r.value().length()
-            val dict = JSON.parseFull( r.value() ).get.asInstanceOf[ scala.collection.immutable.Map[String, String] ] 
+            //val dict = JSON.parseFull( r.value() ).get.asInstanceOf[ scala.collection.immutable.Map[String, String] ] 
+            val dict = parseFull( r.value() ) 
             tables(topic).update_row(Map("key" -> r.key) ++ dict )
             }
           if(listens.contains(topic))

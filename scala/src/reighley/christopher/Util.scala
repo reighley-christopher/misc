@@ -6,14 +6,37 @@ import java.io.InputStream
 import java.lang.Thread
 import scala.sys.process._
 import scala.collection.Map
+import scala.collection.immutable.{Map => ImMap}
+import scala.collection.mutable.{Map => MuMap}
 import java.net.HttpURLConnection
 import java.net.URL
 import scala.io.Source
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.JsonNode
+import scala.jdk.CollectionConverters._
 
 object Util {
   def mapToJson( map : Map[String,String] ) : String = "{" + map.map( x => "\"" + x._1 + "\":\"" + x._2 + "\"").mkString(",") + "}" 
   def dir( example:Object ):Array[String] = {
     example.getClass().getMethods().map( { (m:Method)=> m.getName() } ) 
+    }
+
+  def jsonToMap( json:String ):Map[String,String] = {
+    val mapper = new ObjectMapper()
+    mapper.readTree(json).fields.asScala.map( e => e.getKey() -> e.getValue().asText ).toMap
+    }
+
+  def jsonToShallowMap( json:String ):ImMap[String, JsonNode] = {
+    val mapper = new ObjectMapper()
+    mapper.readTree(json).fields.asScala.map( e => e.getKey() -> e.getValue() ).toMap
+    }
+
+  def shallowMapToJson( map:Map[String, JsonNode] ):JsonNode = 
+    {
+    val mapper = new ObjectMapper()
+    val obj = mapper.createObjectNode()
+    for( (key, value) <- map ) obj.set( key, value )
+    return obj
     }
 
   //TODO connect the error stream to something throws exceptions

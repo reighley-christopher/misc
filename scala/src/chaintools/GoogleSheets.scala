@@ -2,14 +2,14 @@ package chaintools
 
 import reighley.christopher.GoogleSheet
 import reighley.christopher.Properties.properties
-import scala.util.parsing.json.JSON
+import reighley.christopher.Util 
 
 object GoogleSheets {
 
   var testid = "12SPSNnOWyQsHRxDp3JCiQPsXRnitJPJK4Z63svssK-E";
 
   class SheetsInterface( sheet:GoogleSheet ) extends ChainSink[String]( (data) => {
-      sheet.update_record( JSON.parseFull(data).get.asInstanceOf[Map[String,String]] )
+      sheet.update_record( Util.jsonToMap(data) )
       }  )
 
   def google_sheet(sheet_id:String, header_row:Int, key_column:String) = {
