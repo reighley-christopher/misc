@@ -30,7 +30,7 @@ chaintools/GoogleSheets.class : src/chaintools/GoogleSheets.scala reighley/chris
 chaintools/AnnotatedInteractive.class : src/chaintools/AnnotatedInteractive.scala reighley/christopher/Interactive.class
 	scalac src/chaintools/AnnotatedInteractive.scala
 
-focus_game/FocusLogic.class : src/focus_game/FocusGame.scala reighley/christopher/EnumerationModule.class reighley/christopher/ZonedDateTimeModule.class chaintools/HTTPService.class chaintools/ChainTools.class focus_game/IPDB.class chaintools/GoogleSheets.class 
+focus_game/FocusLogic.class : src/focus_game/FocusGame.scala reighley/christopher/EnumerationModule.class reighley/christopher/ZonedDateTimeModule.class chaintools/HTTPService.class chaintools/ChainTools.class focus_game/IPDB.class chaintools/GoogleSheets.class chaintools/CouchDB.class 
 	scalac src/focus_game/FocusGame.scala
 
 focus_game/IPDB.class : src/focus_game/IPDB.scala controlserver/FanInOut.class chaintools
@@ -72,7 +72,7 @@ controlserver/Socket2.class : src/controlserver/Socket2.scala
 controlserver.jar : controlserver/Server.class controlserver/Socket2.class controlserver/FanInOut.class
 	jar cfm controlserver.jar src/META-INF/controlserver.MANIFEST.MF controlserver/*
 
-focus_game.jar : focus_game/FocusLogic.class reighley/christopher/Properties.class chaintools/Kafka.class chaintools/Riak.class chaintools/HTTPService.class focus_game/IPDB.class 
+focus_game.jar : focus_game/FocusLogic.class reighley/christopher/Properties.class chaintools/Kafka.class chaintools/CouchDB.class chaintools/HTTPService.class focus_game/IPDB.class 
 	jar cf focus_game.jar focus_game/* reighley/* chaintools/* 
 
 kafkainterface.jar : kafkainterface/KafkaInterface.class
