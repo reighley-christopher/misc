@@ -15,7 +15,7 @@ import java.lang.reflect.Method
 import chaintools._
 import chaintools.ChainTools._
 import chaintools.HTTPService._
-import chaintools.Riak._
+import chaintools.CouchDB._
 import chaintools.GoogleSheets._
 
 import scala.collection.mutable.Set
@@ -341,7 +341,7 @@ def createStream = {
   A.subscribe("http-in")
   A.subscribe("heartbeat")
   A.subscribe("sanitize")
-  A.subscribe("riak-out")
+  A.subscribe("couchdb-out")
   A.addTopic("table")
   println("set up outside consumers")
   //todo why are the semantics of detach so weird
@@ -349,7 +349,7 @@ def createStream = {
     annotate("key"->"") ) > kafka("http-in")
   detach( http("localhost", properties.get("focus_game.heartbeat").asInstanceOf[String].toInt, "/") ) > kafka("heartbeat")
   detach( http("localhost", properties.get("focus_game.edits").asInstanceOf[String].toInt, "/") ) > kafka("edits")
-  detach( kafka("riak-out") ) > riak("focus")
+  detach( kafka("couchdb-out") ) > couchdb("focus")
   try {
   format_for_sheet.apply( kafka("google_sheet") ,  google_sheet(properties.get("focus_game.googlesheet").asInstanceOf[String] , 2, "Date") )
   } catch {
@@ -362,7 +362,7 @@ def createStream = {
   val heartstream : KStream[String,String] = tablevar.toStream
   heartstream.to("heartbeat")
   builder.stream[String,String]("http-in").flatMap(sanitize).transform(BLSupplier, "table-store").to("table")
-  builder.stream[String,String]("heartbeat").transform(DumpSupplier, "table-store").to("riak-out")
+  builder.stream[String,String]("heartbeat").transform(DumpSupplier, "table-store").to("couchdb-out")
   builder.stream[String,String]("edits").transform( EditSupplier, "table-store").to("table")
   tablevar.toStream.to("google_sheet") 
   val topology = builder.build()

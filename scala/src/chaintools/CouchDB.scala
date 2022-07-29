@@ -66,8 +66,8 @@ def couchdb_put(database : String, key : String, jsonnode : JsonNode):(Int, Stri
     .build
   try {
     val response = client.execute(request) //TODO if I try a URL with a pipe, this fails silently. real pain in the ass java.io.IOException?
-    val entity = response.getEntity().getContent() 
-    return (response.getStatusLine().getStatusCode(), entity.toString)
+    val body = IOUtils.toString( response.getEntity().getContent(), Charset.forName("UTF-8") )
+    return (response.getStatusLine().getStatusCode(), body )
     } catch {
       case _:Exception => return ( 0, "")
     }
@@ -81,23 +81,30 @@ def to_couchdb_pessimistic(payload : Map[String, JsonNode], database : String, k
     .build
   val response = client.execute(request)
   val dict = jsonToMap( IOUtils.toString(response.getEntity().getContent(), Charset.forName("UTF-8")) )
-  revisions(dict("_id")) = dict("_rev")
-  val stree = shallowMapToJson( payload + ("_rev" -> mapper.valueToTree(revisions(key) ) ) )
-  to_couchdb_optimisitic(payload, database, key, revisions ) //the recursion will hopefully not go too deep, but there is always a possibility of multiple contention 
+  revisions(key) = response.getStatusLine().getStatusCode() match { 
+    case 200 => dict("_rev")
+    case _ => "" 
+    }  
+  to_couchdb_optimistic(payload, database, key, revisions ) //the recursion will hopefully not go too deep, but there is always a possibility of multiple contention 
   }
 
 //this assumes that no collision occurs, updates if it gets a 409 Conflict error
-def to_couchdb_optimistic(payload : payload : Map[String, JsonNode], database : String, key : String, revisions : MuMap[String, String] ) : Unit = {
+def to_couchdb_optimistic( payload : Map[String, JsonNode], database : String, key : String, revisions : MuMap[String, String] ) : Unit = {
+  print("to_couchdb_optimistic")
   //val client = HttpClient.newHttpClient
   val client : HttpClient = HttpClientBuilder.create().build()
   val mapper = new ObjectMapper()
-   
+  print(revisions)   
   //if there is no entry in the revisions database this might be a new record just go for it, a 200 request will contain a rev field remember to save
   if( revisions.contains(key)) {
-    val strtree = shallowMapToJson(tree + ("_rev" -> mapper.valueToTree(revisions(key) ) ) )
+    val strtree:JsonNode = revisions(key) match {
+      case "" => shallowMapToJson(payload)
+      case _ => shallowMapToJson(payload.concat(Map ("_rev" -> mapper.valueToTree(revisions(key) ) ) ) )
+      }
     print(strtree.toString())
     couchdb_put( database, key, strtree ) match {
       case (409, _ ) => {
+        print("couchdb revision conflict")
         //oh no conflict
         to_couchdb_pessimistic( payload, database, key, revisions )
         //we will do a get to update the revision number
@@ -107,26 +114,29 @@ def to_couchdb_optimistic(payload : payload : Map[String, JsonNode], database : 
         //then write out
         //tree.set("_rev", revisions[key]) 
         }
-      case (0, _ ) => { 
+      case (0, _ ) => {
+        print("couchdb exception thrown")
         ()
         //this was an error
         }
-      case (_, _) => {
+      case (_, message) => {
+        print("couchdb seems to have worked")
+        revisions(key) = jsonToMap(message)("rev") 
+        print(message)
         ()
         //anything else was maybe okay (should probably handle other http errors but no)
         //TODO don't swallow errors
         } 
       }
     } else to_couchdb_pessimistic( payload, database, key, revisions )
-
+  
   }
 
 def astring_to_couchdb(database:String, payload : AnnotatedString ) : Unit = {
-  var dummykey = payload.get("key")
-  println("to_optimistic_test : %s".format(dummykey) )
-   
-  to_couchdb_optimistic(payload.body, database, dummykey, MuMap() ) 
-
+  print("astring_to_couchdb")
+  var key = payload.get("key")
+  var mapper = new ObjectMapper()
+  to_couchdb_optimistic(Map("_id" -> mapper.valueToTree(key) , "data" -> mapper.readTree(payload.body) ), database, key, MuMap() ) 
   }
 
 //def to_riak_test_wrapper() : AnnotatedString => Unit = 
@@ -142,9 +152,13 @@ def astring_to_couchdb(database:String, payload : AnnotatedString ) : Unit = {
 //  return ret 
 //  } 
 
-class CouchDBInterface(database : String, funct : AnnotatedString => Unit ) extends ChainSink[AnnotatedString]( x => () ) {
+class CouchDBInterface(database : String, func : (String, AnnotatedString ) => Unit ) extends ChainSink[AnnotatedString]( x => () ) {
   val m = MuMap[String, String]()
-  override def absorb( iter:Iterable[AnnotatedString]):Unit = iter.foreach(func)
+  override def absorb( iter:Iterable[AnnotatedString]):Unit = {
+    print("couchdb absorb")
+    iter.foreach(func(database, _) )
+    print("exit absorb")
+    }
   }
 
 def couchdb(bucket : String) = new CouchDBInterface(bucket, astring_to_couchdb ) 

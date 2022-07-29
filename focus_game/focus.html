@@ -135,7 +135,8 @@ login stub : this bit hasn't been specified<br>
      }
 
   var network_parameters = {
-    event_service : "http://new.reighley-christopher.net/focus/"
+    //event_service : "http://new.reighley-christopher.net/focus/"
+    event_service : "http://localhost:8888/"
     }
 
   var myId = ""
@@ -321,15 +322,15 @@ login stub : this bit hasn't been specified<br>
 
   function update_leaderboard() {
     var line = _.template("<tr><td><%= id %><td><%= score  %></td></tr>")
-    $.ajax({url : "http://new.reighley-christopher.net/riak/buckets/focus/keys/"+current_board(), cache : false } ).
-      done(function(d){ 
+    $.ajax({url : "http://new.reighley-christopher.net/couchdb/focus/"+current_board(), cache : false } ).
+        done(function(d) {
         $(".leaderboard").empty().
         append("<tr><th colspan=2>LEADER BOARD</th></th></tr>")
-        _.forEach( d,  function(d) { 
+        _.forEach( d.data,  function(d) { 
           sanitize_record(d)
           $(".leaderboard").append( line(d) ) 
           } )
-        leaderboard = d
+        leaderboard = d.data
         update_clock_state()
       } ).
       fail( function(e) { console.log("ERROR"); console.log(e) } ) 
