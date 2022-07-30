@@ -1,18 +1,18 @@
 package chaintools
-
+import scala.collection.Map
 import reighley.christopher.Util._
-import scala.util.parsing.json.JSON
+
 
 class ChainSink[X](f : X => Unit) {
   def func = f
-  def absorb(iter:Iterable[X]):Unit = iter.foreach( f )
+  def absorb(iter:Iterable[X]):Unit = { iter.foreach( f ) }
   }
 
 class ChainLink[X,Y](f : X => Y) {
   def iterator(iter:ChainHead[X]):Iterator[Y] = new Iterator[Y] { 
     val ator = iter.iterator
     def hasNext = ator.hasNext
-    def next() = f(ator.next)
+    def next() = f(ator.next())
     } 
   // def >( k : ChainSink[Y] ) : ChainSink[X] 
   // def >[Y]( k : ChainLink[X,Y] ) : ChainLink[X, Y]
@@ -27,7 +27,7 @@ trait ChainHead[X] extends Iterable[X] {
 
   def build_chain[Y]( self:ChainHead[X], link:ChainLink[X,Y] ) = new ChainHead[Y] {
     override def toString = "[Composit Chain]" 
-    def iterator() = link.iterator( self ) 
+    def iterator = link.iterator( self ) 
     } 
 
   def >[Y]( k : ChainLink[X, Y] ):ChainHead[Y] = build_chain(this, k) 
@@ -39,20 +39,22 @@ def literal[X]( iterable : Iterable[X] ) : ChainHead[X] = new ChainHead[X] {
   def iterator = iterable.iterator
   } 
 
+def transform[X]( f:X => X ) = new ChainLink[X, X](f) 
+
 def delimit(delimiter:String) = new ChainLink[Map[String,String], String]({(map:Map[String,String]) => map.values.reduce( {(a,b) => a ++ delimiter ++ b} )  })
 
 def split(delimiter:Char) = new ChainLink[String, Array[String]]( _.split(delimiter) )
 
-def label(headers:Array[String]) = new ChainLink[Array[String], Map[String, String]]( (x:Array[String]) => Map(headers.zip(x):_*) )
+def label(headers:Array[String]) = new ChainLink[Array[String], Map[String, String]]( (x:Array[String]) => Map(headers.zip(x).toIndexedSeq:_*) )
 
 def map_to_json() = new ChainLink[Map[String,String], String]( mapToJson(_) )
-def json_to_map() = new ChainLink[String, Map[String,String]](JSON.parseFull(_).get.asInstanceOf[Map[String,String]])
+def json_to_map() = new ChainLink[String, Map[String,String]]( jsonToMap(_) )
 
 def tweek(key:String, value_transform:String => String ) = new ChainLink[Map[String,String], Map[String,String]](map => 
-  map + ( key -> value_transform( map(key) ) ) 
+  map.concat(  Map( key -> value_transform( map(key) ) ) )
   ) 
 
-def templated(str:String) = new ChainLink[String, String]( (x:String) => template(str)(JSON.parseFull(x).get.asInstanceOf[Map[String,String]]) )
+def templated(str:String) = new ChainLink[String, String]( (x:String) => template(str)(jsonToMap(x) ) )
 
 def throughprint[X] = new ChainLink[X, X]({ (input:X) => input match { 
     case a : String => println(a); a.asInstanceOf[X]
@@ -63,18 +65,16 @@ def sinkprint = new ChainSink[String]( println )
 
 def strip_annotations = new ChainLink[AnnotatedString, String]({ x => x.body })
 def flatten_annotations = new ChainLink[AnnotatedString, String]({ x => x.annotations.map({x => x._1 + "=" + x._2}).reduceOption({(y, x) => y  + "\n" +  x }).getOrElse("") + "\n" + x.body + "\n" } )
+
 def json_annotations = new ChainLink[AnnotatedString, String]({ inp => 
-  val x:Map[String,String] = JSON.parseFull(inp.body) match {
-    case Some(x) => x.asInstanceOf[Map[String,String]]
-    case _ => Map[String,String]()
-    }
+  val x:Map[String,String] = jsonToMap(inp.body) 
   mapToJson(x ++ inp.annotations) 
   })
 
 def extract_annotation(key:String) = new ChainLink[String, AnnotatedString]( x => {
- val js = JSON.parseFull(x).get.asInstanceOf[Map[String,String]]
+ val js = jsonToMap(x) 
  val annotate = ( key -> js(key) )
- val body =  mapToJson( js - key )
+ val body =  mapToJson( js.filter( p => p._1==key) )
  new AnnotatedString(body, annotate)
  } )
 

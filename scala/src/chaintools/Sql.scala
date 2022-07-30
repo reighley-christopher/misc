@@ -13,11 +13,11 @@ val mysql = DriverManager.getConnection("jdbc:mysql://192.168.1.2/Catalog", "jup
 
 class SQLInterface( query:String ) extends ChainHead[Map[String,String]] { 
 
-  def iterator() = new Iterator[Map[String, String]] { 
+  def iterator = new Iterator[Map[String, String]] { 
     val resultset=mysql.createStatement().executeQuery(query)
     val meta = resultset.getMetaData() 
     var _hasNext = resultset.next()
-    def hasNext() = _hasNext
+    def hasNext = _hasNext
     def next() = 
       {
       var q = Queue[(String,String)]()

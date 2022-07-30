@@ -12,7 +12,8 @@ import java.time.Instant
 import java.time.Duration
 import scala.collection.mutable.HashMap
 import scala.util.Random
-import scala.collection.JavaConverters._
+//import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.TimeUnit
@@ -33,7 +34,7 @@ class ThreadedIterator[X]( iterator : Iterator[X] ) extends Iterator[X] {
      while(true) {
         if( iterator.hasNext && buffer.isEmpty ) {
           this.synchronized {
-            buffer = Option( iterator.next )
+            buffer = Option( iterator.next() )
             _hasNext = iterator.hasNext
             println("populated buffer")
             } 
@@ -52,7 +53,7 @@ class ThreadedIterator[X]( iterator : Iterator[X] ) extends Iterator[X] {
     println("hasNext") 
     this.synchronized { _hasNext || buffer.isDefined }
     }
-  def next:X = {
+  def next():X = {
     println("next")
     /*if there is anything in the buffer return it otherwise block
     TODO raise exception if not hasNext instead of entering an infinte loop*/
@@ -130,7 +131,7 @@ class CallbackHandler( post:Map[String,String] => String, get:Map[String,String]
     //java_request_headers.keySet().asScala.foreach( key => request_headers(key) = java_request_headers.get(key).asScala.fold("")( _+_ ) ) 
     if(verb == "POST" ) {
       val str = buffer.map( _.toChar )
-      val post_map = request_headers + ( "ip"->ip.toString ) + ( "body"->str.mkString )
+      val post_map =  request_headers ++ Map( "ip"->ip.toString ,  "body"->str.mkString ) 
       post_data = Some(post(post_map))
       }
     if(verb == "POST") {
@@ -144,7 +145,7 @@ class CallbackHandler( post:Map[String,String] => String, get:Map[String,String]
       case "POST" => post_data.getOrElse("").getBytes() 
       case "GET" =>  { 
         print("here we are even calling it and everything %s".format(get))
-        val xx = get(request_headers + ( "ip"->ip.toString ) + ( "path"->subpath ) ).getBytes()
+        val xx = get(request_headers ++ Map( "ip"->ip.toString  , "path"->subpath ) ).getBytes()
         print("got %d bytes back\n", xx.length) 
         xx
         }
@@ -213,10 +214,10 @@ class LoiteringHTTPInterface( host:String, port:Int, path:String, wait:Waiter[An
   //the get_callback needs to block until the data it is waiting for comes back
   def callback(data:Map[String,String]) = {
     print("attempting to handle request :\n");
-    print(data); 
+    print(data);
     //make a random key 
     val hashkey="%s-%s-%d".format( data("ip"), Instant.now().toString, rand.nextInt(1000)).hashCode.toHexString
-    requestQueue.enqueue(new AnnotatedString(data.getOrElse("body", ""), (data + ("key" -> hashkey ) - "body" ).toSeq:_* ) )
+    requestQueue.enqueue(new AnnotatedString(data.getOrElse("body", ""), (data.toMap + ("key" -> hashkey ) - "body" ).toSeq:_* ) )
     val bo = wait.start(hashkey).body
     print("handled request %s\n".format(mapToJson(data)) )
     bo
@@ -225,7 +226,7 @@ class LoiteringHTTPInterface( host:String, port:Int, path:String, wait:Waiter[An
   //this is what makes it a chainhead, producing requests one at a time foreve
   def iterator = new Iterator[AnnotatedString] { 
     def hasNext = true
-    def next:AnnotatedString = {
+    def next():AnnotatedString = {
       while( requestQueue.isEmpty ) { Thread.`yield` }
       return requestQueue.synchronized { requestQueue.dequeue() }
       }  
@@ -266,14 +267,14 @@ class TokenizedHTTPInterface( host:String, port:Int, path:String, datastore:Data
 
   def iterator = new Iterator[AnnotatedString] { 
     def hasNext = true
-    def next:AnnotatedString = {
+    def next():AnnotatedString = {
       while( requestQueue.isEmpty ) { Thread.`yield` }
       return requestQueue.synchronized { requestQueue.dequeue() }
       }  
     } 
   }
 
-class StringHTTPInterface( host:String, port:Int, path:String ) extends ChainSink[String]( { x => Unit  } ) with  ChainHead[String] {
+class StringHTTPInterface( host:String, port:Int, path:String ) extends ChainSink[String]( { x => ()  } ) with  ChainHead[String] {
 
   val requestQueue = new Queue[String]
   //val http_server = HttpServer.create()
@@ -296,14 +297,14 @@ class StringHTTPInterface( host:String, port:Int, path:String ) extends ChainSin
 
   def iterator = new Iterator[String] { 
     def hasNext = true
-    def next:String = {
+    def next():String = {
       while( requestQueue.isEmpty ) { Thread.`yield` }
       return requestQueue.synchronized { requestQueue.dequeue() }
       }  
     } 
   }
 
-class AnnotatedStringHTTPInterface( host:String, port:Int, path:String ) extends ChainSink[AnnotatedString]( { x => Unit } ) with ChainHead[AnnotatedString] {
+class AnnotatedStringHTTPInterface( host:String, port:Int, path:String ) extends ChainSink[AnnotatedString]( { x => () } ) with ChainHead[AnnotatedString] {
   val requestQueue = new Queue[AnnotatedString]
   //val http_server = HttpServer.create()
 
@@ -311,7 +312,7 @@ class AnnotatedStringHTTPInterface( host:String, port:Int, path:String ) extends
   override def absorb( iter:Iterable[AnnotatedString]):Unit = iter.foreach(do_the_thing )
  
   def post_callback(data:Map[String,String]) = requestQueue.synchronized {
-    val out = new AnnotatedString( data("body"), (data-"body").toSeq:_* ) 
+    val out = new AnnotatedString( data("body"), (data.toMap-"body").toSeq:_* ) 
     requestQueue.enqueue(out)
     ""
     }  
@@ -326,7 +327,7 @@ class AnnotatedStringHTTPInterface( host:String, port:Int, path:String ) extends
 
   def iterator = new Iterator[AnnotatedString] { 
     def hasNext = true
-    def next:AnnotatedString = {
+    def next():AnnotatedString = {
       while( requestQueue.isEmpty ) { Thread.`yield` }
       return requestQueue.synchronized { requestQueue.dequeue() }
       }  
@@ -336,7 +337,7 @@ class AnnotatedStringHTTPInterface( host:String, port:Int, path:String ) extends
 
 /*TaskIntersection gives boths Head and Sink behavior to an object running in a separate thread*/
 /*TODO this copies a lot of code from TaskHead maybe I can abstract this out as a mixin?*/
-class TaskIntersection[X,Y]( base : ChainSink[X] with ChainHead[Y] ) extends ChainSink[X]({x => Unit}) with ChainHead[Y] {
+class TaskIntersection[X,Y]( base : ChainSink[X] with ChainHead[Y] ) extends ChainSink[X]({x =>()}) with ChainHead[Y] {
   var _stop = true
   def stop:Unit = { this.synchronized{ _stop=false } }
 
@@ -364,15 +365,15 @@ class TaskIntersection[X,Y]( base : ChainSink[X] with ChainHead[Y] ) extends Cha
     }
 
   def iterator = new Iterator[Y] {
-    val iterator = base.iterator
+    val iter = base.iterator
     /*as soon as > is called the iterator will call hasNext at once, but it may not know if it is time to stop, that will happen when base.iterator 
       runs out, or at least that is what should happen but it never seems to call next*/ 
     def hasNext = {
       true // this.synchronized{ iterator.hasNext }
       } /*if this causes problems with focus_game it is because hasNext needs to be fixed to true for http to work and this is a bug*/
     def next():Y = {
-      while( ! iterator.hasNext && ! _stop ) { Thread.`yield` }
-      iterator.next
+      while( ! iter.hasNext && ! _stop ) { Thread.`yield` }
+      iter.next()
       } 
     } 
   }
@@ -394,15 +395,15 @@ class TaskHead[X]( base : ChainHead[X], loiter:Boolean = false ) extends ChainHe
     t.start() 
     }
   def iterator = new Iterator[X] {
-    val iterator = base.iterator
+    val iter = base.iterator
     /*as soon as > is called the iterator will call hasNext at once, but it may not know if it is time to stop, that will happen when base.iterator 
       runs out, or at least that is what should happen but it never seems to call next*/ 
     def hasNext = {
       true // this.synchronized{ iterator.hasNext }
       } /*if this causes problems with focus_game it is because hasNext needs to be fixed to true for http to work and this is a bug*/
     def next():X = {
-      while( ! iterator.hasNext && ! _stop ) { Thread.`yield` }
-      iterator.next
+      while( ! iter.hasNext && ! _stop ) { Thread.`yield` }
+      iter.next()
       } 
     } 
   }
