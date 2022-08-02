@@ -74,7 +74,7 @@ def json_annotations = new ChainLink[AnnotatedString, String]({ inp =>
 def extract_annotation(key:String) = new ChainLink[String, AnnotatedString]( x => {
  val js = jsonToMap(x) 
  val annotate = ( key -> js(key) )
- val body =  mapToJson( js.filter( p => p._1==key) )
+ val body =  mapToJson( js.filter( p => p._1!=key) )
  new AnnotatedString(body, annotate)
  } )
 

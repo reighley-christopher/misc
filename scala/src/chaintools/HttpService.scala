@@ -190,7 +190,7 @@ class Waiter[A] {
     //TODO don't hardcode the timeout, create some kind of strategy
     while( ! ( index contains token ) && Instant.now().isBefore( timeouts(token).plus(Duration.ofSeconds(60) ) ) ) { Thread.`yield` }
     print("we are pleased to accept your request for token %s\n".format(token) )
-    if(index contains token) print("we have found a value for it!\n");
+    if(index contains token) print("we have found a value for it! %s\n".format(index(token).asInstanceOf[AnnotatedString].body) );
     else  print("we have no value for it\n")
     print( Duration.between( Instant.now(), timeouts(token) ) )
     val ret = index.remove(token)

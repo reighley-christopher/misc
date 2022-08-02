@@ -4,8 +4,14 @@ import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.net.ServerSocket
 import java.net.Socket
+import java.io.PrintWriter
+import java.io.InputStream
+import java.io.OutputStream
 import scala.tools.nsc.Settings
 import scala.tools.nsc.interpreter._
+
+//I think I don't use this at all because in 2.11 the interpreter was hopelessly broken
+//TODO maybe in 2.13 it works and we can replace Socket2 with something that makes more sense
 
 object Server {
 
@@ -17,13 +23,14 @@ object Server {
 
   class MyLoop {
     //ILoop doesn't work, keeps nulling out the IMain interpretter, so I'm going to write my own
-    private var intp : IMain = new IMain()
+    private var settings = new Settings()
+    private var intp : IMain = new IMain(settings, new shell.ReplReporterImpl(settings))
     private var reader : BufferedReader = null
     private var out : OutputStream = null
-    private var writer : JPrintWriter = null 
+    private var writer : PrintWriter = null 
     def this(reader : BufferedReader, out : OutputStream ) = {
        this()
-       this.writer = new JPrintWriter(out)
+       this.writer = new PrintWriter(out)
        this.out = out
        this.reader = reader 
        }
